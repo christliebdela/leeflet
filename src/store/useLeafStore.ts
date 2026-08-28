@@ -267,11 +267,16 @@ export const useLeafStore = create<LeafState>((set, get) => ({
     broadcastSync({ type: 'items_reload' });
   },
 
-  setSelectedItemId: (id) => set({ selectedItemId: id }),
+  setSelectedItemId: (id) =>
+    set({
+      selectedItemId: id,
+      isWorkspaceModalOpen: id ? false : get().isWorkspaceModalOpen,
+    }),
   setSelectedProjectId: (id) => {
     set({
       selectedProjectId: id,
       selectedItemId: null,
+      isWorkspaceModalOpen: false,
       viewMode: id ? { type: 'project', projectId: id } : { type: 'inbox' },
     });
   },
@@ -279,6 +284,7 @@ export const useLeafStore = create<LeafState>((set, get) => ({
     set({
       viewMode,
       selectedItemId: null,
+      isWorkspaceModalOpen: false,
       selectedProjectId: viewMode.type === 'project' ? viewMode.projectId : null,
     });
   },
@@ -297,7 +303,11 @@ export const useLeafStore = create<LeafState>((set, get) => ({
 
   setQuickCaptureOpen: (open) => set({ isQuickCaptureOpen: open }),
   setOnboardingOpen: (open) => set({ isOnboardingOpen: open }),
-  setWorkspaceModalOpen: (open) => set({ isWorkspaceModalOpen: open }),
+  setWorkspaceModalOpen: (open) =>
+    set({
+      isWorkspaceModalOpen: open,
+      selectedItemId: open ? null : get().selectedItemId,
+    }),
   setProjectModalOpen: (open, project = null) => set({ isProjectModalOpen: open, editingProject: project }),
   setStickyNoteItemId: (id) => set({ stickyNoteItemId: id }),
 }));

@@ -55,12 +55,14 @@ export const App: React.FC = () => {
       // 2. Open Settings: 's' / 'S' (when not typing in input) or Ctrl + ,
       if (!isInput && (e.key === 's' || e.key === 'S') && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
-        setWorkspaceModalOpen(true);
+        const cur = useLeafStore.getState().isWorkspaceModalOpen;
+        setWorkspaceModalOpen(!cur);
         return;
       }
       if ((e.ctrlKey || e.metaKey) && (e.key === ',' || e.key === '<')) {
         e.preventDefault();
-        setWorkspaceModalOpen(true);
+        const cur = useLeafStore.getState().isWorkspaceModalOpen;
+        setWorkspaceModalOpen(!cur);
         return;
       }
 
@@ -117,10 +119,16 @@ export const App: React.FC = () => {
         return;
       }
 
-      // 7. Escape: Clear selection if detail pane is open
-      if (e.key === 'Escape' && selectedItemId) {
-        setSelectedItemId(null);
-        return;
+      // 7. Escape: Clear selection or close settings
+      if (e.key === 'Escape') {
+        if (selectedItemId) {
+          setSelectedItemId(null);
+          return;
+        }
+        if (useLeafStore.getState().isWorkspaceModalOpen) {
+          setWorkspaceModalOpen(false);
+          return;
+        }
       }
     };
 
@@ -164,7 +172,7 @@ export const App: React.FC = () => {
         {/* Fixed Unified Header */}
         <HeaderBar />
 
-        {/* Dynamic Body Content & Detail Pane */}
+        {/* Dynamic Body Content & Detail / Settings Pane */}
         <main className="flex-1 min-h-0 flex overflow-hidden relative">
           <div className="flex-1 min-w-0 h-full flex flex-col overflow-hidden">
             {viewMode.type === 'my_queue' ? (
@@ -176,6 +184,9 @@ export const App: React.FC = () => {
 
           {/* Item Detail Split Slide-In Pane */}
           <ItemDetailPane />
+
+          {/* Settings Split Slide-In Pane */}
+          <WorkspaceModal />
         </main>
       </div>
 
@@ -183,7 +194,6 @@ export const App: React.FC = () => {
       <QuickCaptureModal />
       <StickyNoteView />
       <OnboardingModal />
-      <WorkspaceModal />
       <ProjectModal />
     </div>
   );

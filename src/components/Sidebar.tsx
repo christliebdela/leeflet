@@ -33,6 +33,7 @@ export const Sidebar: React.FC = () => {
     viewMode,
     setViewMode,
     setProjectModalOpen,
+    isWorkspaceModalOpen,
     setWorkspaceModalOpen,
     deleteProject,
     theme,
@@ -407,8 +408,12 @@ export const Sidebar: React.FC = () => {
           </button>
 
           <button
-            onClick={() => setWorkspaceModalOpen(true)}
-            className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white transition-colors text-xs font-medium"
+            onClick={() => setWorkspaceModalOpen(!isWorkspaceModalOpen)}
+            className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] transition-colors text-xs font-medium ${
+              isWorkspaceModalOpen
+                ? 'bg-[#ebecee] dark:bg-[#27272a] text-[#111827] dark:text-white font-semibold'
+                : 'text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white'
+            }`}
           >
             <div className="flex items-center gap-2">
               <Settings className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />

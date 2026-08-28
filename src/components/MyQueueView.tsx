@@ -6,7 +6,7 @@ import { ListTodo, Plus, Circle, CheckCircle2, X } from 'lucide-react';
 type SectionKey = 'critical' | 'high' | 'medium' | 'low' | 'ideas';
 
 export const MyQueueView: React.FC = () => {
-  const { items, projects, selectedItemId, setSelectedItemId, filterOptions, setQuickCaptureOpen, updateItem, createItem } = useLeafStore();
+  const { items, projects, selectedItemId, setSelectedItemId, filterOptions, setQuickCaptureOpen, updateItem, createItem, isWorkspaceModalOpen } = useLeafStore();
   const [addingSection, setAddingSection] = useState<SectionKey | null>(null);
   const [newTitle, setNewTitle] = useState('');
   const inlineInputRef = useRef<HTMLInputElement>(null);
@@ -205,7 +205,7 @@ export const MyQueueView: React.FC = () => {
     );
   };
 
-  const isPaneOpen = Boolean(selectedItemId);
+  const isPaneOpen = Boolean(selectedItemId) || isWorkspaceModalOpen;
 
   if (queueItems.length === 0 && !addingSection) {
     return (

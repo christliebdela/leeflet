@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useLeafStore } from '../store/useLeafStore';
 import { dbService } from '../services/db';
 import {
@@ -10,20 +11,20 @@ import {
   Command,
   LayoutGrid,
   Edit3,
-  Sun,
-  Moon,
   Check,
   Copy,
-  ExternalLink,
   Sliders,
   Database,
   User,
   Sparkles,
+  Globe,
+  AlertCircle,
+  Plus,
 } from 'lucide-react';
 import { Item, Attachment } from '../types';
 import { formatFileSize } from '../utils/format';
 
-type Tab = 'shortcuts' | 'preferences';
+type Tab = 'preferences' | 'shortcuts';
 
 interface ShortcutItem {
   id: string;
@@ -51,31 +52,37 @@ export const WorkspaceModal: React.FC = () => {
   const {
     workspace,
     items,
-    theme,
-    setTheme,
     isWorkspaceModalOpen,
     setWorkspaceModalOpen,
     setOnboardingOpen,
+    setQuickCaptureOpen,
     initialize,
   } = useLeafStore();
 
-  const [activeTab, setActiveTab] = useState<Tab>('shortcuts');
+  const [activeTab, setActiveTab] = useState<Tab>('preferences');
   const [copiedPath, setCopiedPath] = useState(false);
   const [shortcutFilter, setShortcutFilter] = useState('');
+  const [showEmptyExportModal, setShowEmptyExportModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Global window Escape key listener
   useEffect(() => {
     const handleWindowKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isWorkspaceModalOpen) {
-        setWorkspaceModalOpen(false);
+      if (e.key === 'Escape') {
+        if (showEmptyExportModal) {
+          setShowEmptyExportModal(false);
+          return;
+        }
+        if (isWorkspaceModalOpen) {
+          setWorkspaceModalOpen(false);
+        }
       }
     };
     window.addEventListener('keydown', handleWindowKeyDown);
     return () => window.removeEventListener('keydown', handleWindowKeyDown);
-  }, [isWorkspaceModalOpen, setWorkspaceModalOpen]);
+  }, [isWorkspaceModalOpen, setWorkspaceModalOpen, showEmptyExportModal]);
 
-  if (!isWorkspaceModalOpen || !workspace) return null;
+  if (!workspace) return null;
 
   const totalAttachments = items.reduce(
     (acc: number, i: Item) => acc + (i.attachments?.length || 0),
@@ -91,15 +98,79 @@ export const WorkspaceModal: React.FC = () => {
     0
   );
 
+  const [isExporting, setIsExporting] = useState(false);
+
   const handleExport = async () => {
-    const jsonStr = await dbService.exportWorkspaceData();
-    const blob = new Blob([jsonStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `leaf-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    if (items.length === 0) {
+      setShowEmptyExportModal(true);
+      return;
+    }
+
+    try {
+      setIsExporting(true);
+      const jsonStr = await dbService.exportWorkspaceData();
+      const defaultFilename = `leaf-backup-${new Date().toISOString().slice(0, 10)}.json`;
+
+      // 1. Native Tauri Save File Dialog + Direct Rust File Write
+      try {
+        const { save } = await import('@tauri-apps/plugin-dialog');
+        const { invoke } = await import('@tauri-apps/api/core');
+        const filePath = await save({
+          defaultPath: defaultFilename,
+          filters: [{ name: 'JSON Archive', extensions: ['json'] }],
+        });
+
+        if (filePath) {
+          await invoke('write_file_to_path', { path: filePath, content: jsonStr });
+          alert('Workspace backup exported successfully!');
+          return;
+        } else {
+          // User clicked Cancel
+          return;
+        }
+      } catch (tauriError) {
+        console.warn('Native dialog/invoke failed or running in browser:', tauriError);
+      }
+
+      // 2. Fallback for browser environment
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = defaultFilename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export error:', err);
+      alert('Failed to export workspace data.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleImportNative = async () => {
+    try {
+      const { open } = await import('@tauri-apps/plugin-dialog');
+      const { invoke } = await import('@tauri-apps/api/core');
+      const selected = await open({
+        multiple: false,
+        filters: [{ name: 'JSON Archive', extensions: ['json'] }],
+      });
+
+      if (selected && typeof selected === 'string') {
+        const text = await invoke<string>('read_file_from_path', { path: selected });
+        await dbService.importWorkspaceData(text);
+        alert('Workspace restored successfully!');
+        await initialize();
+        setWorkspaceModalOpen(false);
+        return;
+      }
+    } catch (err) {
+      console.warn('Native open dialog failed, falling back to file input:', err);
+      fileInputRef.current?.click();
+    }
   };
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -127,6 +198,20 @@ export const WorkspaceModal: React.FC = () => {
     setTimeout(() => setCopiedPath(false), 2000);
   };
 
+  const handleOpenFolder = async () => {
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      await invoke('open_in_file_manager', { path: workspace.path });
+    } catch {
+      try {
+        const { openPath } = await import('@tauri-apps/plugin-opener');
+        await openPath(workspace.path);
+      } catch {
+        alert(`Workspace folder path:\n${workspace.path}`);
+      }
+    }
+  };
+
   const openExternalUrl = async (url: string) => {
     try {
       const { openUrl } = await import('@tauri-apps/plugin-opener');
@@ -144,78 +229,81 @@ export const WorkspaceModal: React.FC = () => {
 
   return (
     <div
-      onClick={(e) => {
-        if (e.target === e.currentTarget) setWorkspaceModalOpen(false);
-      }}
-      className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex justify-end select-none animate-in fade-in duration-200"
+      className={`transition-all duration-300 ease-out overflow-hidden flex shrink-0 ${
+        isWorkspaceModalOpen ? 'w-[360px] pl-2 pr-3 pb-3 pt-0' : 'w-0 pl-0 pr-0 pb-0 pt-0 pointer-events-none'
+      }`}
     >
-      {/* Right Slide-Over Sheet (matching ItemDetailPane floating card layout) */}
-      <aside className="w-[420px] max-w-[calc(100vw-3rem)] my-2 mr-6 bg-white dark:bg-[#18181b] border border-[#e5e7eb] dark:border-[#27272a] rounded-[12px] shadow-modal flex flex-col justify-between overflow-hidden animate-in slide-in-from-right duration-200">
+      {/* Right Slide-Over Sheet (matching ItemDetailPane split layout) */}
+      <aside
+        className={`w-[352px] h-full bg-white dark:bg-[#18181b] border border-[#e5e7eb] dark:border-[#27272a] rounded-[12px] shadow-modal flex flex-col justify-between overflow-hidden transition-transform duration-300 ease-out select-none ${
+          isWorkspaceModalOpen ? 'translate-x-0' : 'translate-x-[400px]'
+        }`}
+      >
         {/* Top Header */}
-        <div className="p-4 border-b border-[#f3f4f6] dark:border-[#27272a] space-y-3 shrink-0">
+        <div className="p-3 border-b border-[#f3f4f6] dark:border-[#27272a] space-y-2.5 shrink-0">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-[6px] bg-[#f4f5f6] dark:bg-[#27272a] flex items-center justify-center">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-[5px] bg-[#f4f5f6] dark:bg-[#27272a] flex items-center justify-center">
                 <img
                   src="/leaf_logo.png"
                   alt="Leaf"
-                  className="w-4 h-4 object-contain brightness-0 dark:brightness-0 dark:invert"
+                  className="w-3.5 h-3.5 object-contain brightness-0 dark:brightness-0 dark:invert"
                 />
               </div>
               <div>
-                <h2 className="text-xs font-bold text-[#111827] dark:text-[#f4f4f5] tracking-tight">
+                <h2 className="text-xs font-bold text-[#111827] dark:text-[#f4f4f5] tracking-tight leading-tight">
                   Settings
                 </h2>
-                <p className="text-[10.5px] text-[#6b7280] dark:text-[#71717a]">
+                <p className="text-[10px] text-[#6b7280] dark:text-[#71717a] leading-none">
                   Shortcuts & Preferences
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-1.5">
-              <kbd className="hidden sm:inline-block px-1.5 py-0.5 rounded bg-[#f3f4f6] dark:bg-[#27272a] border border-[#e5e7eb] dark:border-[#3f3f46] font-mono text-[9.5px] font-semibold text-[#6b7280] dark:text-[#a1a1aa]">
+              <kbd className="hidden sm:inline-block px-1.5 py-0.5 rounded bg-[#f3f4f6] dark:bg-[#27272a] border border-[#e5e7eb] dark:border-[#3f3f46] font-mono text-[9px] font-semibold text-[#6b7280] dark:text-[#a1a1aa]">
                 Esc
               </kbd>
               <button
                 onClick={() => setWorkspaceModalOpen(false)}
-                className="p-1.5 rounded-[6px] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white transition-colors"
-                title="Close"
+                className="p-1 rounded-[5px] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white transition-colors"
+                title="Close Settings"
               >
-                <X className="w-4 h-4" />
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
 
-          {/* Clean Segmented Tab Navigation */}
-          <div className="flex items-center gap-1 bg-[#f4f5f6] dark:bg-[#222226] p-1 rounded-[6px]">
+          {/* Clean Modern Tab Navigation */}
+          <div className="flex border-b border-[#f3f4f6] dark:border-[#27272a] -mx-3 px-3 -mb-3 pt-0.5 gap-3">
             <button
-              onClick={() => setActiveTab('shortcuts')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-[4px] text-xs font-semibold transition-all ${
-                activeTab === 'shortcuts'
-                  ? 'bg-white dark:bg-[#18181b] text-[#111827] dark:text-white shadow-xs'
-                  : 'text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white'
+              onClick={() => setActiveTab('preferences')}
+              className={`pb-2 px-1 text-xs font-semibold flex items-center gap-1.5 border-b-2 transition-all ${
+                activeTab === 'preferences'
+                  ? 'border-[#111827] text-[#111827] dark:border-white dark:text-white'
+                  : 'border-transparent text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white'
               }`}
             >
-              <Keyboard className="w-3.5 h-3.5 shrink-0" />
-              <span>Shortcuts</span>
+              <Sliders className="w-3.5 h-3.5" />
+              <span>Preferences</span>
             </button>
 
             <button
-              onClick={() => setActiveTab('preferences')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-[4px] text-xs font-semibold transition-all ${
-                activeTab === 'preferences'
-                  ? 'bg-white dark:bg-[#18181b] text-[#111827] dark:text-white shadow-xs'
-                  : 'text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white'
+              onClick={() => setActiveTab('shortcuts')}
+              className={`pb-2 px-1 text-xs font-semibold flex items-center gap-1.5 border-b-2 transition-all ${
+                activeTab === 'shortcuts'
+                  ? 'border-[#111827] text-[#111827] dark:border-white dark:text-white'
+                  : 'border-transparent text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white'
               }`}
             >
-              <Sliders className="w-3.5 h-3.5 shrink-0" />
-              <span>Preferences & Data</span>
+              <Keyboard className="w-3.5 h-3.5" />
+              <span>Shortcuts</span>
             </button>
           </div>
         </div>
 
         {/* Sheet Content Body */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3.5 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
           {/* TAB 1: KEYBOARD SHORTCUTS */}
           {activeTab === 'shortcuts' && (
             <div className="space-y-3 animate-in fade-in duration-150">
@@ -320,50 +408,9 @@ export const WorkspaceModal: React.FC = () => {
             </div>
           )}
 
-          {/* TAB 2: PREFERENCES & DATA (Using the exact same clean row-based design as Shortcuts) */}
+          {/* TAB 2: PREFERENCES & DATA */}
           {activeTab === 'preferences' && (
             <div className="space-y-3 animate-in fade-in duration-150">
-              {/* Appearance Section */}
-              <div className="p-3 bg-white dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#2e2e32] rounded-[8px] space-y-2">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-[#111827] dark:text-[#f4f4f5]">
-                  <Sun className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
-                  <span>Appearance</span>
-                </div>
-                <div className="space-y-1 text-xs">
-                  <div className="flex items-center justify-between py-1.5">
-                    <div>
-                      <div className="text-[#111827] dark:text-[#f4f4f5] font-medium">Theme</div>
-                      <div className="text-[10.5px] text-[#6b7280] dark:text-[#71717a]">Select interface color mode</div>
-                    </div>
-                    {/* Compact Segmented Switch */}
-                    <div className="flex items-center bg-[#f4f5f6] dark:bg-[#27272a] p-0.5 rounded-[6px] border border-[#e5e7eb] dark:border-[#3f3f46]">
-                      <button
-                        onClick={() => setTheme('dark')}
-                        className={`flex items-center gap-1.5 px-2 py-1 rounded-[4px] text-[11px] font-medium transition-all ${
-                          theme === 'dark'
-                            ? 'bg-[#18181b] text-white shadow-xs'
-                            : 'text-[#6b7280] dark:text-[#a1a1aa] hover:text-white'
-                        }`}
-                      >
-                        <Moon className="w-3 h-3" />
-                        <span>Dark</span>
-                      </button>
-                      <button
-                        onClick={() => setTheme('light')}
-                        className={`flex items-center gap-1.5 px-2 py-1 rounded-[4px] text-[11px] font-medium transition-all ${
-                          theme === 'light'
-                            ? 'bg-white text-[#111827] shadow-xs'
-                            : 'text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827]'
-                        }`}
-                      >
-                        <Sun className="w-3 h-3" />
-                        <span>Light</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
               {/* Storage Section */}
               <div className="p-3 bg-white dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#2e2e32] rounded-[8px] space-y-2">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-[#111827] dark:text-[#f4f4f5]">
@@ -389,9 +436,9 @@ export const WorkspaceModal: React.FC = () => {
                         <span>{copiedPath ? 'Copied' : 'Copy'}</span>
                       </button>
                       <button
-                        onClick={() => alert(`Workspace folder:\n${workspace.path}`)}
+                        onClick={handleOpenFolder}
                         className="p-1 bg-[#f4f5f6] dark:bg-[#27272a] hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] text-[#374151] dark:text-[#d4d4d8] rounded-[4px] border border-[#e5e7eb] dark:border-[#3f3f46] transition-colors"
-                        title="Open in file manager"
+                        title="Open folder in File Explorer"
                       >
                         <Folder className="w-3 h-3" />
                       </button>
@@ -419,10 +466,11 @@ export const WorkspaceModal: React.FC = () => {
                     </div>
                     <button
                       onClick={handleExport}
-                      className="px-2.5 py-1 bg-[#f4f5f6] dark:bg-[#27272a] hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] text-[#374151] dark:text-[#d4d4d8] rounded-[4px] border border-[#e5e7eb] dark:border-[#3f3f46] text-[11px] font-medium flex items-center gap-1.5 transition-colors"
+                      disabled={isExporting}
+                      className="px-2.5 py-1 bg-[#f4f5f6] dark:bg-[#27272a] hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] text-[#374151] dark:text-[#d4d4d8] rounded-[4px] border border-[#e5e7eb] dark:border-[#3f3f46] text-[11px] font-medium flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0 disabled:opacity-50"
                     >
-                      <Upload className="w-3 h-3" />
-                      <span>Export JSON</span>
+                      <Upload className="w-3 h-3 shrink-0" />
+                      <span className="whitespace-nowrap">{isExporting ? 'Exporting...' : 'Export JSON'}</span>
                     </button>
                   </div>
 
@@ -433,11 +481,11 @@ export const WorkspaceModal: React.FC = () => {
                       <div className="text-[10.5px] text-[#6b7280] dark:text-[#71717a]">Import from backup JSON file</div>
                     </div>
                     <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className="px-2.5 py-1 bg-[#f4f5f6] dark:bg-[#27272a] hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] text-[#374151] dark:text-[#d4d4d8] rounded-[4px] border border-[#e5e7eb] dark:border-[#3f3f46] text-[11px] font-medium flex items-center gap-1.5 transition-colors"
+                      onClick={handleImportNative}
+                      className="px-2.5 py-1 bg-[#f4f5f6] dark:bg-[#27272a] hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] text-[#374151] dark:text-[#d4d4d8] rounded-[4px] border border-[#e5e7eb] dark:border-[#3f3f46] text-[11px] font-medium flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0"
                     >
-                      <RotateCcw className="w-3 h-3" />
-                      <span>Import JSON</span>
+                      <RotateCcw className="w-3 h-3 shrink-0" />
+                      <span className="whitespace-nowrap">Import JSON</span>
                     </button>
                     <input
                       type="file"
@@ -459,10 +507,10 @@ export const WorkspaceModal: React.FC = () => {
                         setWorkspaceModalOpen(false);
                         setOnboardingOpen(true);
                       }}
-                      className="px-2.5 py-1 bg-[#f4f5f6] dark:bg-[#27272a] hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] text-[#374151] dark:text-[#d4d4d8] rounded-[4px] border border-[#e5e7eb] dark:border-[#3f3f46] text-[11px] font-medium flex items-center gap-1.5 transition-colors"
+                      className="px-2.5 py-1 bg-[#f4f5f6] dark:bg-[#27272a] hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] text-[#374151] dark:text-[#d4d4d8] rounded-[4px] border border-[#e5e7eb] dark:border-[#3f3f46] text-[11px] font-medium flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0"
                     >
-                      <Sparkles className="w-3 h-3 text-[#6b7280] dark:text-[#a1a1aa]" />
-                      <span>Replay Tour</span>
+                      <Sparkles className="w-3 h-3 text-[#6b7280] dark:text-[#a1a1aa] shrink-0" />
+                      <span className="whitespace-nowrap">Replay Tour</span>
                     </button>
                   </div>
                 </div>
@@ -490,17 +538,26 @@ export const WorkspaceModal: React.FC = () => {
                       <div className="text-[#111827] dark:text-[#f4f4f5] font-medium">Christlieb Dela</div>
                       <div className="text-[10.5px] text-[#6b7280] dark:text-[#71717a]">Creator & Developer</div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => openExternalUrl('https://github.com/christliebdela')}
-                      className="flex items-center gap-1.5 px-2 py-1 rounded-[4px] bg-[#f4f5f6] dark:bg-[#27272a] hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] text-[11px] font-medium text-[#111827] dark:text-[#f4f4f5] border border-[#e5e7eb] dark:border-[#3f3f46] transition-colors"
-                    >
-                      <svg className="w-3 h-3 fill-current" viewBox="0 0 24 24">
-                        <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
-                      </svg>
-                      <span>/christliebdela</span>
-                      <ExternalLink className="w-2.5 h-2.5 opacity-60" />
-                    </button>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => openExternalUrl('https://github.com/christliebdela')}
+                        className="p-1.5 rounded-[5px] bg-[#f4f5f6] dark:bg-[#27272a] hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] text-[#111827] dark:text-[#f4f4f5] border border-[#e5e7eb] dark:border-[#3f3f46] transition-colors"
+                        title="GitHub (christliebdela)"
+                      >
+                        <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                          <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openExternalUrl('https://christliebdela.vercel.app/')}
+                        className="p-1.5 rounded-[5px] bg-[#f4f5f6] dark:bg-[#27272a] hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] text-[#111827] dark:text-[#f4f4f5] border border-[#e5e7eb] dark:border-[#3f3f46] transition-colors"
+                        title="Website (christliebdela.vercel.app)"
+                      >
+                        <Globe className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -525,6 +582,56 @@ export const WorkspaceModal: React.FC = () => {
           </button>
         </div>
       </aside>
+
+      {/* Empty Workspace Export Alert Modal */}
+      {showEmptyExportModal &&
+        createPortal(
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-md z-[999] flex items-center justify-center p-4 animate-in fade-in duration-150"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setShowEmptyExportModal(false);
+            }}
+          >
+            <div className="bg-white dark:bg-[#1c1c20] border border-[#e5e7eb] dark:border-[#2e2e32] rounded-[12px] shadow-2xl p-5 max-w-sm w-full space-y-4 animate-in zoom-in-95 duration-150 select-none">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 flex items-center justify-center shrink-0">
+                  <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-sm font-semibold text-[#111827] dark:text-[#f4f4f5]">
+                    Workspace is Empty
+                  </h3>
+                  <p className="text-xs text-[#6b7280] dark:text-[#a1a1aa] leading-relaxed">
+                    There are no items or tasks in your workspace to export. Capture or create items first before generating a backup archive.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-1 border-t border-[#f3f4f6] dark:border-[#27272a]">
+                <button
+                  type="button"
+                  onClick={() => setShowEmptyExportModal(false)}
+                  className="px-3 py-1.5 rounded-[6px] text-xs font-medium text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] transition-colors"
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEmptyExportModal(false);
+                    setWorkspaceModalOpen(false);
+                    setQuickCaptureOpen(true);
+                  }}
+                  className="px-3 py-1.5 bg-[#111827] dark:bg-white text-white dark:text-[#111827] rounded-[6px] text-xs font-semibold hover:bg-[#1f2937] dark:hover:bg-[#e4e4e7] transition-all shadow-subtle flex items-center gap-1.5"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Capture Item</span>
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 };

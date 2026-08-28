@@ -1,7 +1,7 @@
 use tauri::{
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    Emitter, Manager, WindowEvent,
+    Manager, WindowEvent,
 };
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
@@ -20,6 +20,9 @@ fn open_in_file_manager(path: String) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
         use std::process::Command;
+        if !std::path::Path::new(&path).exists() {
+            let _ = std::fs::create_dir_all(&path);
+        }
         Command::new("explorer")
             .arg(&path)
             .spawn()
@@ -30,6 +33,16 @@ fn open_in_file_manager(path: String) -> Result<(), String> {
     {
         opener::open(&path).map_err(|e| e.to_string())
     }
+}
+
+#[tauri::command]
+fn write_file_to_path(path: String, content: String) -> Result<(), String> {
+    std::fs::write(&path, content).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn read_file_from_path(path: String) -> Result<String, String> {
+    std::fs::read_to_string(&path).map_err(|e| e.to_string())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -129,7 +142,9 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             get_default_workspace_path,
-            open_in_file_manager
+            open_in_file_manager,
+            write_file_to_path,
+            read_file_from_path
         ])
         .run(tauri::generate_context!())
         .expect("error while running leaf application");
