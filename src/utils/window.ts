@@ -124,6 +124,7 @@ export async function openStickyNoteWindow(itemId: string): Promise<void> {
       transparent: true,
       alwaysOnTop: false,
       shadow: true,
+      skipTaskbar: true,
     });
 
     win.once('tauri://error', (e) => {
@@ -179,6 +180,7 @@ export async function openQueueWidgetWindow(): Promise<void> {
       transparent: true,
       alwaysOnTop: true,
       shadow: true,
+      skipTaskbar: true,
     });
 
     win.once('tauri://error', (e) => {
