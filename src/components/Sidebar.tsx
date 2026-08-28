@@ -22,7 +22,6 @@ import {
   X,
   Sun,
   Moon,
-  Sparkles,
 } from 'lucide-react';
 import { ViewMode, ItemType, Priority, Project, Item } from '../types';
 import { openQueueWidgetWindow } from '../utils/window';
@@ -35,7 +34,6 @@ export const Sidebar: React.FC = () => {
     setViewMode,
     setProjectModalOpen,
     setWorkspaceModalOpen,
-    setOnboardingOpen,
     deleteProject,
     theme,
     toggleTheme,
@@ -58,7 +56,7 @@ export const Sidebar: React.FC = () => {
   // Compute counts
   const inboxCount = items.filter((i: Item) => i.status === 'inbox').length;
   const queueCount = items.filter(
-    (i: Item) => (i.priority === 'critical' || i.priority === 'high' || i.type === 'idea') && i.status !== 'done' && i.status !== 'archived'
+    (i: Item) => (i.priority === 'critical' || i.priority === 'high' || i.priority === 'medium' || i.priority === 'low' || i.type === 'idea') && i.status !== 'done' && i.status !== 'archived'
   ).length;
   const allCount = items.filter((i: Item) => i.status !== 'archived').length;
 
@@ -391,19 +389,6 @@ export const Sidebar: React.FC = () => {
 
         {/* Bottom Footer Controls */}
         <div className="p-3 border-t border-[#e5e7eb] dark:border-[#27272a] space-y-1">
-          <button
-            onClick={() => setOnboardingOpen(true)}
-            className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white transition-colors text-xs font-medium"
-          >
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
-              <span>Welcome Tour</span>
-            </div>
-            <span className="text-[10px] text-[#9ca3af] dark:text-[#71717a] font-medium">
-              Tour
-            </span>
-          </button>
-
           <button
             onClick={toggleTheme}
             className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white transition-colors text-xs font-medium"

@@ -173,7 +173,7 @@ export const HeaderBar: React.FC = () => {
           onChange={(e) => setSearchQuery(e.target.value)}
           onClear={() => setSearchQuery('')}
           placeholder="Search..."
-          className="w-36 sm:w-44 focus-within:w-52 transition-all duration-200"
+          className="w-44 sm:w-52"
         />
 
         {/* Filter Toggle */}

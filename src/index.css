@@ -27,8 +27,13 @@
     color: #f4f4f5;
   }
 
-  input, textarea, select {
+  input, textarea, select, [contenteditable] {
     user-select: text;
+  }
+
+  [contenteditable] a,
+  [contenteditable] a * {
+    cursor: pointer !important;
   }
 
   textarea {
@@ -68,6 +73,17 @@
 
 .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #3f3f46;
+}
+
+/* Utility to hide scrollbars completely */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 @keyframes captureBounceIn {

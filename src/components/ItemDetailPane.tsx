@@ -25,6 +25,7 @@ import {
   Eye,
   Folder,
   ChevronDown,
+  Save,
 } from 'lucide-react';
 import { Item, ItemType, Priority, Status, ChecklistItem, Attachment } from '../types';
 import {
@@ -36,6 +37,7 @@ import {
 } from '../utils/format';
 import { Checkbox } from './ui/Checkbox';
 import { openStickyNoteWindow } from '../utils/window';
+import { markdownToHtml, htmlToMarkdown, autoLinkHtml } from '../utils/markdown';
 
 const TYPE_ICONS: Record<ItemType, React.FC<{ className?: string }>> = {
   task: CheckSquare,
@@ -85,7 +87,7 @@ export const ItemDetailPane: React.FC = () => {
 
   const paneRef = useRef<HTMLElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const metadataRef = useRef<HTMLDivElement>(null);
@@ -96,8 +98,12 @@ export const ItemDetailPane: React.FC = () => {
       if (document.activeElement !== titleInputRef.current && activeItem.title !== title) {
         setTitle(activeItem.title);
       }
-      if (document.activeElement !== textareaRef.current && (activeItem.content || '') !== content) {
-        setContent(activeItem.content || '');
+      if (document.activeElement !== editorRef.current) {
+        const itemContent = activeItem.content || '';
+        setContent(itemContent);
+        if (editorRef.current) {
+          editorRef.current.innerHTML = markdownToHtml(itemContent);
+        }
       }
       setProjectId(activeItem.projectId);
       setType(activeItem.type);
@@ -112,7 +118,7 @@ export const ItemDetailPane: React.FC = () => {
     setSelectedItemId(null);
   };
 
-  // Close image preview on Escape key and handle click outside metadata popovers / sheet
+  // Close image preview / menu on Escape key and close metadata menu on outside click
   useEffect(() => {
     if (!isPaneOpen) return;
 
@@ -133,19 +139,6 @@ export const ItemDetailPane: React.FC = () => {
     const handleClickOutside = (e: MouseEvent) => {
       if (metadataRef.current && !metadataRef.current.contains(e.target as Node)) {
         setOpenMenu(null);
-      }
-
-      if (paneRef.current && !paneRef.current.contains(e.target as Node)) {
-        const target = e.target as HTMLElement;
-        // Don't close if clicking an item card (item card switches selection smoothly)
-        if (target.closest('[data-item-card]')) {
-          return;
-        }
-        // Don't close if clicking a modal/dropdown/popover
-        if (target.closest('[data-modal]')) {
-          return;
-        }
-        handleClose();
       }
     };
 
@@ -269,26 +262,233 @@ export const ItemDetailPane: React.FC = () => {
     triggerAutoSave({ attachments: next });
   };
 
-  // Format Text helper
-  const applyFormatting = (prefix: string, suffix: string = '') => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
+  // Rich WYSIWYG Formatting helper
+  const applyRichCommand = (command: string, value: string = '') => {
+    const editor = editorRef.current;
+    if (!editor) return;
 
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const text = textarea.value;
-    const selected = text.substring(start, end);
+    editor.focus();
 
-    const replacement = `${prefix}${selected}${suffix}`;
-    const newContent = text.substring(0, start) + replacement + text.substring(end);
+    if (command === 'code') {
+      const selection = window.getSelection();
+      const selectedText = selection?.toString() || '';
+      if (selectedText) {
+        const escaped = selectedText
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;');
+        document.execCommand('insertHTML', false, `<code class="bg-black/10 dark:bg-white/10 px-1 py-0.5 rounded font-mono text-[11px]">${escaped}</code>`);
+      } else {
+        document.execCommand('insertHTML', false, `<code class="bg-black/10 dark:bg-white/10 px-1 py-0.5 rounded font-mono text-[11px]">code</code>`);
+      }
+    } else {
+      document.execCommand(command, false, value);
+    }
 
-    setContent(newContent);
-    triggerAutoSave({ content: newContent });
+    const rawHtml = editor.innerHTML;
+    const md = htmlToMarkdown(rawHtml);
+    setContent(md);
+    triggerAutoSave({ content: md });
+  };
 
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(start + prefix.length, end + prefix.length);
-    }, 0);
+  const handleLinkButtonClick = () => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    editor.focus();
+    const selection = window.getSelection();
+    const selectedText = selection?.toString()?.trim() || '';
+
+    if (selectedText) {
+      let finalUrl = selectedText;
+      if (!/^https?:\/\//i.test(finalUrl) && !/^mailto:/i.test(finalUrl)) {
+        finalUrl = 'https://' + finalUrl;
+      }
+      document.execCommand('createLink', false, finalUrl);
+    } else {
+      document.execCommand(
+        'insertHTML',
+        false,
+        '<a href="https://example.com" style="color: #60a5fa; text-decoration: underline;">https://example.com</a>\u00A0'
+      );
+    }
+
+    const rawHtml = editor.innerHTML;
+    const md = htmlToMarkdown(rawHtml);
+    setContent(md);
+    triggerAutoSave({ content: md });
+  };
+
+  // Open clicked links in user's default browser (guaranteeing single tab)
+  const handleEditorClick = async (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    const anchor = target.closest('a');
+    if (anchor && anchor.href) {
+      e.preventDefault();
+      e.stopPropagation();
+      const href = anchor.href;
+      try {
+        const { openUrl } = await import('@tauri-apps/plugin-opener');
+        await openUrl(href);
+      } catch {
+        window.open(href, '_blank');
+      }
+    }
+  };
+
+  const handleEditorMouseDown = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    const anchor = target.closest('a');
+    if (anchor && anchor.href) {
+      // Prevent contenteditable text caret from overriding link pointer
+      e.stopPropagation();
+    }
+  };
+
+  // Instantly format URLs into links when user presses Space or Enter, including merged edits
+  const handleEditorKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === ' ' || e.key === 'Enter') {
+      const selection = window.getSelection();
+      if (!selection || !selection.isCollapsed || !selection.anchorNode) return;
+
+      const anchorNode = selection.anchorNode;
+
+      // Case 1: Cursor is inside an existing <a> tag (user edited inside link)
+      if (anchorNode.parentElement?.tagName === 'A') {
+        const anchorEl = anchorNode.parentElement as HTMLAnchorElement;
+        const currentLinkText = anchorEl.textContent?.trim() || '';
+        if (currentLinkText) {
+          e.preventDefault();
+          let href = currentLinkText;
+          if (!/^https?:\/\//i.test(href) && !/^mailto:/i.test(href)) {
+            href = 'https://' + href;
+          }
+          anchorEl.href = href;
+
+          const trailingNode = e.key === ' '
+            ? document.createTextNode('\u00A0')
+            : document.createElement('br');
+
+          anchorEl.after(trailingNode);
+
+          const newRange = document.createRange();
+          newRange.setStartAfter(trailingNode);
+          newRange.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+
+          if (editorRef.current) {
+            const md = htmlToMarkdown(editorRef.current.innerHTML);
+            setContent(md);
+            triggerAutoSave({ content: md });
+          }
+          return;
+        }
+      }
+
+      // Case 2: Cursor is in a text node
+      if (anchorNode.nodeType === Node.TEXT_NODE) {
+        const fullText = anchorNode.textContent || '';
+        const cursorOffset = selection.anchorOffset;
+        const textBeforeCursor = fullText.slice(0, cursorOffset);
+
+        // Check if there is an immediately preceding <a> tag (e.g. <a ...>text.co</a>m)
+        const prevSibling = anchorNode.previousSibling as HTMLElement | null;
+        let prevAnchorText = '';
+        if (prevSibling && prevSibling.tagName === 'A') {
+          prevAnchorText = prevSibling.textContent || '';
+        }
+
+        const combinedText = prevAnchorText + textBeforeCursor;
+
+        // Match the last word before cursor: https://..., http://..., www...., or domain.tld
+        const match = combinedText.match(/(?:^|\s)((https?:\/\/|www\.)[^\s<]+|(?:[a-zA-Z0-9-]+\.)+(com|org|net|io|dev|app|ai|co|me|xyz|tech|info|edu|gov|ca|uk|de|jp|fr|au|us|site|online|space|store)(?:\/[^\s<]*)?)$/i);
+
+        if (match) {
+          e.preventDefault();
+          const matchedUrl = match[1];
+
+          let href = matchedUrl;
+          if (!/^https?:\/\//i.test(href) && !/^mailto:/i.test(href)) {
+            href = 'https://' + href;
+          }
+
+          // If we merged with a preceding <a> tag, remove the old <a> tag
+          if (prevSibling && prevSibling.tagName === 'A') {
+            prevSibling.remove();
+          }
+
+          const wordStartIndex = prevAnchorText ? 0 : cursorOffset - matchedUrl.length;
+
+          const range = document.createRange();
+          range.setStart(anchorNode, Math.max(0, wordStartIndex));
+          range.setEnd(anchorNode, cursorOffset);
+          range.deleteContents();
+
+          const a = document.createElement('a');
+          a.href = href;
+          a.style.color = '#60a5fa';
+          a.style.textDecoration = 'underline';
+          a.className = 'cursor-pointer text-blue-500 hover:underline';
+          a.textContent = matchedUrl;
+
+          const trailingNode = e.key === ' '
+            ? document.createTextNode('\u00A0')
+            : document.createElement('br');
+
+          range.insertNode(trailingNode);
+          range.insertNode(a);
+
+          const newRange = document.createRange();
+          newRange.setStartAfter(trailingNode);
+          newRange.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+
+          if (editorRef.current) {
+            const md = htmlToMarkdown(editorRef.current.innerHTML);
+            setContent(md);
+            triggerAutoSave({ content: md });
+          }
+        }
+      }
+    }
+  };
+
+  // Ensure all bare URLs are linked when user blurs/clicks away
+  const handleEditorBlur = () => {
+    if (editorRef.current) {
+      const linked = autoLinkHtml(editorRef.current.innerHTML);
+      if (linked !== editorRef.current.innerHTML) {
+        editorRef.current.innerHTML = linked;
+      }
+      const md = htmlToMarkdown(editorRef.current.innerHTML);
+      setContent(md);
+      triggerAutoSave({ content: md });
+    }
+  };
+
+  // Handle paste: Smart URL auto-linking on highlighted text or plain text
+  const handleEditorPaste = (e: React.ClipboardEvent) => {
+    const pastedText = e.clipboardData.getData('text/plain').trim();
+    if (/^(https?:\/\/|www\.)/i.test(pastedText) || /^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(\/.*)?$/i.test(pastedText)) {
+      const selection = window.getSelection();
+      let finalUrl = pastedText;
+      if (!/^https?:\/\//i.test(finalUrl)) {
+        finalUrl = 'https://' + finalUrl;
+      }
+
+      if (selection && selection.toString().trim().length > 0) {
+        e.preventDefault();
+        document.execCommand('createLink', false, finalUrl);
+        if (editorRef.current) {
+          const rawHtml = editorRef.current.innerHTML;
+          const md = htmlToMarkdown(rawHtml);
+          setContent(md);
+          triggerAutoSave({ content: md });
+        }
+      }
+    }
   };
 
   const selectedProject = projects.find((p) => p.id === projectId);
@@ -301,7 +501,7 @@ export const ItemDetailPane: React.FC = () => {
     <>
       <div
         className={`transition-all duration-300 ease-out overflow-hidden flex shrink-0 ${
-          isPaneOpen ? 'w-[380px] mr-6 my-2' : 'w-0 mr-0 my-2 pointer-events-none'
+          isPaneOpen ? 'w-[380px] ml-3.5 mr-6 my-2' : 'w-0 ml-0 mr-0 my-2 pointer-events-none'
         }`}
       >
         <aside
@@ -542,24 +742,27 @@ export const ItemDetailPane: React.FC = () => {
 
         {/* Editor & Content Area */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
-          {/* Markdown Toolbar */}
+          {/* Markdown & Rich Text Toolbar */}
           <div className="flex items-center gap-1 py-1 px-1.5 bg-[#f9fafb] dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] text-[#4b5563] dark:text-[#a1a1aa]">
             <button
-              onClick={() => applyFormatting('# ')}
+              type="button"
+              onClick={() => applyRichCommand('formatBlock', '<h3>')}
               className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs"
               title="Heading"
             >
               <Heading className="w-3.5 h-3.5" />
             </button>
             <button
-              onClick={() => applyFormatting('**', '**')}
+              type="button"
+              onClick={() => applyRichCommand('bold')}
               className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs"
               title="Bold"
             >
               <Bold className="w-3.5 h-3.5" />
             </button>
             <button
-              onClick={() => applyFormatting('*', '*')}
+              type="button"
+              onClick={() => applyRichCommand('italic')}
               className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs"
               title="Italic"
             >
@@ -567,53 +770,60 @@ export const ItemDetailPane: React.FC = () => {
             </button>
             <div className="w-px h-3 bg-[#e5e7eb] dark:bg-[#27272a] mx-0.5" />
             <button
-              onClick={() => applyFormatting('- ')}
+              type="button"
+              onClick={() => applyRichCommand('insertUnorderedList')}
               className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs"
               title="Bullet List"
             >
               <List className="w-3.5 h-3.5" />
             </button>
             <button
-              onClick={() => applyFormatting('1. ')}
+              type="button"
+              onClick={() => applyRichCommand('insertOrderedList')}
               className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs"
               title="Numbered List"
             >
               <ListOrdered className="w-3.5 h-3.5" />
             </button>
-            <button
-              onClick={() => applyFormatting('- [ ] ')}
-              className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs"
-              title="Task List"
-            >
-              <CheckSquare className="w-3.5 h-3.5" />
-            </button>
             <div className="w-px h-3 bg-[#e5e7eb] dark:bg-[#27272a] mx-0.5" />
             <button
-              onClick={() => applyFormatting('[', '](url)')}
-              className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs"
-              title="Link"
+              type="button"
+              onClick={handleLinkButtonClick}
+              className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs transition-colors"
+              title="Insert Link"
             >
               <Link className="w-3.5 h-3.5" />
             </button>
             <button
-              onClick={() => applyFormatting('`', '`')}
+              type="button"
+              onClick={() => applyRichCommand('code')}
               className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs"
-              title="Inline Code"
+              title="Inline Code / Preformatted"
             >
               <Code className="w-3.5 h-3.5" />
             </button>
           </div>
 
-          {/* Content Textarea */}
-          <textarea
-            ref={textareaRef}
-            value={content}
-            onChange={(e) => {
-              setContent(e.target.value);
-              triggerAutoSave({ content: e.target.value });
+          {/* Rich Content WYSIWYG Editor */}
+          <div
+            ref={editorRef}
+            contentEditable
+            suppressContentEditableWarning
+            onClick={handleEditorClick}
+            onMouseDown={handleEditorMouseDown}
+            onPaste={handleEditorPaste}
+            onKeyDown={handleEditorKeyDown}
+            onBlur={handleEditorBlur}
+            onInput={() => {
+              if (editorRef.current) {
+                const rawHtml = editorRef.current.innerHTML;
+                const md = htmlToMarkdown(rawHtml);
+                setContent(md);
+                triggerAutoSave({ content: md });
+              }
             }}
-            placeholder="Add details, notes, links, or markdown content..."
-            className="w-full h-44 p-2 bg-transparent text-[#111827] dark:text-[#f4f4f5] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] text-xs focus:outline-none focus:border-[#9ca3af] dark:focus:border-[#52525b] resize-none font-mono placeholder:font-sans placeholder:text-[#9ca3af] dark:placeholder:text-[#71717a]"
+            data-placeholder="Add details, notes, links, or markdown content..."
+            className="w-full min-h-[170px] p-2.5 bg-transparent text-[#111827] dark:text-[#f4f4f5] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] text-xs focus:outline-none focus:border-[#9ca3af] dark:focus:border-[#52525b] overflow-y-auto leading-relaxed empty:before:content-[attr(data-placeholder)] empty:before:text-[#9ca3af] dark:empty:before:text-[#71717a] empty:before:pointer-events-none max-w-none [&_b]:font-bold [&_strong]:font-bold [&_i]:italic [&_em]:italic [&_h1]:text-base [&_h1]:font-bold [&_h1]:my-1.5 [&_h2]:text-sm [&_h2]:font-bold [&_h2]:my-1 [&_h3]:text-xs [&_h3]:font-bold [&_h3]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-1 [&_a]:text-blue-500 [&_a]:underline [&_a]:cursor-pointer [&_a:hover]:text-blue-400 [&_a]:relative [&_a]:z-10 cursor-text [&_pre]:bg-black/10 dark:[&_pre]:bg-white/10 [&_pre]:p-2 [&_pre]:rounded [&_pre]:font-mono [&_code]:bg-black/10 dark:[&_code]:bg-white/10 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:font-mono"
           />
 
           {/* Checklist Section */}
@@ -787,8 +997,8 @@ export const ItemDetailPane: React.FC = () => {
 
         {/* Footer */}
         <div className="p-3 border-t border-[#f3f4f6] dark:border-[#27272a] flex items-center justify-between text-xs">
-          <div className="flex items-center gap-1.5 text-[11px] text-[#10b981]">
-            <Check className="w-3.5 h-3.5" />
+          <div className="flex items-center gap-1.5 text-[11px] text-[#6b7280] dark:text-[#a1a1aa]">
+            <Save className="w-3.5 h-3.5 opacity-80" />
             <span>{saveStatus === 'saving' ? 'Saving...' : 'Saved'}</span>
           </div>
 

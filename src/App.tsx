@@ -35,7 +35,12 @@ export const App: React.FC = () => {
   // Global & In-App Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      const isInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes((document.activeElement?.tagName || ''));
+      const activeEl = document.activeElement as HTMLElement | null;
+      const isInput =
+        Boolean(activeEl) &&
+        (['INPUT', 'TEXTAREA', 'SELECT'].includes(activeEl?.tagName || '') ||
+          activeEl?.isContentEditable ||
+          Boolean(activeEl?.closest('[contenteditable="true"]')));
 
       // 1. Quick capture shortcut (Alt+L or Alt+N)
       if (

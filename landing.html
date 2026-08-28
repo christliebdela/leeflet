@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Leaf — Capture at the speed of thought</title>
+  <link rel="icon" type="image/png" href="leaf_logo.png" />
+
+  <!-- Fonts: Inter & JetBrains Mono for Obsidian-like crispness -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #0b0b0e;
+      --bg-alt: #111116;
+      --bg-card: #15151a;
+      --bg-card-hover: #1b1b22;
+      --border: #24242c;
+      --border-light: #32323d;
+      --text: #ededef;
+      --text-muted: #8e8e99;
+      --text-dim: #63636e;
+      --accent: #ffffff;
+      --accent-hover: #e4e4e7;
+      --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Navigation */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(11, 11, 14, 0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: #fff;
+    }
+
+    .nav-brand img {
+      width: 22px;
+      height: 22px;
+      object-fit: contain;
+      filter: brightness(0) invert(1);
+    }
+
+    .nav-brand span {
+      font-weight: 700;
+      font-size: 1.15rem;
+      letter-spacing: -0.02em;
+    }
+
+    .nav-menu {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+    }
+
+    .nav-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: color 0.15s ease;
+    }
+
+    .nav-link:hover {
+      color: #fff;
+    }
+
+    .nav-btn {
+      background: #fff;
+      color: #0b0b0e !important;
+      padding: 7px 14px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.825rem;
+      text-decoration: none;
+      transition: opacity 0.15s ease;
+    }
+
+    .nav-btn:hover {
+      opacity: 0.9;
+    }
+
+    /* Hero Section */
+    .hero {
+      padding: 90px 0 60px;
+      text-align: left;
+    }
+
+    .version-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      background: var(--bg-alt);
+      border: 1px solid var(--border);
+      font-size: 0.775rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+
+    .version-tag span.badge {
+      color: #fff;
+      font-weight: 600;
+    }
+
+    h1 {
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Roboto, Inter, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+      font-style: normal;
+      font-weight: 600;
+      color: rgb(238, 238, 238);
+      font-size: 60px;
+      line-height: 60px;
+      letter-spacing: -0.03em;
+      white-space: nowrap;
+      max-width: 100%;
+      margin: 0 0 24px 0;
+    }
+
+    .hero-lead {
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Roboto, Inter, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+      font-style: normal;
+      font-weight: 400;
+      color: rgb(188, 188, 188);
+      font-size: 1.15rem;
+      line-height: 1.6;
+      max-width: 680px;
+      margin: 0 0 36px 0;
+    }
+
+    @media (max-width: 900px) {
+      h1 {
+        font-size: clamp(28px, 6vw, 48px);
+        line-height: 1.15;
+        white-space: normal;
+      }
+      .hero-lead {
+        font-size: 1rem;
+        line-height: 1.5;
+      }
+    }
+
+    .kbd {
+      display: inline-block;
+      padding: 2px 6px;
+      background: #1f1f26;
+      border: 1px solid #34343f;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 0.85em;
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .btn-download {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: #ffffff;
+      color: #0b0b0e;
+      font-size: 0.95rem;
+      font-weight: 600;
+      padding: 13px 26px;
+      border-radius: 8px;
+      border: 1px solid #ffffff;
+      text-decoration: none;
+      transition: background 0.15s ease, transform 0.15s ease, opacity 0.15s ease;
+    }
+
+    .btn-download:hover {
+      background: #e4e4e7;
+      border-color: #e4e4e7;
+      transform: translateY(-1px);
+    }
+
+    .btn-outline {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: transparent;
+      color: var(--text);
+      font-size: 0.95rem;
+      font-weight: 600;
+      padding: 13px 22px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      text-decoration: none;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .btn-outline:hover {
+      background: var(--bg-alt);
+      border-color: var(--border-light);
+    }
+
+    .hero-meta {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 12px;
+    }
+
+    /* Product Screenshot Showcase */
+    .hero-showcase {
+      margin: 48px auto 80px;
+      max-width: 1020px;
+    }
+
+    .app-frame {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #000;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+      overflow: hidden;
+    }
+
+    .app-frame img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    /* Section Layout */
+    section {
+      padding: 80px 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .section-title {
+      font-size: 2.2rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: #ffffff;
+      margin-bottom: 12px;
+    }
+
+    .section-desc {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      max-width: 580px;
+      margin-bottom: 44px;
+      line-height: 1.6;
+    }
+
+    /* Bento Feature Grid Layout */
+    .bento-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .bento-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+
+    .bento-card:hover {
+      border-color: var(--border-light);
+      background: var(--bg-card-hover);
+    }
+
+    .bento-col-2 {
+      grid-column: span 2;
+    }
+
+    .bento-col-1 {
+      grid-column: span 1;
+    }
+
+    @media (max-width: 900px) {
+      .bento-grid {
+        grid-template-columns: 1fr;
+      }
+      .bento-col-2, .bento-col-1 {
+        grid-column: span 1;
+      }
+    }
+
+    .icon-box {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      background: #111116;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      color: #ffffff;
+    }
+
+    .bento-card h3 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #ffffff;
+      margin-bottom: 10px;
+      letter-spacing: -0.02em;
+    }
+
+    .bento-card p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.65;
+    }
+
+    .bento-preview-box {
+      margin-top: 24px;
+      background: #0f0f13;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+    }
+
+    /* Shortcuts Section (Centered) */
+    .shortcuts-section {
+      text-align: center;
+    }
+
+    .shortcuts-section .section-desc {
+      margin: 0 auto 40px;
+    }
+
+    .shortcuts-wrapper {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      max-width: 720px;
+      margin: 0 auto;
+      text-align: left;
+    }
+
+    .shortcut-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 22px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .shortcut-item:last-child {
+      border-bottom: none;
+    }
+
+    .shortcut-name {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    /* Bottom Download Section */
+    .cta-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 60px 30px;
+      text-align: center;
+      margin: 40px auto 20px;
+      max-width: 800px;
+    }
+
+    .cta-box h2 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.03em;
+      margin-bottom: 12px;
+    }
+
+    .cta-box p {
+      color: var(--text-muted);
+      font-size: 1rem;
+      max-width: 480px;
+      margin: 0 auto 30px;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 40px 0;
+      margin-top: 40px;
+      font-size: 0.825rem;
+      color: var(--text-dim);
+    }
+
+    .footer-inner {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 20px;
+    }
+
+    .footer-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.15s ease;
+    }
+
+    .footer-links a:hover {
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav>
+    <div class="container nav-inner">
+      <a href="#" class="nav-brand">
+        <img src="leaf_logo_white.png" alt="Leaf" onerror="this.src='leaf_logo.png'" />
+        <span>leaf</span>
+      </a>
+      <div class="nav-menu">
+        <a href="#features" class="nav-link">Features</a>
+        <a href="#shortcuts" class="nav-link">Shortcuts</a>
+        <a href="https://github.com/christliebdela/leaf" class="nav-link" target="_blank" rel="noopener">GitHub</a>
+        <a href="#download" class="nav-btn">Download</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <header class="hero">
+    <div class="container">
+      <h1>Capture instantly. Think clearly.</h1>
+
+      <p class="hero-lead">
+        Leaf is the private, distraction-free desktop HUD that adapts to how you work. Press <span class="kbd">Alt + L</span> to capture tasks, notes, bugs, and checklists from anywhere on your PC.
+      </p>
+
+      <div class="hero-actions">
+        <a href="https://github.com/christliebdela/leaf/releases/latest" class="btn-download">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>Download for Windows</span>
+        </a>
+        <a href="https://github.com/christliebdela/leaf" class="btn-outline" target="_blank" rel="noopener">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"></path>
+          </svg>
+          <span>Source Code</span>
+        </a>
+      </div>
+
+      <!-- App Interface Screenshot -->
+      <div class="hero-showcase">
+        <div class="app-frame">
+          <img src="leaf_ui.png" alt="Leaf Desktop Application Interface" />
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Features Section (Bento Grid) -->
+  <section id="features">
+    <div class="container">
+      <h2 class="section-title">Your workspace. Your rules.</h2>
+      <p class="section-desc">Designed for builders who value speed, privacy, and zero distraction.</p>
+
+      <div class="bento-grid">
+        <!-- Card 1: Global Quick Capture (2 Columns Wide) -->
+        <div class="bento-card bento-col-2">
+          <div>
+            <div class="icon-box">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+              </svg>
+            </div>
+            <h3>Global Quick Capture HUD</h3>
+            <p>Press <span class="kbd">Alt + L</span> anywhere on your PC. Summon an ultra-fast capture window directly over full-screen code editors, games, or research papers without losing your flow.</p>
+          </div>
+
+          <div class="bento-preview-box">
+            <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem; color: #a1a1aa;">
+              <span style="display: flex; align-items: center; gap: 8px;">
+                <span style="width: 6px; height: 6px; border-radius: 50%; background: #10b981;"></span>
+                <span style="font-family: var(--font-mono); color: #fff;">What are you working on?</span>
+              </span>
+              <span class="kbd">Enter ↵</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2: 100% Local & Private (1 Column) -->
+        <div class="bento-card bento-col-1">
+          <div>
+            <div class="icon-box">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+            </div>
+            <h3>100% Local & Private</h3>
+            <p>Your workspace is saved strictly on your local disk in clean, human-readable Markdown and JSON files. No cloud lock-in, no telemetry, no tracking.</p>
+          </div>
+        </div>
+
+        <!-- Card 3: Always-on-Top Floating Stickies (1 Column) -->
+        <div class="bento-card bento-col-1">
+          <div>
+            <div class="icon-box">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="17" x2="12" y2="22"></line>
+                <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path>
+              </svg>
+            </div>
+            <h3>Always-on-Top Stickies</h3>
+            <p>Detach any note or task card into a minimal floating desktop sticky with customizable opacity, window locking, and interactive checkbox toggles.</p>
+          </div>
+        </div>
+
+        <!-- Card 4: Dedicated Priority Queues (2 Columns Wide) -->
+        <div class="bento-card bento-col-2">
+          <div>
+            <div class="icon-box">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                <polyline points="2 17 12 22 22 17"></polyline>
+                <polyline points="2 12 12 17 22 12"></polyline>
+              </svg>
+            </div>
+            <h3>Dedicated Priority Queues</h3>
+            <p>Automatically segment your active backlog into Critical, High, Medium, Low, and Ideas queues. Completed tasks stay visible with strikethroughs and sink to the bottom.</p>
+          </div>
+
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px;">
+            <span style="font-size: 0.75rem; padding: 4px 10px; border-radius: 6px; background: #1a1a20; border: 1px solid #27272a; color: #f43f5e; font-weight: 600;">● Critical</span>
+            <span style="font-size: 0.75rem; padding: 4px 10px; border-radius: 6px; background: #1a1a20; border: 1px solid #27272a; color: #f97316; font-weight: 600;">● High</span>
+            <span style="font-size: 0.75rem; padding: 4px 10px; border-radius: 6px; background: #1a1a20; border: 1px solid #27272a; color: #f59e0b; font-weight: 600;">● Medium</span>
+            <span style="font-size: 0.75rem; padding: 4px 10px; border-radius: 6px; background: #1a1a20; border: 1px solid #27272a; color: #3b82f6; font-weight: 600;">● Low</span>
+            <span style="font-size: 0.75rem; padding: 4px 10px; border-radius: 6px; background: #1a1a20; border: 1px solid #27272a; color: #8b5cf6; font-weight: 600;">● Ideas</span>
+          </div>
+        </div>
+
+        <!-- Card 5: Multi-line Checklist Drafting (1 Column) -->
+        <div class="bento-card bento-col-1">
+          <div>
+            <div class="icon-box">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 11 12 14 22 4"></polyline>
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+              </svg>
+            </div>
+            <h3>Multi-line Subtask Checklists</h3>
+            <p>Subtask items wrap naturally across lines without truncation, auto-focus on creation, and allow rapid consecutive keyboard entry.</p>
+          </div>
+        </div>
+
+        <!-- Card 6: Native Rust & Tauri Speed (2 Columns) -->
+        <div class="bento-card bento-col-2">
+          <div>
+            <div class="icon-box">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+                <rect x="9" y="9" width="6" height="6"></rect>
+                <line x1="9" y1="1" x2="9" y2="4"></line>
+                <line x1="15" y1="1" x2="15" y2="4"></line>
+                <line x1="9" y1="20" x2="9" y2="23"></line>
+                <line x1="15" y1="20" x2="15" y2="23"></line>
+                <line x1="20" y1="9" x2="23" y2="9"></line>
+                <line x1="20" y1="14" x2="23" y2="14"></line>
+                <line x1="1" y1="9" x2="4" y2="9"></line>
+                <line x1="1" y1="14" x2="4" y2="14"></line>
+              </svg>
+            </div>
+            <h3>Native Rust & Tauri Architecture</h3>
+            <p>Engineered for raw performance with zero heavy Electron bloat. Starts up in milliseconds and continuously runs under 15 MB of RAM.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Shortcuts Section (Centered) -->
+  <section id="shortcuts" class="shortcuts-section">
+    <div class="container">
+      <h2 class="section-title">Built for the keyboard</h2>
+      <p class="section-desc">Everything in Leaf is accessible with simple, intuitive keyboard shortcuts.</p>
+
+      <div class="shortcuts-wrapper">
+        <div class="shortcut-item">
+          <span class="shortcut-name">Global Quick Capture HUD</span>
+          <span class="kbd">Alt + L</span>
+        </div>
+        <div class="shortcut-item">
+          <span class="shortcut-name">New Item In-App</span>
+          <span class="kbd">N</span>
+        </div>
+        <div class="shortcut-item">
+          <span class="shortcut-name">Search Workspace</span>
+          <span class="kbd">Ctrl + K</span>
+        </div>
+        <div class="shortcut-item">
+          <span class="shortcut-name">Switch to My Queue</span>
+          <span class="kbd">Ctrl + Q</span>
+        </div>
+        <div class="shortcut-item">
+          <span class="shortcut-name">Switch to Backlog / Inbox</span>
+          <span class="kbd">Ctrl + I</span>
+        </div>
+        <div class="shortcut-item">
+          <span class="shortcut-name">Workspace Settings & Shortcuts</span>
+          <span class="kbd">S</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Download Section -->
+  <section id="download">
+    <div class="container">
+      <div class="cta-box">
+        <h2>Get Leaf for Windows</h2>
+        <p>A simple, private desktop capture HUD for everyday focus.</p>
+
+        <a href="https://github.com/christliebdela/leaf/releases/latest" class="btn-download">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>Download Leaf v0.1.0 (.exe)</span>
+        </a>
+
+        <div style="margin-top: 16px; font-size: 0.8rem; color: var(--text-dim);">
+          Windows 10 / 11 64-bit installer • ~8 MB • No account required
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container footer-inner">
+      <div>© 2026 Leaf. Local-first desktop workspace.</div>
+      <div class="footer-links">
+        <a href="#features">Features</a>
+        <a href="#shortcuts">Shortcuts</a>
+        <a href="https://github.com/christliebdela/leaf" target="_blank" rel="noopener">GitHub</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
