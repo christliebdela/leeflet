@@ -48,31 +48,52 @@
   }
 }
 
-/* Custom minimal scrollbar */
+/* Global scrollbar cleanup */
+::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent !important;
+}
+
+/* Custom ultra-minimal scrollbar */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.4) transparent;
+}
+
+.dark .custom-scrollbar {
+  scrollbar-color: rgba(63, 63, 70, 0.6) transparent;
+}
+
 .custom-scrollbar::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 4px;
+  height: 4px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
+  margin: 4px 0;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #e5e7eb;
+  background: rgba(156, 163, 175, 0.35);
   border-radius: 9999px;
 }
 
 .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #27272a;
+  background: rgba(63, 63, 70, 0.6);
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #d1d5db;
+  background: rgba(156, 163, 175, 0.7);
 }
 
 .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
+  background: rgba(82, 82, 91, 0.85);
 }
 
 /* Utility to hide scrollbars completely */

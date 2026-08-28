@@ -246,8 +246,10 @@ export const ItemListView: React.FC = () => {
   const emptyState = getEmptyState();
   const EmptyIcon = emptyState.Icon;
 
+  const isPaneOpen = Boolean(selectedItemId);
+
   return (
-    <div className="flex-1 h-full overflow-y-auto px-6 py-2 pb-6 flex flex-col custom-scrollbar">
+    <div className={`flex-1 h-full overflow-y-auto overflow-x-hidden ${isPaneOpen ? 'pl-3 pr-2 py-3' : 'p-3'} flex flex-col custom-scrollbar`}>
       {displayItems.length === 0 ? (
         <div className="flex-1 min-h-[360px] w-full flex flex-col items-center justify-center text-center p-6 border border-dashed border-[#e5e7eb] dark:border-[#27272a] rounded-[6px]">
           <div className="w-10 h-10 rounded-full bg-[#f3f4f6] dark:bg-[#27272a] flex items-center justify-center mb-2.5">
@@ -261,14 +263,14 @@ export const ItemListView: React.FC = () => {
           </p>
           <button
             onClick={() => setQuickCaptureOpen(true)}
-            className="mt-3 flex items-center gap-1.5 px-3 py-1.5 bg-[#111827] dark:bg-white text-white dark:text-[#111827] rounded-[6px] text-xs font-medium hover:bg-[#1f2937] dark:hover:bg-[#e4e4e7] transition-all shadow-subtle"
+            className="mt-3 flex items-center gap-1.5 px-3 py-1.5 bg-[#111827] dark:bg-white text-white dark:text-[#111827] rounded-[6px] text-xs font-medium hover:bg-[#1f2937] dark:hover:bg-[#e4e4e7] transition-all shadow-subtle shrink-0 whitespace-nowrap"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>New Item</span>
           </button>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-2 min-w-0">
           {displayItems.map((item: Item) => {
             const isSelected = selectedItemId === item.id;
             const isDragged = draggedItemId === item.id;
@@ -312,7 +314,7 @@ export const ItemListView: React.FC = () => {
                   setDragOverItemId(null);
                 }}
                 onClick={() => setSelectedItemId(isSelected ? null : item.id)}
-                className={`group flex items-center justify-between p-3 rounded-[6px] border transition-all cursor-pointer select-none ${
+                className={`group flex items-center justify-between p-2.5 sm:p-3 rounded-[6px] border transition-all cursor-pointer select-none min-w-0 overflow-hidden ${
                   isSelected
                     ? 'border-[#9ca3af] dark:border-[#52525b] bg-[#f9fafb] dark:bg-[#1f1f23] shadow-sm'
                     : 'border-[#e5e7eb] dark:border-[#27272a] bg-white dark:bg-[#18181b] hover:border-[#d1d5db] dark:hover:border-[#3f3f46]'
@@ -321,7 +323,7 @@ export const ItemListView: React.FC = () => {
                 }`}
               >
                 {/* Left Section: Drag handle, Title with MiddleTruncate, Checklist count */}
-                <div className="flex items-center gap-2.5 min-w-0 flex-1 mr-3 overflow-hidden">
+                <div className="flex items-center gap-2 min-w-0 flex-1 mr-2 overflow-hidden">
                   <div
                     className="cursor-grab active:cursor-grabbing text-[#d1d5db] dark:text-[#52525b] group-hover:text-[#9ca3af] dark:group-hover:text-[#a1a1aa] transition-colors shrink-0"
                     title="Drag to reorder"
@@ -329,7 +331,7 @@ export const ItemListView: React.FC = () => {
                     <GripVertical className="w-3.5 h-3.5" />
                   </div>
 
-                  <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
+                  <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden">
                     <div className="min-w-0 flex-1 overflow-hidden">
                       <MiddleTruncate
                         value={item.title}
@@ -349,33 +351,55 @@ export const ItemListView: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Right Columns: Type, Priority, Status, Date */}
-                <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                  {/* Type Column */}
-                  <div className="w-14 sm:w-16 flex items-center justify-start shrink-0">
+                {/* Right Columns: Type, Priority, Date */}
+                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                  {/* Type Column (compact icon badge or label) */}
+                  {isPaneOpen ? (
                     <span
-                      className={`inline-flex items-center px-1.5 py-0 text-[9.5px] font-medium leading-[14px] rounded-full border ${typeConfig.bg} ${typeConfig.color} ${typeConfig.border}`}
+                      title={`Type: ${typeConfig.label}`}
+                      className={`inline-flex items-center px-1.5 py-0 text-[9px] font-medium leading-[13px] rounded-full border ${typeConfig.bg} ${typeConfig.color} ${typeConfig.border} shrink-0`}
                     >
                       {typeConfig.label}
                     </span>
-                  </div>
+                  ) : (
+                    <div className="w-14 sm:w-16 flex items-center justify-start shrink-0">
+                      <span
+                        className={`inline-flex items-center px-1.5 py-0 text-[9.5px] font-medium leading-[14px] rounded-full border ${typeConfig.bg} ${typeConfig.color} ${typeConfig.border}`}
+                      >
+                        {typeConfig.label}
+                      </span>
+                    </div>
+                  )}
 
                   {/* Priority Column */}
-                  <div className="w-16 sm:w-18 flex items-center justify-start shrink-0">
-                    {item.priority !== 'none' ? (
-                      <span className="inline-flex items-center gap-1.5 text-[11px] text-[#6b7280] dark:text-[#a1a1aa] truncate">
+                  {item.priority !== 'none' ? (
+                    isPaneOpen ? (
+                      <span
+                        title={`Priority: ${priorityConfig.label}`}
+                        className="inline-flex items-center shrink-0"
+                      >
                         <span className={`w-1.5 h-1.5 rounded-full ${priorityConfig.dotColor} shrink-0`} />
-                        <span className="truncate">{priorityConfig.label}</span>
                       </span>
                     ) : (
+                      <div className="w-16 sm:w-18 flex items-center justify-start shrink-0">
+                        <span className="inline-flex items-center gap-1.5 text-[11px] text-[#6b7280] dark:text-[#a1a1aa] truncate">
+                          <span className={`w-1.5 h-1.5 rounded-full ${priorityConfig.dotColor} shrink-0`} />
+                          <span className="truncate">{priorityConfig.label}</span>
+                        </span>
+                      </div>
+                    )
+                  ) : !isPaneOpen ? (
+                    <div className="w-16 sm:w-18 flex items-center justify-start shrink-0">
                       <span className="text-[11px] text-[#9ca3af] dark:text-[#52525b]">—</span>
-                    )}
-                  </div>
+                    </div>
+                  ) : null}
 
-                  {/* Date Column */}
-                  <div className="text-[11px] text-[#9ca3af] dark:text-[#71717a] w-12 sm:w-14 text-right shrink-0 hidden md:block">
-                    {formatDate(item.createdAt)}
-                  </div>
+                  {/* Date Column (Full view only) */}
+                  {!isPaneOpen && (
+                    <div className="text-[11px] text-[#9ca3af] dark:text-[#71717a] w-12 sm:w-14 text-right shrink-0 hidden md:block">
+                      {formatDate(item.createdAt)}
+                    </div>
+                  )}
                 </div>
               </div>
             );

@@ -6,7 +6,7 @@ import { ListTodo, Plus, Circle, CheckCircle2, X } from 'lucide-react';
 type SectionKey = 'critical' | 'high' | 'medium' | 'low' | 'ideas';
 
 export const MyQueueView: React.FC = () => {
-  const { items, projects, setSelectedItemId, filterOptions, setQuickCaptureOpen, updateItem, createItem } = useLeafStore();
+  const { items, projects, selectedItemId, setSelectedItemId, filterOptions, setQuickCaptureOpen, updateItem, createItem } = useLeafStore();
   const [addingSection, setAddingSection] = useState<SectionKey | null>(null);
   const [newTitle, setNewTitle] = useState('');
   const inlineInputRef = useRef<HTMLInputElement>(null);
@@ -205,9 +205,11 @@ export const MyQueueView: React.FC = () => {
     );
   };
 
+  const isPaneOpen = Boolean(selectedItemId);
+
   if (queueItems.length === 0 && !addingSection) {
     return (
-      <div className="flex-1 h-full overflow-y-auto px-6 py-2 pb-6 flex flex-col custom-scrollbar">
+      <div className={`flex-1 h-full overflow-y-auto ${isPaneOpen ? 'pl-3 pr-2 py-3' : 'p-3'} flex flex-col custom-scrollbar`}>
         <div className="flex-1 min-h-[360px] w-full flex flex-col items-center justify-center text-center p-6 border border-dashed border-[#e5e7eb] dark:border-[#27272a] rounded-[6px]">
           <div className="w-10 h-10 rounded-full bg-[#f3f4f6] dark:bg-[#27272a] flex items-center justify-center mb-2.5">
             <ListTodo className="w-5 h-5 text-[#9ca3af] dark:text-[#71717a]" />
@@ -231,9 +233,9 @@ export const MyQueueView: React.FC = () => {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto px-6 py-2 pb-6 space-y-4 select-none custom-scrollbar">
+    <div className={`flex-1 overflow-y-auto ${isPaneOpen ? 'pl-3 pr-2 py-3' : 'p-3'} space-y-3 select-none custom-scrollbar`}>
       {/* Single-Column Stack of Queues (One on a row) */}
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3">
         {renderSection('Critical', 'critical', criticalItems, 'bg-rose-500')}
         {renderSection('High', 'high', highItems, 'bg-orange-500')}
         {renderSection('Medium', 'medium', mediumItems, 'bg-amber-500')}

@@ -94,25 +94,25 @@ export const Sidebar: React.FC = () => {
   return (
     <>
       <aside className="w-52 h-full bg-[#f4f5f6] dark:bg-[#121214] border-r border-[#e5e7eb] dark:border-[#27272a] flex flex-col justify-between select-none text-xs text-[#374151] dark:text-[#d4d4d8] shrink-0 transition-colors">
-        {/* Top Header & Navigation */}
-        <div className="flex-1 overflow-y-auto px-3 space-y-4 custom-scrollbar">
-          {/* Brand logo & name aligned with top bar */}
-          <div
-            className="h-14 flex items-center gap-2 px-1"
-            data-tauri-drag-region
-          >
-            <div className="w-5 h-5 flex items-center justify-center shrink-0">
-              <img
-                src="/leaf_logo.png"
-                alt="leaf"
-                className="w-5 h-5 object-contain brightness-0 dark:brightness-0 dark:invert transition-all"
-              />
-            </div>
-            <span className="font-bold text-base tracking-tight text-[#111827] dark:text-[#f4f4f5]" data-tauri-drag-region>
-              leaf
-            </span>
+        {/* Brand logo & name aligned with top HeaderBar */}
+        <div
+          className="h-12 px-3 flex items-center gap-2 select-none shrink-0"
+          data-tauri-drag-region
+        >
+          <div className="w-5 h-5 flex items-center justify-center shrink-0">
+            <img
+              src="/leaf_logo.png"
+              alt="leaf"
+              className="w-5 h-5 object-contain brightness-0 dark:brightness-0 dark:invert transition-all"
+            />
           </div>
+          <span className="font-bold text-base tracking-tight text-[#111827] dark:text-[#f4f4f5]" data-tauri-drag-region>
+            leaf
+          </span>
+        </div>
 
+        {/* Navigation items */}
+        <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-3 custom-scrollbar">
           {/* Primary Views */}
           <div className="space-y-0.5">
             <button

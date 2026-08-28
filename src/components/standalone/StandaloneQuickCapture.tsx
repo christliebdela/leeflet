@@ -13,6 +13,7 @@ import {
   FileText,
   ChevronDown,
   X,
+  Plus,
 } from 'lucide-react';
 import { broadcastSync } from '../../utils/sync';
 import { ITEM_TYPE_CONFIG, PRIORITY_CONFIG } from '../../utils/format';
@@ -40,6 +41,8 @@ export const StandaloneQuickCapture: React.FC = () => {
   const [isTypeMenuOpen, setIsTypeMenuOpen] = useState(false);
   const [isPriorityMenuOpen, setIsPriorityMenuOpen] = useState(false);
   const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false);
+  const [isCreatingProject, setIsCreatingProject] = useState(false);
+  const [newProjectName, setNewProjectName] = useState('');
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const checklistInputRef = useRef<HTMLTextAreaElement>(null);
@@ -47,6 +50,25 @@ export const StandaloneQuickCapture: React.FC = () => {
   const projectRef = useRef<HTMLDivElement>(null);
   const typeRef = useRef<HTMLDivElement>(null);
   const priorityRef = useRef<HTMLDivElement>(null);
+  const newProjectInputRef = useRef<HTMLInputElement>(null);
+
+  const handleCreateProject = async () => {
+    const trimmed = newProjectName.trim();
+    if (!trimmed) return;
+    try {
+      const created = await dbService.createProject({ name: trimmed });
+      const updated = await dbService.getProjects();
+      setProjects(updated);
+      setProjectId(created.id);
+      setNewProjectName('');
+      setIsCreatingProject(false);
+      setIsProjectMenuOpen(false);
+      broadcastSync({ type: 'projects_reload' });
+      setTimeout(() => textareaRef.current?.focus(), 50);
+    } catch (err) {
+      console.error('Failed to create project:', err);
+    }
+  };
 
   const toggleChecklist = () => {
     const next = !showChecklist;
@@ -387,27 +409,80 @@ export const StandaloneQuickCapture: React.FC = () => {
             </button>
 
             {isProjectMenuOpen && (
-              <div className="absolute left-0 bottom-full mb-1.5 w-44 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] shadow-modal p-1 z-50 space-y-0.5 max-h-48 overflow-y-auto custom-scrollbar">
-                {projects.map((p) => (
-                  <button
-                    key={p.id}
-                    onClick={() => {
-                      setProjectId(p.id);
-                      setIsProjectMenuOpen(false);
-                    }}
-                    className={`w-full text-left px-2 py-1.5 rounded-[4px] text-xs truncate flex items-center justify-between transition-colors ${
-                      projectId === p.id
-                        ? 'bg-[#111827] text-white dark:bg-white dark:text-[#111827] font-semibold'
-                        : 'text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a]'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 truncate">
-                      <Folder className="w-3.5 h-3.5 shrink-0 opacity-70" />
-                      <span className="truncate">{p.name}</span>
+              <div className="absolute left-0 bottom-full mb-1.5 w-52 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] shadow-modal p-1 z-50 space-y-0.5 max-h-56 overflow-y-auto custom-scrollbar">
+                <div className="max-h-36 overflow-y-auto custom-scrollbar space-y-0.5">
+                  {projects.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => {
+                        setProjectId(p.id);
+                        setIsProjectMenuOpen(false);
+                      }}
+                      className={`w-full text-left px-2 py-1.5 rounded-[4px] text-xs truncate flex items-center justify-between transition-colors ${
+                        projectId === p.id
+                          ? 'bg-[#111827] text-white dark:bg-white dark:text-[#111827] font-semibold'
+                          : 'text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <Folder className="w-3.5 h-3.5 shrink-0 opacity-70" />
+                        <span className="truncate">{p.name}</span>
+                      </div>
+                      {projectId === p.id && <Check className="w-3.5 h-3.5 shrink-0" />}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Inline New Project Creator */}
+                <div className="pt-1 mt-1 border-t border-[#f3f4f6] dark:border-[#27272a]">
+                  {isCreatingProject ? (
+                    <div className="p-1">
+                      <div className="flex items-center gap-1">
+                        <input
+                          ref={newProjectInputRef}
+                          type="text"
+                          value={newProjectName}
+                          onChange={(e) => setNewProjectName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleCreateProject();
+                            } else if (e.key === 'Escape') {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setIsCreatingProject(false);
+                              setNewProjectName('');
+                            }
+                          }}
+                          placeholder="Project name..."
+                          className="w-full bg-[#f9fafb] dark:bg-[#141416] border border-[#e5e7eb] dark:border-[#27272a] rounded-[4px] px-2 py-1 text-xs text-[#111827] dark:text-[#f4f4f5] focus:outline-none focus:border-[#9ca3af] dark:focus:border-[#52525b]"
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          onClick={handleCreateProject}
+                          disabled={!newProjectName.trim()}
+                          className="px-2 py-1 bg-[#111827] text-white dark:bg-white dark:text-[#111827] rounded-[4px] text-xs font-semibold hover:opacity-90 disabled:opacity-40 transition-opacity"
+                        >
+                          <Check className="w-3 h-3" />
+                        </button>
+                      </div>
                     </div>
-                    {projectId === p.id && <Check className="w-3.5 h-3.5 shrink-0" />}
-                  </button>
-                ))}
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsCreatingProject(true);
+                        setTimeout(() => newProjectInputRef.current?.focus(), 50);
+                      }}
+                      className="w-full text-left px-2 py-1.5 rounded-[4px] text-xs flex items-center gap-2 text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] transition-colors"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>New Project</span>
+                    </button>
+                  )}
+                </div>
               </div>
             )}
           </div>

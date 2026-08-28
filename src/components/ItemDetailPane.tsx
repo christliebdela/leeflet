@@ -57,6 +57,7 @@ export const ItemDetailPane: React.FC = () => {
     setSelectedItemId,
     updateItem,
     deleteItem,
+    createProject,
   } = useLeafStore();
 
   const isPaneOpen = Boolean(selectedItemId);
@@ -84,6 +85,8 @@ export const ItemDetailPane: React.FC = () => {
   const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(null);
 
   const [openMenu, setOpenMenu] = useState<'project' | 'type' | 'priority' | 'status' | null>(null);
+  const [isCreatingProject, setIsCreatingProject] = useState(false);
+  const [newProjectName, setNewProjectName] = useState('');
 
   const paneRef = useRef<HTMLElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
@@ -91,6 +94,22 @@ export const ItemDetailPane: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const metadataRef = useRef<HTMLDivElement>(null);
+  const newProjectInputRef = useRef<HTMLInputElement>(null);
+
+  const handleCreateProject = async () => {
+    const trimmed = newProjectName.trim();
+    if (!trimmed) return;
+    try {
+      const proj = await createProject({ name: trimmed });
+      setProjectId(proj.id);
+      handleFieldChange('projectId', proj.id);
+      setNewProjectName('');
+      setIsCreatingProject(false);
+      setOpenMenu(null);
+    } catch (err) {
+      console.error('Failed to create project:', err);
+    }
+  };
 
   // Sync form state when active item updates
   useEffect(() => {
@@ -501,17 +520,17 @@ export const ItemDetailPane: React.FC = () => {
     <>
       <div
         className={`transition-all duration-300 ease-out overflow-hidden flex shrink-0 ${
-          isPaneOpen ? 'w-[380px] ml-3.5 mr-6 my-2' : 'w-0 ml-0 mr-0 my-2 pointer-events-none'
+          isPaneOpen ? 'w-[360px] pl-2 pr-3 pb-3 pt-0' : 'w-0 pl-0 pr-0 pb-0 pt-0 pointer-events-none'
         }`}
       >
         <aside
           ref={paneRef}
-          className={`w-[380px] h-full bg-white dark:bg-[#18181b] border border-[#e5e7eb] dark:border-[#27272a] rounded-[12px] shadow-modal flex flex-col justify-between overflow-hidden transition-transform duration-300 ease-out select-none ${
+          className={`w-[352px] h-full bg-white dark:bg-[#18181b] border border-[#e5e7eb] dark:border-[#27272a] rounded-[12px] shadow-modal flex flex-col justify-between overflow-hidden transition-transform duration-300 ease-out select-none ${
             isPaneOpen ? 'translate-x-0' : 'translate-x-[400px]'
           }`}
         >
         {/* Top bar */}
-        <div className="p-4 border-b border-[#f3f4f6] dark:border-[#27272a] space-y-3">
+        <div className="p-3 border-b border-[#f3f4f6] dark:border-[#27272a] space-y-2.5">
           <div className="flex items-center justify-between gap-2">
             <input
               ref={titleInputRef}
@@ -560,43 +579,96 @@ export const ItemDetailPane: React.FC = () => {
               </button>
 
               {openMenu === 'project' && (
-                <div className="absolute left-0 top-full mt-1 w-48 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] shadow-modal p-1 z-50 max-h-48 overflow-y-auto custom-scrollbar">
-                  <button
-                    onClick={() => {
-                      setProjectId('');
-                      handleFieldChange('projectId', '');
-                      setOpenMenu(null);
-                    }}
-                    className={`w-full text-left px-2 py-1.5 rounded-[4px] text-xs flex items-center justify-between transition-colors ${
-                      !projectId
-                        ? 'bg-[#111827] text-white dark:bg-white dark:text-[#111827] font-semibold'
-                        : 'text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a]'
-                    }`}
-                  >
-                    <span>No Project</span>
-                    {!projectId && <Check className="w-3.5 h-3.5" />}
-                  </button>
-                  {projects.map((p) => (
+                <div className="absolute left-0 top-full mt-1 w-52 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] shadow-modal p-1 z-50 max-h-56 overflow-y-auto custom-scrollbar">
+                  <div className="max-h-36 overflow-y-auto custom-scrollbar space-y-0.5">
                     <button
-                      key={p.id}
                       onClick={() => {
-                        setProjectId(p.id);
-                        handleFieldChange('projectId', p.id);
+                        setProjectId('');
+                        handleFieldChange('projectId', '');
                         setOpenMenu(null);
                       }}
-                      className={`w-full text-left px-2 py-1.5 rounded-[4px] text-xs flex items-center justify-between truncate transition-colors ${
-                        projectId === p.id
+                      className={`w-full text-left px-2 py-1.5 rounded-[4px] text-xs flex items-center justify-between transition-colors ${
+                        !projectId
                           ? 'bg-[#111827] text-white dark:bg-white dark:text-[#111827] font-semibold'
                           : 'text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a]'
                       }`}
                     >
-                      <div className="flex items-center gap-2 truncate">
-                        <Folder className="w-3.5 h-3.5 shrink-0 opacity-70" />
-                        <span className="truncate">{p.name}</span>
-                      </div>
-                      {projectId === p.id && <Check className="w-3.5 h-3.5 shrink-0" />}
+                      <span>No Project</span>
+                      {!projectId && <Check className="w-3.5 h-3.5" />}
                     </button>
-                  ))}
+                    {projects.map((p) => (
+                      <button
+                        key={p.id}
+                        onClick={() => {
+                          setProjectId(p.id);
+                          handleFieldChange('projectId', p.id);
+                          setOpenMenu(null);
+                        }}
+                        className={`w-full text-left px-2 py-1.5 rounded-[4px] text-xs flex items-center justify-between truncate transition-colors ${
+                          projectId === p.id
+                            ? 'bg-[#111827] text-white dark:bg-white dark:text-[#111827] font-semibold'
+                            : 'text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 truncate">
+                          <Folder className="w-3.5 h-3.5 shrink-0 opacity-70" />
+                          <span className="truncate">{p.name}</span>
+                        </div>
+                        {projectId === p.id && <Check className="w-3.5 h-3.5 shrink-0" />}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Inline New Project Creator */}
+                  <div className="pt-1 mt-1 border-t border-[#f3f4f6] dark:border-[#27272a]">
+                    {isCreatingProject ? (
+                      <div className="p-1">
+                        <div className="flex items-center gap-1">
+                          <input
+                            ref={newProjectInputRef}
+                            type="text"
+                            value={newProjectName}
+                            onChange={(e) => setNewProjectName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleCreateProject();
+                              } else if (e.key === 'Escape') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setIsCreatingProject(false);
+                                setNewProjectName('');
+                              }
+                            }}
+                            placeholder="Project name..."
+                            className="w-full bg-[#f9fafb] dark:bg-[#141416] border border-[#e5e7eb] dark:border-[#27272a] rounded-[4px] px-2 py-1 text-xs text-[#111827] dark:text-[#f4f4f5] focus:outline-none focus:border-[#9ca3af] dark:focus:border-[#52525b]"
+                            autoFocus
+                          />
+                          <button
+                            type="button"
+                            onClick={handleCreateProject}
+                            disabled={!newProjectName.trim()}
+                            className="px-2 py-1 bg-[#111827] text-white dark:bg-white dark:text-[#111827] rounded-[4px] text-xs font-semibold hover:opacity-90 disabled:opacity-40 transition-opacity"
+                          >
+                            <Check className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsCreatingProject(true);
+                          setTimeout(() => newProjectInputRef.current?.focus(), 50);
+                        }}
+                        className="w-full text-left px-2 py-1.5 rounded-[4px] text-xs flex items-center gap-2 text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] transition-colors"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>New Project</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -741,7 +813,7 @@ export const ItemDetailPane: React.FC = () => {
         </div>
 
         {/* Editor & Content Area */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
           {/* Markdown & Rich Text Toolbar */}
           <div className="flex items-center gap-1 py-1 px-1.5 bg-[#f9fafb] dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] text-[#4b5563] dark:text-[#a1a1aa]">
             <button

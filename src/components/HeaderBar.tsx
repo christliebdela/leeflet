@@ -131,7 +131,7 @@ export const HeaderBar: React.FC = () => {
   return (
     <header
       data-tauri-drag-region
-      className="h-14 px-6 bg-transparent flex items-center justify-between select-none shrink-0"
+      className="h-12 px-3 bg-transparent flex items-center justify-between select-none shrink-0"
     >
       {/* Title & Count */}
       <div className="flex items-center gap-3 min-w-0" data-tauri-drag-region>
@@ -164,7 +164,7 @@ export const HeaderBar: React.FC = () => {
       </div>
 
       {/* Action Controls & Top Window Controls */}
-      <div className="flex items-center gap-2" data-tauri-drag-region="false">
+      <div className="flex items-center gap-1.5 shrink-0" data-tauri-drag-region="false">
         {/* Geist-style CmdK Search Input */}
         <SearchInput
           aria-label="Search items"
@@ -173,14 +173,14 @@ export const HeaderBar: React.FC = () => {
           onChange={(e) => setSearchQuery(e.target.value)}
           onClear={() => setSearchQuery('')}
           placeholder="Search..."
-          className="w-44 sm:w-52"
+          className="w-28 sm:w-36 md:w-48 transition-all"
         />
 
         {/* Filter Toggle */}
-        <div className="relative" ref={filterDropdownRef}>
+        <div className="relative shrink-0" ref={filterDropdownRef}>
           <button
             onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] border text-xs font-medium transition-colors ${
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] border text-xs font-medium shrink-0 whitespace-nowrap transition-colors ${
               isFilterDropdownOpen || activeFilterCount > 0
                 ? 'bg-[#111827] text-white border-[#111827] dark:bg-white dark:text-[#111827] dark:border-white shadow-sm'
                 : 'bg-[#f4f5f6] dark:bg-[#1c1c1f] border-[#e5e7eb] dark:border-[#27272a] text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#27272a]'
@@ -324,10 +324,10 @@ export const HeaderBar: React.FC = () => {
         </div>
 
         {/* Sort Toggle */}
-        <div className="relative" ref={sortDropdownRef}>
+        <div className="relative shrink-0" ref={sortDropdownRef}>
           <button
             onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-[6px] border border-[#e5e7eb] dark:border-[#27272a] bg-[#f4f5f6] dark:bg-[#1c1c1f] text-xs font-medium text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#27272a] transition-colors"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-[6px] border border-[#e5e7eb] dark:border-[#27272a] bg-[#f4f5f6] dark:bg-[#1c1c1f] text-xs font-medium text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#27272a] shrink-0 whitespace-nowrap transition-colors"
           >
             <ArrowUpDown className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
             <span>Sort</span>
@@ -388,14 +388,14 @@ export const HeaderBar: React.FC = () => {
         {/* + New Item Button */}
         <button
           onClick={() => setQuickCaptureOpen(true)}
-          className="flex items-center gap-1 px-3 py-1 bg-[#111827] dark:bg-white hover:bg-[#1f2937] dark:hover:bg-[#e4e4e7] text-white dark:text-[#111827] rounded-[6px] text-xs font-semibold shadow-subtle transition-all active:scale-[0.98]"
+          className="flex items-center gap-1 px-3 py-1 bg-[#111827] dark:bg-white hover:bg-[#1f2937] dark:hover:bg-[#e4e4e7] text-white dark:text-[#111827] rounded-[6px] text-xs font-semibold shadow-subtle shrink-0 whitespace-nowrap transition-all active:scale-[0.98]"
         >
           <Plus className="w-3.5 h-3.5" />
           <span>New Item</span>
         </button>
 
         {/* Window Controls */}
-        <div className="ml-1 pl-1 border-l border-[#e5e7eb] dark:border-[#27272a]">
+        <div className="ml-0.5 pl-1 border-l border-[#e5e7eb] dark:border-[#27272a] shrink-0">
           <WindowControls />
         </div>
       </div>
