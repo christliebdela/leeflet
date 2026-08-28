@@ -230,11 +230,11 @@ export const StandaloneQueueWidget: React.FC = () => {
   };
 
   return (
-    <div className="w-screen h-screen bg-white dark:bg-[#18181b] border border-[#e5e7eb] dark:border-[#27272a] p-3.5 flex flex-col justify-between select-none overflow-hidden font-sans text-[#111827] dark:text-[#f4f4f5]">
+    <div className="w-screen h-screen bg-white dark:bg-[#18181b] border border-[#e5e7eb] dark:border-[#27272a] p-3 flex flex-col justify-between select-none overflow-hidden font-sans text-[#111827] dark:text-[#f4f4f5]">
       {/* Header with Drag Region */}
       <div
         data-tauri-drag-region
-        className="flex items-center justify-between pb-2 border-b border-[#f3f4f6] dark:border-[#27272a] cursor-move"
+        className="flex items-center justify-between pb-2.5 border-b border-[#f3f4f6] dark:border-[#27272a] cursor-move"
       >
         <div className="flex items-center gap-2" data-tauri-drag-region>
           <img

@@ -326,7 +326,7 @@ export const StandaloneStickyNote: React.FC<StandaloneStickyNoteProps> = ({ item
       {/* Header with Drag Region & Interactive Dropdowns */}
       <div
         data-tauri-drag-region
-        className={`flex items-center justify-between cursor-move pb-2 border-b ${currentTheme.border}`}
+        className={`flex items-center justify-between cursor-move pb-2.5 border-b ${currentTheme.border}`}
       >
         <div className="flex items-center gap-1.5 min-w-0" data-tauri-drag-region>
           {/* Fixed Project Label */}
@@ -625,7 +625,7 @@ export const StandaloneStickyNote: React.FC<StandaloneStickyNoteProps> = ({ item
 
       {/* Footer */}
       <div
-        className={`pt-2 border-t ${currentTheme.border} flex items-center justify-between text-[10px] font-bold tracking-wider`}
+        className={`pt-2.5 border-t ${currentTheme.border} flex items-center justify-between text-[10px] font-bold tracking-wider`}
       >
         <span className="truncate max-w-[140px] uppercase opacity-75">
           {STATUS_CONFIG[item.status]?.label || item.status.replace('_', ' ')}

@@ -12,9 +12,9 @@ export const StickyNoteView: React.FC = () => {
   const project = projects.find((p: Project) => p.id === item.projectId);
 
   return (
-    <div className="fixed bottom-6 right-6 w-80 bg-[#fef9c3] border border-[#fef08a] rounded-[6px] shadow-sticky p-3.5 text-[#713f12] z-40 animate-in slide-in-from-bottom-5 duration-150 font-sans">
+    <div className="fixed bottom-6 right-6 w-80 bg-[#fef9c3] border border-[#fef08a] rounded-[6px] shadow-sticky p-3 text-[#713f12] z-40 animate-in slide-in-from-bottom-5 duration-150 font-sans">
       {/* Header */}
-      <div className="flex items-center justify-between pb-1.5 border-b border-[#fef08a]/80">
+      <div className="flex items-center justify-between pb-2 border-b border-[#fef08a]/80">
         <div className="text-xs font-semibold tracking-tight text-[#713f12]">
           {project?.name || 'Backlog'} — <span className="capitalize">{item.type}</span>
         </div>

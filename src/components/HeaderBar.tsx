@@ -200,20 +200,19 @@ export const HeaderBar: React.FC = () => {
               </span>
             )}
           </button>
-
           {isFilterDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-modal z-50 overflow-hidden text-xs animate-in fade-in zoom-in-95 duration-100">
+            <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-modal z-50 overflow-hidden text-xs animate-in fade-in zoom-in-95 duration-100">
               {/* Header */}
-              <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-[#f3f4f6] dark:border-[#27272a] bg-[#fafafa] dark:bg-[#141416]">
-                <span className="font-bold text-xs text-[#111827] dark:text-[#f4f4f5] tracking-tight">
+              <div className="flex items-center justify-between px-3 py-2 border-b border-[#f3f4f6] dark:border-[#27272a] bg-[#fafafa] dark:bg-[#141416]">
+                <span className="font-bold text-[11px] text-[#111827] dark:text-[#f4f4f5] tracking-tight">
                   Filters
                 </span>
                 {activeFilterCount > 0 && (
                   <button
                     onClick={resetFilters}
-                    className="flex items-center gap-1 text-[11px] font-medium text-[#6b7280] dark:text-[#a1a1aa] hover:text-rose-600 dark:hover:text-rose-400 transition-colors"
+                    className="flex items-center gap-1 text-[10.5px] font-medium text-[#6b7280] dark:text-[#a1a1aa] hover:text-rose-600 dark:hover:text-rose-400 transition-colors"
                   >
-                    <RotateCcw className="w-3 h-3" />
+                    <RotateCcw className="w-2.5 h-2.5" />
                     <span>Reset</span>
                   </button>
                 )}
@@ -224,7 +223,7 @@ export const HeaderBar: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setActiveFilterTab('type')}
-                  className={`flex-1 py-1 px-2 rounded-[5px] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors ${
+                  className={`flex-1 py-1 px-1.5 rounded-[5px] text-[11px] font-semibold flex items-center justify-center gap-1 transition-colors ${
                     activeFilterTab === 'type'
                       ? 'bg-white dark:bg-[#27272a] text-[#111827] dark:text-white shadow-xs'
                       : 'text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white'
@@ -232,7 +231,7 @@ export const HeaderBar: React.FC = () => {
                 >
                   <span>Type</span>
                   {activeTypesCount > 0 && (
-                    <span className="px-1.5 py-0 text-[9.5px] rounded-full bg-[#111827] text-white dark:bg-white dark:text-[#111827] font-bold leading-none">
+                    <span className="px-1 py-0 text-[9px] rounded-full bg-[#111827] text-white dark:bg-white dark:text-[#111827] font-bold leading-none">
                       {activeTypesCount}
                     </span>
                   )}
@@ -240,7 +239,7 @@ export const HeaderBar: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setActiveFilterTab('priority')}
-                  className={`flex-1 py-1 px-2 rounded-[5px] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors ${
+                  className={`flex-1 py-1 px-1.5 rounded-[5px] text-[11px] font-semibold flex items-center justify-center gap-1 transition-colors ${
                     activeFilterTab === 'priority'
                       ? 'bg-white dark:bg-[#27272a] text-[#111827] dark:text-white shadow-xs'
                       : 'text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white'
@@ -248,7 +247,7 @@ export const HeaderBar: React.FC = () => {
                 >
                   <span>Priority</span>
                   {activePrioritiesCount > 0 && (
-                    <span className="px-1.5 py-0 text-[9.5px] rounded-full bg-[#111827] text-white dark:bg-white dark:text-[#111827] font-bold leading-none">
+                    <span className="px-1 py-0 text-[9px] rounded-full bg-[#111827] text-white dark:bg-white dark:text-[#111827] font-bold leading-none">
                       {activePrioritiesCount}
                     </span>
                   )}
@@ -257,7 +256,7 @@ export const HeaderBar: React.FC = () => {
 
               {/* Tab Content: Item Types */}
               {activeFilterTab === 'type' && (
-                <div className="p-2 space-y-0.5 max-h-60 overflow-y-auto custom-scrollbar">
+                <div className="p-1.5 space-y-0.5 max-h-56 overflow-y-auto custom-scrollbar">
                   {(['task', 'bug', 'idea', 'improvement', 'research', 'question', 'note'] as ItemType[]).map((t) => {
                     const ItemIcon = TYPE_ICONS[t];
                     const cfg = ITEM_TYPE_CONFIG[t];
@@ -271,17 +270,17 @@ export const HeaderBar: React.FC = () => {
                           const next = isSelected ? cur.filter((x) => x !== t) : [...cur, t];
                           setFilterOptions({ types: next.length > 0 ? next : undefined });
                         }}
-                        className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-[5px] text-xs transition-colors ${
+                        className={`w-full flex items-center justify-between px-2 py-1.5 rounded-[5px] text-[11px] transition-colors ${
                           isSelected
                             ? 'bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-white font-semibold'
                             : 'text-[#4b5563] dark:text-[#d4d4d8] hover:bg-[#f9fafb] dark:hover:bg-[#222226]'
                         }`}
                       >
-                        <div className="flex items-center gap-2">
-                          <ItemIcon className="w-3.5 h-3.5 shrink-0 opacity-80" />
-                          <span>{cfg.label}</span>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <ItemIcon className="w-3 h-3 text-[#6b7280] dark:text-[#a1a1aa] shrink-0" />
+                          <span className="truncate">{cfg.label}</span>
                         </div>
-                        {isSelected && <Check className="w-3.5 h-3.5 text-[#111827] dark:text-white" />}
+                        {isSelected && <Check className="w-3 h-3 text-[#111827] dark:text-white shrink-0 ml-1" />}
                       </button>
                     );
                   })}
@@ -290,7 +289,7 @@ export const HeaderBar: React.FC = () => {
 
               {/* Tab Content: Priority */}
               {activeFilterTab === 'priority' && (
-                <div className="p-2 space-y-0.5 max-h-60 overflow-y-auto custom-scrollbar">
+                <div className="p-1.5 space-y-0.5 max-h-56 overflow-y-auto custom-scrollbar">
                   {(['critical', 'high', 'medium', 'low', 'none'] as Priority[]).map((p) => {
                     const pCfg = PRIORITY_CONFIG[p];
                     const isSelected = filterOptions.priorities?.includes(p);
@@ -303,17 +302,17 @@ export const HeaderBar: React.FC = () => {
                           const next = isSelected ? cur.filter((x) => x !== p) : [...cur, p];
                           setFilterOptions({ priorities: next.length > 0 ? next : undefined });
                         }}
-                        className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-[5px] text-xs transition-colors ${
+                        className={`w-full flex items-center justify-between px-2 py-1.5 rounded-[5px] text-[11px] transition-colors ${
                           isSelected
                             ? 'bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-white font-semibold'
                             : 'text-[#4b5563] dark:text-[#d4d4d8] hover:bg-[#f9fafb] dark:hover:bg-[#222226]'
                         }`}
                       >
-                        <div className="flex items-center gap-2">
-                          <span className={`w-2 h-2 rounded-full shrink-0 ${pCfg.dotColor}`} />
-                          <span>{pCfg.label}</span>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${pCfg.dotColor}`} />
+                          <span className="truncate">{pCfg.label}</span>
                         </div>
-                        {isSelected && <Check className="w-3.5 h-3.5 text-[#111827] dark:text-white" />}
+                        {isSelected && <Check className="w-3 h-3 text-[#111827] dark:text-white shrink-0 ml-1" />}
                       </button>
                     );
                   })}
@@ -334,7 +333,7 @@ export const HeaderBar: React.FC = () => {
           </button>
 
           {isSortDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-modal py-1.5 z-50 text-xs animate-in fade-in zoom-in-95 duration-100">
+            <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-modal py-1.5 z-50 text-xs animate-in fade-in zoom-in-95 duration-100">
               <button
                 onClick={() => { setFilterOptions({ sortBy: 'manual' }); setIsSortDropdownOpen(false); }}
                 className={`w-full text-left px-3 py-1.5 hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] flex items-center justify-between ${(!filterOptions.sortBy || filterOptions.sortBy === 'manual') ? 'font-semibold text-[#111827] dark:text-white' : 'text-[#4b5563] dark:text-[#a1a1aa]'}`}
