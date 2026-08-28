@@ -56,7 +56,7 @@ export class DatabaseService {
       settings: {
         defaultPriority: 'none',
         defaultType: 'task',
-        globalShortcut: 'CommandOrControl+Shift+L',
+        globalShortcut: 'Alt+L',
         theme: 'light',
         compactMode: false,
       },

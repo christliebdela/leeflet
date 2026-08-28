@@ -34,7 +34,7 @@ interface ShortcutItem {
 
 const SHORTCUTS_DATA: ShortcutItem[] = [
   { id: '1', label: 'New Item (In-App)', category: 'Creation & Global', keys: ['N', 'Ctrl + N'] },
-  { id: '2', label: 'New Item (Desktop Floating Panel)', category: 'Creation & Global', keys: ['Ctrl + Shift + N'] },
+  { id: '2', label: 'Quick Capture (Desktop Floating Panel)', category: 'Creation & Global', keys: ['Alt + L'] },
   { id: '3', label: 'Search Workspace', category: 'Creation & Global', keys: ['Ctrl + K', '/'] },
   { id: '4', label: 'Open Settings Sheet', category: 'Creation & Global', keys: ['S', 'Ctrl + ,'] },
   { id: '5', label: 'Close Sheet / Modal', category: 'Creation & Global', keys: ['Esc'] },

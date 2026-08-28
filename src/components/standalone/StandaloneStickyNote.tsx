@@ -284,6 +284,8 @@ export const StandaloneStickyNote: React.FC<StandaloneStickyNoteProps> = ({ item
     triggerSave({ checklist: nextList });
   };
 
+  const stickyChecklistInputRef = useRef<HTMLInputElement>(null);
+
   const handleAddChecklistItem = () => {
     if (!newChecklistText.trim() || !item) return;
     const newItem: ChecklistItem = {
@@ -296,7 +298,7 @@ export const StandaloneStickyNote: React.FC<StandaloneStickyNoteProps> = ({ item
     const nextList = [...(item.checklist || []), newItem];
     triggerSave({ checklist: nextList });
     setNewChecklistText('');
-    setIsAddingChecklist(false);
+    setTimeout(() => stickyChecklistInputRef.current?.focus(), 20);
   };
 
   const handleDeleteChecklistItem = (id: string) => {
@@ -492,7 +494,10 @@ export const StandaloneStickyNote: React.FC<StandaloneStickyNoteProps> = ({ item
             </div>
 
             <button
-              onClick={() => setIsAddingChecklist(true)}
+              onClick={() => {
+                setIsAddingChecklist(true);
+                setTimeout(() => stickyChecklistInputRef.current?.focus(), 40);
+              }}
               className="p-0.5 hover:bg-black/5 dark:hover:bg-white/5 rounded text-current opacity-70 hover:opacity-100 transition-opacity"
               title="Add Item"
             >
@@ -505,15 +510,17 @@ export const StandaloneStickyNote: React.FC<StandaloneStickyNoteProps> = ({ item
             {checklist.map((check) => (
               <div
                 key={check.id}
-                className="group flex items-center justify-between gap-1.5 py-0.5 text-xs hover:bg-black/5 dark:hover:bg-white/5 px-1 rounded transition-colors"
+                className="group flex items-start justify-between gap-1.5 py-1 text-xs hover:bg-black/5 dark:hover:bg-white/5 px-1 rounded transition-colors"
               >
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <Checkbox
-                    checked={check.isCompleted}
-                    onChange={() => handleToggleChecklist(check.id)}
-                  />
+                <div className="flex items-start gap-2 flex-1 min-w-0">
+                  <div className="mt-0.5 shrink-0">
+                    <Checkbox
+                      checked={check.isCompleted}
+                      onChange={() => handleToggleChecklist(check.id)}
+                    />
+                  </div>
                   <span
-                    className={`truncate text-[11px] ${
+                    className={`text-[11px] break-words whitespace-pre-wrap flex-1 leading-snug ${
                       check.isCompleted ? 'line-through opacity-50' : ''
                     }`}
                   >
@@ -523,7 +530,7 @@ export const StandaloneStickyNote: React.FC<StandaloneStickyNoteProps> = ({ item
 
                 <button
                   onClick={() => handleDeleteChecklistItem(check.id)}
-                  className="opacity-0 group-hover:opacity-100 p-0.5 hover:text-rose-500 rounded transition-opacity"
+                  className="opacity-0 group-hover:opacity-100 p-0.5 hover:text-rose-500 rounded transition-opacity shrink-0 mt-0.5"
                 >
                   <Trash2 className="w-3 h-3" />
                 </button>
@@ -533,6 +540,7 @@ export const StandaloneStickyNote: React.FC<StandaloneStickyNoteProps> = ({ item
             {isAddingChecklist && (
               <div className="flex items-center gap-1 mt-1">
                 <input
+                  ref={stickyChecklistInputRef}
                   type="text"
                   value={newChecklistText}
                   onChange={(e) => setNewChecklistText(e.target.value)}

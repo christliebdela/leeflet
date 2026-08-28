@@ -1,8 +1,20 @@
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { currentMonitor } from '@tauri-apps/api/window';
 
+let isOpeningCapture = false;
+
 export async function openQuickCaptureWindow(): Promise<void> {
+  if (isOpeningCapture) return;
+  isOpeningCapture = true;
   try {
+    const existing = await WebviewWindow.getByLabel('quick_capture');
+    if (existing) {
+      await existing.show();
+      await existing.unminimize();
+      await existing.setFocus();
+      return;
+    }
+
     const logicalWidth = 390;
     const logicalHeight = 245;
 
@@ -26,23 +38,6 @@ export async function openQuickCaptureWindow(): Promise<void> {
       // Fallback
     }
 
-    const existing = await WebviewWindow.getByLabel('quick_capture');
-    if (existing) {
-      try {
-        const { PhysicalSize, PhysicalPosition } = await import('@tauri-apps/api/dpi');
-        await existing.setSize(new PhysicalSize(physicalW, physicalH));
-        if (targetPhysicalX !== undefined && targetPhysicalY !== undefined) {
-          await existing.setPosition(new PhysicalPosition(targetPhysicalX, targetPhysicalY));
-        }
-      } catch (err) {
-        console.error('Error repositioning existing window:', err);
-      }
-      await existing.show();
-      await existing.unminimize();
-      await existing.setFocus();
-      return;
-    }
-
     const { PhysicalPosition, PhysicalSize } = await import('@tauri-apps/api/dpi');
     const win = new WebviewWindow('quick_capture', {
       url: '/?window=capture',
@@ -54,6 +49,8 @@ export async function openQuickCaptureWindow(): Promise<void> {
       transparent: true,
       alwaysOnTop: true,
       shadow: true,
+      visible: true,
+      skipTaskbar: true,
     });
 
     win.once('tauri://created', async () => {
@@ -72,6 +69,10 @@ export async function openQuickCaptureWindow(): Promise<void> {
     });
   } catch (err) {
     console.error('Failed to open quick capture window:', err);
+  } finally {
+    setTimeout(() => {
+      isOpeningCapture = false;
+    }, 200);
   }
 }
 

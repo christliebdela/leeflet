@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLeafStore } from '../store/useLeafStore';
-import { ItemType, Priority, Project } from '../types';
+import { ItemType, Priority, Project, ChecklistItem } from '../types';
 import {
   Folder,
   Check,
@@ -12,6 +12,7 @@ import {
   HelpCircle,
   FileText,
   ChevronDown,
+  X,
 } from 'lucide-react';
 import { ITEM_TYPE_CONFIG, PRIORITY_CONFIG } from '../utils/format';
 
@@ -44,15 +45,52 @@ export const QuickCaptureModal: React.FC = () => {
   );
   const [type, setType] = useState<ItemType>('task');
   const [priority, setPriority] = useState<Priority>('none');
+  const [checklist, setChecklist] = useState<{ id: string; title: string; isCompleted: boolean }[]>([]);
+  const [showChecklist, setShowChecklist] = useState(false);
+  const [newChecklistText, setNewChecklistText] = useState('');
 
   const [isTypeMenuOpen, setIsTypeMenuOpen] = useState(false);
   const [isPriorityMenuOpen, setIsPriorityMenuOpen] = useState(false);
   const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const checklistInputRef = useRef<HTMLTextAreaElement>(null);
+  const bodyScrollRef = useRef<HTMLDivElement>(null);
   const projectRef = useRef<HTMLDivElement>(null);
   const typeRef = useRef<HTMLDivElement>(null);
   const priorityRef = useRef<HTMLDivElement>(null);
+
+  const toggleChecklist = () => {
+    const next = !showChecklist;
+    setShowChecklist(next);
+    if (next) {
+      setTimeout(() => {
+        checklistInputRef.current?.focus();
+        if (bodyScrollRef.current) {
+          bodyScrollRef.current.scrollTop = bodyScrollRef.current.scrollHeight;
+        }
+      }, 50);
+    }
+  };
+
+  const handleAddChecklistStep = () => {
+    if (newChecklistText.trim()) {
+      setChecklist((prev) => [
+        ...prev,
+        { id: crypto.randomUUID(), title: newChecklistText.trim(), isCompleted: false },
+      ]);
+      setNewChecklistText('');
+      if (checklistInputRef.current) {
+        checklistInputRef.current.style.height = 'auto';
+        checklistInputRef.current.focus();
+      }
+      setTimeout(() => {
+        if (bodyScrollRef.current) {
+          bodyScrollRef.current.scrollTop = bodyScrollRef.current.scrollHeight;
+        }
+      }, 30);
+    }
+  };
 
   // Global window Escape listener
   useEffect(() => {
@@ -94,6 +132,9 @@ export const QuickCaptureModal: React.FC = () => {
       setTimeout(() => textareaRef.current?.focus(), 50);
     } else {
       setTitle('');
+      setChecklist([]);
+      setShowChecklist(false);
+      setNewChecklistText('');
     }
   }, [isQuickCaptureOpen, isInProjectView, activeProject, selectedProjectId, projects, projectId]);
 
@@ -106,15 +147,27 @@ export const QuickCaptureModal: React.FC = () => {
       ? activeProject.id
       : (projectId || (projects[0]?.id || ''));
 
+    const checklistItems: ChecklistItem[] = checklist.map((c, idx) => ({
+      id: c.id || crypto.randomUUID(),
+      itemId: '',
+      title: c.title.trim(),
+      isCompleted: false,
+      position: idx,
+    }));
+
     await createItem({
       projectId: targetProjectId,
       title: title.trim(),
       type,
       priority,
       status: 'inbox',
+      checklist: checklistItems,
     });
 
     setTitle('');
+    setChecklist([]);
+    setShowChecklist(false);
+    setNewChecklistText('');
     setQuickCaptureOpen(false);
   };
 
@@ -138,7 +191,7 @@ export const QuickCaptureModal: React.FC = () => {
       className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 select-none animate-in fade-in duration-150"
     >
       <div
-        className="w-full max-w-[390px] bg-white dark:bg-[#18181b] rounded-[12px] border border-[#e5e7eb] dark:border-[#27272a] shadow-modal relative animate-in fade-in zoom-in-95 duration-100"
+        className="w-full max-w-[390px] max-h-[340px] bg-white dark:bg-[#18181b] rounded-[12px] border border-[#e5e7eb] dark:border-[#27272a] shadow-modal relative animate-in fade-in zoom-in-95 duration-100 flex flex-col overflow-hidden"
         onKeyDown={handleKeyDown}
       >
         {/* Top Header */}
@@ -161,22 +214,98 @@ export const QuickCaptureModal: React.FC = () => {
         </div>
 
         {/* Input prompt & textarea */}
-        <div className="px-4 py-2.5">
-          <div className="text-[11px] font-semibold text-[#6b7280] dark:text-[#a1a1aa] mb-1.5">
-            What are you working on?
+        <div ref={bodyScrollRef} className="px-4 py-2.5 overflow-y-auto custom-scrollbar flex-1 flex flex-col">
+          <div className="flex items-center justify-between mb-1.5 shrink-0">
+            <span className="text-[11px] font-semibold text-[#6b7280] dark:text-[#a1a1aa]">
+              What are you working on?
+            </span>
+            <button
+              type="button"
+              onClick={toggleChecklist}
+              className={`flex items-center gap-1 text-[10.5px] font-semibold px-1.5 py-0.5 rounded transition-colors ${
+                showChecklist || checklist.length > 0
+                  ? 'text-[#111827] dark:text-white bg-[#f3f4f6] dark:bg-[#27272a]'
+                  : 'text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white'
+              }`}
+            >
+              <CheckSquare className="w-3 h-3" />
+              <span>Checklist{checklist.length > 0 ? ` (${checklist.length})` : ''}</span>
+            </button>
           </div>
           <textarea
             ref={textareaRef}
-            rows={4}
+            rows={showChecklist || checklist.length > 0 ? 2 : 4}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Add a task, idea, bug, note, or research..."
-            className="w-full bg-[#f9fafb] dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] focus:border-[#9ca3af] dark:focus:border-[#52525b] rounded-[8px] p-2.5 text-xs text-[#111827] dark:text-[#f4f4f5] placeholder-[#9ca3af] dark:placeholder-[#71717a] outline-none focus:outline-none focus:ring-0 resize-none leading-relaxed min-h-[96px]"
+            className="w-full bg-[#f9fafb] dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] focus:border-[#9ca3af] dark:focus:border-[#52525b] rounded-[8px] p-2.5 text-xs text-[#111827] dark:text-[#f4f4f5] placeholder-[#9ca3af] dark:placeholder-[#71717a] outline-none focus:outline-none focus:ring-0 resize-none leading-relaxed min-h-[64px] shrink-0"
           />
+
+          {/* Checklist Area */}
+          {(showChecklist || checklist.length > 0) && (
+            <div className="space-y-1.5 mt-2 pt-2 border-t border-[#f3f4f6] dark:border-[#27272a]">
+              {checklist.length > 0 && (
+                <div className="space-y-1.5">
+                  {checklist.map((item, index) => (
+                    <div
+                      key={item.id || index}
+                      className="group flex items-start justify-between gap-2 px-2.5 py-1.5 bg-[#f9fafb] dark:bg-[#1c1c1f] rounded-[6px] border border-[#e5e7eb] dark:border-[#27272a] text-xs w-full"
+                    >
+                      <div className="flex items-start gap-2 min-w-0 flex-1 w-full">
+                        <span className="w-3.5 h-3.5 mt-0.5 rounded border border-[#d1d5db] dark:border-[#52525b] flex items-center justify-center shrink-0" />
+                        <span className="text-xs text-[#374151] dark:text-[#d4d4d8] break-words break-all [overflow-wrap:anywhere] whitespace-normal flex-1 leading-snug">
+                          {item.title}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setChecklist(checklist.filter((_, i) => i !== index))}
+                        className="opacity-60 hover:opacity-100 p-0.5 text-[#6b7280] dark:text-[#a1a1aa] hover:text-rose-500 transition-colors shrink-0 mt-0.5"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Add checklist input */}
+              <div className="flex items-center gap-1.5">
+                <textarea
+                  ref={checklistInputRef}
+                  rows={1}
+                  value={newChecklistText}
+                  onChange={(e) => {
+                    setNewChecklistText(e.target.value);
+                    e.target.style.height = 'auto';
+                    e.target.style.height = Math.min(e.target.scrollHeight, 72) + 'px';
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleAddChecklistStep();
+                    }
+                  }}
+                  placeholder="Add step/subtask (Press Enter)..."
+                  className="flex-1 bg-[#f9fafb] dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] px-2.5 py-1.5 text-xs text-[#111827] dark:text-[#f4f4f5] placeholder-[#9ca3af] outline-none focus:border-[#9ca3af] resize-none leading-relaxed min-h-[32px] max-h-[72px] overflow-hidden"
+                />
+                {newChecklistText.trim() && (
+                  <button
+                    type="button"
+                    onClick={handleAddChecklistStep}
+                    className="px-2.5 py-1.5 bg-[#f3f4f6] dark:bg-[#27272a] hover:bg-[#e5e7eb] text-xs font-semibold rounded-[6px] text-[#374151] dark:text-[#d4d4d8] shrink-0 self-end"
+                  >
+                    Add
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Horizontal Metadata Chips & Single-Row Footer */}
-        <div className="px-4 py-2.5 bg-[#fafafa] dark:bg-[#141416] border-t border-[#f3f4f6] dark:border-[#27272a] rounded-b-[12px] flex items-center justify-between gap-1.5 text-xs flex-nowrap">
+        <div className="px-3.5 py-2.5 bg-[#fafafa] dark:bg-[#141416] border-t border-[#f3f4f6] dark:border-[#27272a] rounded-b-[12px] flex items-center justify-between gap-3 text-xs flex-nowrap">
           <div className="flex items-center gap-1.5 flex-nowrap min-w-0">
             {/* Project Chip */}
             {isInProjectView && activeProject ? (
@@ -185,7 +314,7 @@ export const QuickCaptureModal: React.FC = () => {
                 className="flex items-center gap-1.5 px-2 py-1 bg-[#f3f4f6] dark:bg-[#27272a] rounded-[6px] text-xs font-medium text-[#374151] dark:text-[#d4d4d8] border border-[#e5e7eb] dark:border-[#3f3f46] shrink-0"
               >
                 <Folder className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa] shrink-0" />
-                <span className="truncate max-w-[80px]">{activeProject.name}</span>
+                <span className="truncate max-w-[76px]">{activeProject.name}</span>
               </div>
             ) : (
               <div className="relative" ref={projectRef}>
@@ -199,7 +328,7 @@ export const QuickCaptureModal: React.FC = () => {
                   className="flex items-center gap-1.5 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] px-2 py-1 hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-colors shrink-0 text-xs font-medium text-[#374151] dark:text-[#f4f4f5]"
                 >
                   <Folder className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa] shrink-0" />
-                  <span className="truncate max-w-[80px]">{selectedProject?.name || 'No Project'}</span>
+                  <span className="truncate max-w-[76px]">{selectedProject?.name || 'No Project'}</span>
                   <ChevronDown className="w-3 h-3 opacity-60 shrink-0" />
                 </button>
 
@@ -239,7 +368,7 @@ export const QuickCaptureModal: React.FC = () => {
                   setIsProjectMenuOpen(false);
                   setIsPriorityMenuOpen(false);
                 }}
-                className="flex items-center gap-1.5 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] px-2.5 py-1 hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-colors shrink-0 text-xs font-medium text-[#374151] dark:text-[#f4f4f5]"
+                className="flex items-center gap-1.5 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] px-2 py-1 hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-colors shrink-0 text-xs font-medium text-[#374151] dark:text-[#f4f4f5]"
               >
                 <TypeIcon className="w-3.5 h-3.5 shrink-0 text-[#6b7280] dark:text-[#a1a1aa]" />
                 <span className="capitalize">{typeConfig.label}</span>
@@ -285,7 +414,7 @@ export const QuickCaptureModal: React.FC = () => {
                   setIsProjectMenuOpen(false);
                   setIsTypeMenuOpen(false);
                 }}
-                className="flex items-center gap-1.5 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] px-2.5 py-1 hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-colors shrink-0 text-xs font-medium text-[#374151] dark:text-[#f4f4f5]"
+                className="flex items-center gap-1.5 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] px-2 py-1 hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-colors shrink-0 text-xs font-medium text-[#374151] dark:text-[#f4f4f5]"
               >
                 <span className={`w-2 h-2 rounded-full shrink-0 ${priorityConfig.dotColor}`} />
                 <span className="capitalize">{priorityConfig.label}</span>
@@ -326,7 +455,7 @@ export const QuickCaptureModal: React.FC = () => {
           <button
             onClick={handleSave}
             disabled={!title.trim()}
-            className="px-4 py-1.5 bg-[#111827] dark:bg-white hover:bg-[#1f2937] dark:hover:bg-[#e4e4e7] disabled:opacity-50 text-white dark:text-[#111827] rounded-[6px] text-xs font-semibold transition-all shadow-subtle active:scale-[0.98] shrink-0"
+            className="px-3.5 py-1 bg-[#111827] dark:bg-white hover:bg-[#1f2937] dark:hover:bg-[#e4e4e7] disabled:opacity-50 text-white dark:text-[#111827] rounded-[6px] text-xs font-semibold transition-all shadow-subtle active:scale-[0.98] shrink-0 ml-auto"
           >
             Save
           </button>

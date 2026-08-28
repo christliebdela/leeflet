@@ -37,8 +37,11 @@ export const App: React.FC = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const isInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes((document.activeElement?.tagName || ''));
 
-      // 1. Global shortcut Ctrl+Shift+N: Floating desktop panel
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'N' || e.key === 'n' || e.key === 'L' || e.key === 'l')) {
+      // 1. Quick capture shortcut (Alt+L or Alt+N)
+      if (
+        (e.altKey && (e.key === 'l' || e.key === 'L' || e.key === 'n' || e.key === 'N')) ||
+        ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'l' || e.key === 'L' || e.key === 'n' || e.key === 'N'))
+      ) {
         e.preventDefault();
         openQuickCaptureWindow();
         return;
@@ -116,23 +119,9 @@ export const App: React.FC = () => {
       }
     };
 
-    let unlistenTray: (() => void) | undefined;
-    const initTrayEvent = async () => {
-      try {
-        const { listen } = await import('@tauri-apps/api/event');
-        unlistenTray = await listen('open-quick-capture', () => {
-          openQuickCaptureWindow();
-        });
-      } catch {
-        // Ignore
-      }
-    };
-    initTrayEvent();
-
     window.addEventListener('keydown', handleKeyDown);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
-      if (unlistenTray) unlistenTray();
     };
   }, [
     projects,

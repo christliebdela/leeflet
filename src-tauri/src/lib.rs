@@ -54,20 +54,18 @@ pub fn run() {
                             let _ = window.show();
                             let _ = window.unminimize();
                             let _ = window.set_focus();
-                        } else {
-                            let _ = app.emit("open-quick-capture", ());
                         }
                     }
                 })
                 .build(),
         )
         .setup(|app| {
-            if let Ok(shortcut) = "Ctrl+Shift+N".parse::<Shortcut>() {
+            if let Ok(shortcut) = "Alt+L".parse::<Shortcut>() {
                 let _ = app.global_shortcut().register(shortcut);
             }
 
             let open_item = MenuItem::with_id(app, "open", "Open leaf", true, None::<&str>)?;
-            let capture_item = MenuItem::with_id(app, "capture", "Quick Capture (Ctrl+Shift+N)", true, None::<&str>)?;
+            let capture_item = MenuItem::with_id(app, "capture", "Quick Capture (Alt+L)", true, None::<&str>)?;
             let quit_item = MenuItem::with_id(app, "quit", "Quit leaf", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&open_item, &capture_item, &quit_item])?;
 
@@ -90,8 +88,6 @@ pub fn run() {
                                 let _ = window.show();
                                 let _ = window.unminimize();
                                 let _ = window.set_focus();
-                            } else {
-                                let _ = app.emit("open-quick-capture", ());
                             }
                         }
                         "quit" => {

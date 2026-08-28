@@ -147,7 +147,7 @@ export const OnboardingModal: React.FC = () => {
                 <div className="text-[11.5px] text-[#374151] dark:text-[#d4d4d8] flex items-center justify-between w-full">
                   <span>Quick Capture anywhere</span>
                   <kbd className="px-1 py-0.5 rounded bg-white dark:bg-[#27272a] border border-[#e5e7eb] dark:border-[#3f3f46] font-mono text-[9px] font-semibold text-[#6b7280] dark:text-[#a1a1aa]">
-                    Ctrl+Shift+N
+                    Alt+L
                   </kbd>
                 </div>
               </div>

@@ -629,15 +629,15 @@ export const ItemDetailPane: React.FC = () => {
               {checklist.map((item: ChecklistItem) => (
                 <div
                   key={item.id}
-                  className="group flex items-center justify-between p-1.5 hover:bg-[#f9fafb] dark:hover:bg-[#1f1f23] rounded-[4px] text-xs transition-colors"
+                  className="group flex items-start justify-between p-1.5 hover:bg-[#f9fafb] dark:hover:bg-[#1f1f23] rounded-[4px] text-xs transition-colors gap-2"
                 >
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <div className="flex items-start gap-2 flex-1 min-w-0">
                     <Checkbox
                       checked={item.isCompleted}
                       onChange={() => toggleChecklist(item.id)}
                     >
                       <span
-                        className={`truncate ${
+                        className={`text-xs break-words break-all [overflow-wrap:anywhere] whitespace-normal flex-1 leading-snug ${
                           item.isCompleted
                             ? 'line-through text-[#9ca3af] dark:text-[#71717a]'
                             : 'text-[#374151] dark:text-[#e4e4e7]'
@@ -649,7 +649,7 @@ export const ItemDetailPane: React.FC = () => {
                   </div>
                   <button
                     onClick={() => removeChecklistItem(item.id)}
-                    className="opacity-0 group-hover:opacity-100 p-0.5 text-[#9ca3af] hover:text-rose-600 transition-opacity shrink-0"
+                    className="opacity-0 group-hover:opacity-100 p-0.5 text-[#9ca3af] hover:text-rose-600 transition-opacity shrink-0 mt-0.5"
                   >
                     <Trash2 className="w-3 h-3" />
                   </button>
