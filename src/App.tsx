@@ -71,7 +71,7 @@ export const App: React.FC = () => {
         if (e.key === 'z' || e.key === 'Z') {
           e.preventDefault();
           setStandby(false);
-        } else if (standbyJokesEnabled && (e.key === 'ArrowRight' || e.key === 'ArrowDown')) {
+        } else if (standbyJokesEnabled && e.key === '>') {
           e.preventDefault();
           // Advance: if at end of history fetch a new one, else step forward
           setJokeHistory((prev) => {
@@ -86,7 +86,7 @@ export const App: React.FC = () => {
             setJokeHistoryIndex((i) => i + 1);
             return prev;
           });
-        } else if (standbyJokesEnabled && (e.key === 'ArrowLeft' || e.key === 'ArrowUp')) {
+        } else if (standbyJokesEnabled && e.key === '<') {
           e.preventDefault();
           setJokeHistoryIndex((i) => Math.max(0, i - 1));
         }
