@@ -94,11 +94,7 @@ export async function fetchRandomDevJoke(): Promise<string> {
 
       if (text) {
         const cleanJoke = text.replace(/\r?\n|\r/g, ' ');
-        if (
-          cleanJoke.length <= 95 &&
-          !seen.has(cleanJoke) &&
-          isJokeAcceptable(cleanJoke)
-        ) {
+        if (!seen.has(cleanJoke) && isJokeAcceptable(cleanJoke)) {
           markJokeSeen(cleanJoke);
           return cleanJoke;
         }
