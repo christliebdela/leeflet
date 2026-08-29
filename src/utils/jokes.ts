@@ -1,4 +1,4 @@
-// Crisp, punchy developer one-liners (offline fallback pool)
+// Short, punchy offline fallback pool (all ≤ 80 chars — safe for mini mode)
 const PUNCHY_DEV_JOKES: string[] = [
   "it works on my machine.",
   "// todo: fix this before production",
@@ -19,21 +19,22 @@ const PUNCHY_DEV_JOKES: string[] = [
   "sudo make me a coffee.",
   "keyboard not found. press F1 to continue.",
   "there are 10 types of people: binary lovers & the rest.",
-  "99 bugs in the code... patch 1 down, 127 bugs in the code.",
-  "a QA engineer walks into a bar and orders 0 beers, 999999 beers, -1 beers.",
+  "99 bugs in the code... patch 1 down, 127 more to go.",
   "there is no cloud, it's just someone else's computer.",
   "have you tried turning it off and on again?",
-  "my code works. I have no idea why. sending a PR.",
   "git blame: it was definitely someone else.",
   "you can't break production if there is no production.",
   "merge conflict: the original sin of collaboration.",
   "works in dev. ships. panics in prod.",
   "the best code is no code.",
   "sleep is just a garbage collector for your brain.",
+  "my code works. I have no idea why. sending a PR.",
+  "a watched build never compiles.",
 ];
 
 const SEEN_JOKES_KEY = 'leaf_seen_jokes';
 const SEEN_JOKES_MAX = 50;
+const MINI_MODE_MAX_CHARS = 80;
 
 /** Block list for jokes that slip through API safe filters */
 const CONTENT_BLOCK_PATTERNS = [
@@ -61,51 +62,95 @@ function markJokeSeen(joke: string): void {
   } catch {}
 }
 
-function pickFreshOfflineJoke(): string | null {
+function pickFreshOfflineJoke(miniMode: boolean): string | null {
   const seen = new Set(getSeenJokes());
-  const fresh = PUNCHY_DEV_JOKES.filter((j) => !seen.has(j));
-  const pool = fresh.length > 0 ? fresh : PUNCHY_DEV_JOKES;
-  const joke = pool[Math.floor(Math.random() * pool.length)];
-  return joke ?? null;
+  const pool = miniMode
+    ? PUNCHY_DEV_JOKES.filter((j) => j.length <= MINI_MODE_MAX_CHARS)
+    : PUNCHY_DEV_JOKES;
+  const fresh = pool.filter((j) => !seen.has(j));
+  const source = fresh.length > 0 ? fresh : pool;
+  return source[Math.floor(Math.random() * source.length)] ?? null;
 }
 
-export async function fetchRandomDevJoke(): Promise<string> {
+// ─── API fetchers ────────────────────────────────────────────────────────────
+
+async function fetchFromJokeAPI(signal: AbortSignal): Promise<string | null> {
+  const res = await fetch(
+    'https://v2.jokeapi.dev/joke/Programming?safe-mode&blacklistFlags=nsfw,religious,political,racist,sexist,explicit',
+    { signal }
+  );
+  if (!res.ok) return null;
+  const data = await res.json();
+  if (data.type === 'single' && data.joke) return data.joke.trim();
+  if (data.type === 'twopart' && data.setup && data.delivery)
+    return `${data.setup.trim()} — ${data.delivery.trim()}`;
+  return null;
+}
+
+async function fetchFromOfficialJokeAPI(signal: AbortSignal): Promise<string | null> {
+  // Returns an array with one joke: { setup, punchline }
+  const res = await fetch(
+    'https://official-joke-api.appspot.com/jokes/programming/random',
+    { signal }
+  );
+  if (!res.ok) return null;
+  const data = await res.json();
+  const item = Array.isArray(data) ? data[0] : data;
+  if (item?.setup && item?.punchline) return `${item.setup.trim()} — ${item.punchline.trim()}`;
+  return null;
+}
+
+async function fetchFromChuckNorrisAPI(signal: AbortSignal): Promise<string | null> {
+  const res = await fetch('https://api.chucknorris.io/jokes/random?category=dev', { signal });
+  if (!res.ok) return null;
+  const data = await res.json();
+  if (data?.value) return data.value.trim();
+  return null;
+}
+
+const API_FETCHERS = [fetchFromJokeAPI, fetchFromOfficialJokeAPI, fetchFromChuckNorrisAPI];
+
+// ─── Main export ─────────────────────────────────────────────────────────────
+
+/**
+ * Fetches a fresh dev joke.
+ * @param miniMode - When true, only short jokes (≤ 80 chars) are returned.
+ */
+export async function fetchRandomDevJoke(miniMode = false): Promise<string> {
   const seen = new Set(getSeenJokes());
 
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2500);
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
 
-    // safe=true: JokeAPI's safe tier — excludes offensive/momma jokes
-    const res = await fetch(
-      'https://v2.jokeapi.dev/joke/Programming?safe-mode&blacklistFlags=nsfw,religious,political,racist,sexist,explicit',
-      { signal: controller.signal }
-    );
-    clearTimeout(timeoutId);
+    // Shuffle APIs so we don't always hit the same one first
+    const shuffled = [...API_FETCHERS].sort(() => Math.random() - 0.5);
 
-    if (res.ok) {
-      const data = await res.json();
-      let text = '';
-      if (data.type === 'single' && data.joke) {
-        text = data.joke.trim();
-      } else if (data.type === 'twopart' && data.setup && data.delivery) {
-        text = `${data.setup.trim()} — ${data.delivery.trim()}`;
-      }
+    for (const fetcher of shuffled) {
+      try {
+        const raw = await fetcher(controller.signal);
+        if (!raw) continue;
 
-      if (text) {
-        const cleanJoke = text.replace(/\r?\n|\r/g, ' ');
-        if (!seen.has(cleanJoke) && isJokeAcceptable(cleanJoke)) {
+        const cleanJoke = raw.replace(/\r?\n|\r/g, ' ');
+        const lengthOk = !miniMode || cleanJoke.length <= MINI_MODE_MAX_CHARS;
+
+        if (lengthOk && !seen.has(cleanJoke) && isJokeAcceptable(cleanJoke)) {
+          clearTimeout(timeoutId);
           markJokeSeen(cleanJoke);
           return cleanJoke;
         }
+      } catch {
+        // This specific fetcher failed — try next
       }
     }
+
+    clearTimeout(timeoutId);
   } catch {
-    // Offline or timed out — fall through to offline pool
+    // AbortController or global failure — fall through
   }
 
-  // Offline: pick a fresh unseen one-liner
-  const offlineJoke = pickFreshOfflineJoke();
+  // Offline fallback
+  const offlineJoke = pickFreshOfflineJoke(miniMode);
   if (offlineJoke) {
     markJokeSeen(offlineJoke);
     return offlineJoke;

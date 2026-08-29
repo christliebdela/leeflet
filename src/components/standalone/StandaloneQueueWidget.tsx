@@ -130,7 +130,7 @@ export const StandaloneQueueWidget: React.FC = () => {
     const jokesEnabled = localStorage.getItem('leaf_standby_jokes_enabled') === 'true';
     if (isStandby && jokesEnabled) {
       let isCurrent = true;
-      fetchRandomDevJoke().then((joke) => {
+      fetchRandomDevJoke(true).then((joke) => {
         if (isCurrent) setStandbyJoke(joke);
       });
       return () => {
