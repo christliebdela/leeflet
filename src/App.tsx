@@ -34,20 +34,25 @@ export const App: React.FC = () => {
     setWorkspaceModalOpen,
   } = useLeafStore();
 
-  const [standbyJoke, setStandbyJoke] = React.useState<string | null>(null);
+  // Joke navigation state (history so ← goes back, → fetches next)
+  const [jokeHistory, setJokeHistory] = React.useState<string[]>([]);
+  const [jokeHistoryIndex, setJokeHistoryIndex] = React.useState(0);
+  const standbyJoke = jokeHistory[jokeHistoryIndex] ?? null;
 
-  // Fetch a fresh joke whenever entering Standby if enabled
+  // Load first joke when entering Standby
   useEffect(() => {
     if (isStandby && standbyJokesEnabled) {
       let isCurrent = true;
       fetchRandomDevJoke().then((joke) => {
-        if (isCurrent) setStandbyJoke(joke);
+        if (isCurrent) {
+          setJokeHistory([joke]);
+          setJokeHistoryIndex(0);
+        }
       });
-      return () => {
-        isCurrent = false;
-      };
+      return () => { isCurrent = false; };
     } else {
-      setStandbyJoke(null);
+      setJokeHistory([]);
+      setJokeHistoryIndex(0);
     }
   }, [isStandby, standbyJokesEnabled]);
 
@@ -61,11 +66,29 @@ export const App: React.FC = () => {
   // Global & In-App Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // If on standby, resume ONLY on Z key
+      // Standby navigation
       if (isStandby) {
         if (e.key === 'z' || e.key === 'Z') {
           e.preventDefault();
           setStandby(false);
+        } else if (standbyJokesEnabled && (e.key === 'ArrowRight' || e.key === 'ArrowDown')) {
+          e.preventDefault();
+          // Advance: if at end of history fetch a new one, else step forward
+          setJokeHistory((prev) => {
+            const atEnd = jokeHistoryIndex >= prev.length - 1;
+            if (atEnd) {
+              fetchRandomDevJoke().then((joke) => {
+                setJokeHistory((h) => [...h, joke]);
+                setJokeHistoryIndex((i) => i + 1);
+              });
+              return prev; // updated async
+            }
+            setJokeHistoryIndex((i) => i + 1);
+            return prev;
+          });
+        } else if (standbyJokesEnabled && (e.key === 'ArrowLeft' || e.key === 'ArrowUp')) {
+          e.preventDefault();
+          setJokeHistoryIndex((i) => Math.max(0, i - 1));
         }
         return;
       }

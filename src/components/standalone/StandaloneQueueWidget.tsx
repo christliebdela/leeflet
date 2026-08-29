@@ -120,24 +120,28 @@ export const StandaloneQueueWidget: React.FC = () => {
   const [colorPreset, setColorPreset] = useState<ColorPreset>(() => (localStorage.getItem('leaf_queue_widget_color') as ColorPreset) || 'theme');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isStandby, setIsStandby] = useState(false);
-  const [standbyJoke, setStandbyJoke] = useState<string | null>(null);
+  const [jokeHistory, setJokeHistory] = useState<string[]>([]);
+  const [jokeHistoryIndex, setJokeHistoryIndex] = useState(0);
+  const standbyJoke = jokeHistory[jokeHistoryIndex] ?? null;
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const [newChecklistText, setNewChecklistText] = useState<Record<string, string>>({});
   const inlineInputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch joke on standby if enabled
+  // Load first joke when entering Standby, reset history on exit
   useEffect(() => {
     const jokesEnabled = localStorage.getItem('leaf_standby_jokes_enabled') === 'true';
     if (isStandby && jokesEnabled) {
       let isCurrent = true;
       fetchRandomDevJoke(true).then((joke) => {
-        if (isCurrent) setStandbyJoke(joke);
+        if (isCurrent) {
+          setJokeHistory([joke]);
+          setJokeHistoryIndex(0);
+        }
       });
-      return () => {
-        isCurrent = false;
-      };
+      return () => { isCurrent = false; };
     } else {
-      setStandbyJoke(null);
+      setJokeHistory([]);
+      setJokeHistoryIndex(0);
     }
   }, [isStandby]);
 
@@ -253,11 +257,31 @@ export const StandaloneQueueWidget: React.FC = () => {
   // Keyboard shortcuts (M to restore Full App, P for Pin, Z for Standby, Esc to exit)
   useEffect(() => {
     const handleKeyDown = async (e: KeyboardEvent) => {
-      // If in Standby, resume ONLY on Z key
+      // Standby mode navigation
       if (isStandby) {
         if (e.key === 'z' || e.key === 'Z') {
           e.preventDefault();
           setIsStandby(false);
+        } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+          e.preventDefault();
+          const jokesEnabled = localStorage.getItem('leaf_standby_jokes_enabled') === 'true';
+          if (jokesEnabled) {
+            setJokeHistory((prev) => {
+              const atEnd = jokeHistoryIndex >= prev.length - 1;
+              if (atEnd) {
+                fetchRandomDevJoke(true).then((joke) => {
+                  setJokeHistory((h) => [...h, joke]);
+                  setJokeHistoryIndex((i) => i + 1);
+                });
+                return prev;
+              }
+              setJokeHistoryIndex((i) => i + 1);
+              return prev;
+            });
+          }
+        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          setJokeHistoryIndex((i) => Math.max(0, i - 1));
         }
         return;
       }
@@ -299,7 +323,7 @@ export const StandaloneQueueWidget: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [addingSection, isAlwaysOnTop, isStandby]);
+  }, [addingSection, isAlwaysOnTop, isStandby, jokeHistoryIndex]);
 
   // Remember window position on drag / move
   useEffect(() => {
