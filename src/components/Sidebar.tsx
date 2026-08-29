@@ -18,13 +18,13 @@ import {
   Settings,
   Trash2,
   SquarePen,
-  Pin,
   X,
   Sun,
   Moon,
+  Minimize2,
 } from 'lucide-react';
 import { ViewMode, ItemType, Priority, Project, Item } from '../types';
-import { openQueueWidgetWindow } from '../utils/window';
+import { enterMiniMode } from '../utils/window';
 
 export const Sidebar: React.FC = () => {
   const {
@@ -151,12 +151,11 @@ export const Sidebar: React.FC = () => {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    openQueueWidgetWindow();
+                    enterMiniMode();
                   }}
-                  title="Open as Floating Desktop Widget"
                   className="hidden group-hover:flex items-center justify-center p-0.5 text-[#9ca3af] hover:text-[#111827] dark:hover:text-white rounded transition-colors"
                 >
-                  <Pin className="w-3 h-3" />
+                  <Minimize2 className="w-3 h-3" />
                 </button>
                 {queueCount > 0 && (
                   <span className="text-[11px] text-[#6b7280] dark:text-[#71717a] font-normal">
@@ -202,7 +201,6 @@ export const Sidebar: React.FC = () => {
               </div>
               <button
                 onClick={() => setProjectModalOpen(true)}
-                title="Add Project"
                 className="hover:text-[#111827] dark:hover:text-white p-0.5 rounded-[4px] hover:bg-[#ebecee] dark:hover:bg-[#27272a]"
               >
                 <Plus className="w-3 h-3 text-[#6b7280] dark:text-[#a1a1aa]" />
@@ -250,7 +248,6 @@ export const Sidebar: React.FC = () => {
                               e.stopPropagation();
                               setProjectModalOpen(true, project);
                             }}
-                            title={`Edit ${project.name}`}
                             className="hidden group-hover:flex items-center justify-center p-0.5 text-[#9ca3af] hover:text-[#111827] dark:hover:text-white rounded transition-colors"
                           >
                             <SquarePen className="w-3 h-3" />
@@ -260,7 +257,6 @@ export const Sidebar: React.FC = () => {
                               e.stopPropagation();
                               setProjectToDelete(project);
                             }}
-                            title={`Delete ${project.name}`}
                             className="hidden group-hover:flex items-center justify-center p-0.5 text-[#9ca3af] hover:text-rose-600 dark:hover:text-rose-400 rounded transition-colors"
                           >
                             <Trash2 className="w-3 h-3" />
@@ -390,6 +386,7 @@ export const Sidebar: React.FC = () => {
 
         {/* Bottom Footer Controls */}
         <div className="p-3 border-t border-[#e5e7eb] dark:border-[#27272a] space-y-1">
+          {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
             className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white transition-colors text-xs font-medium"
@@ -407,6 +404,21 @@ export const Sidebar: React.FC = () => {
             </span>
           </button>
 
+          {/* Mini Mode */}
+          <button
+            onClick={enterMiniMode}
+            className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white transition-colors text-xs font-medium"
+          >
+            <div className="flex items-center gap-2">
+              <Minimize2 className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
+              <span>Mini Mode</span>
+            </div>
+            <kbd className="w-4 h-4 flex items-center justify-center rounded-[3px] bg-[#ebecee] dark:bg-[#27272a] border border-[#e5e7eb] dark:border-[#3f3f46] font-mono text-[9px] font-semibold text-[#6b7280] dark:text-[#a1a1aa] shrink-0 leading-none">
+              M
+            </kbd>
+          </button>
+
+          {/* Settings */}
           <button
             onClick={() => setWorkspaceModalOpen(!isWorkspaceModalOpen)}
             className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] transition-colors text-xs font-medium ${
@@ -419,7 +431,7 @@ export const Sidebar: React.FC = () => {
               <Settings className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
               <span>Settings</span>
             </div>
-            <kbd className="px-1.5 py-0.5 rounded bg-[#ebecee] dark:bg-[#27272a] border border-[#e5e7eb] dark:border-[#3f3f46] font-mono text-[9.5px] font-semibold text-[#6b7280] dark:text-[#a1a1aa]">
+            <kbd className="w-4 h-4 flex items-center justify-center rounded-[3px] bg-[#ebecee] dark:bg-[#27272a] border border-[#e5e7eb] dark:border-[#3f3f46] font-mono text-[9px] font-semibold text-[#6b7280] dark:text-[#a1a1aa] shrink-0 leading-none">
               S
             </kbd>
           </button>

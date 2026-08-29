@@ -1,9 +1,18 @@
 import React, { useState, useRef } from 'react';
 import { useLeafStore } from '../store/useLeafStore';
 import { Item, Project, Priority, ItemType } from '../types';
-import { ListTodo, Plus, Circle, CheckCircle2, X } from 'lucide-react';
+import { Plus, Circle, CheckCircle2, X, Sparkles } from 'lucide-react';
 
-type SectionKey = 'critical' | 'high' | 'medium' | 'low' | 'ideas';
+type SectionKey = 'critical' | 'high' | 'medium' | 'low' | 'ideas' | 'inbox';
+
+const SECTION_EMPTY_MESSAGES: Record<SectionKey, string> = {
+  critical: 'No critical items pending',
+  high: 'No high priority items pending',
+  medium: 'Medium queue is clear',
+  low: 'Low queue is clear',
+  ideas: 'No active ideas in queue',
+  inbox: 'Inbox queue is clear',
+};
 
 export const MyQueueView: React.FC = () => {
   const { items, projects, selectedItemId, setSelectedItemId, filterOptions, setQuickCaptureOpen, updateItem, createItem, isWorkspaceModalOpen } = useLeafStore();
@@ -23,6 +32,19 @@ export const MyQueueView: React.FC = () => {
     return true;
   });
 
+  const criticalItems = queueItems.filter((i: Item) => i.priority === 'critical');
+  const highItems = queueItems.filter((i: Item) => i.priority === 'high');
+  const mediumItems = queueItems.filter((i: Item) => i.priority === 'medium');
+  const lowItems = queueItems.filter((i: Item) => i.priority === 'low');
+  const ideasItems = queueItems.filter((i: Item) => i.type === 'idea' && i.priority !== 'critical' && i.priority !== 'high');
+  const inboxItems = queueItems.filter((i: Item) => i.priority === 'none' && i.type !== 'idea');
+
+  const getProjectName = (projectId?: string) => {
+    if (!projectId) return '';
+    const proj = projects.find((p: Project) => p.id === projectId);
+    return proj ? proj.name : '';
+  };
+
   const handleStartAdding = (sectionKey: SectionKey) => {
     setAddingSection(sectionKey);
     setNewTitle('');
@@ -37,18 +59,17 @@ export const MyQueueView: React.FC = () => {
     let type: ItemType = 'task';
 
     if (sectionKey === 'critical') priority = 'critical';
-    else if (sectionKey === 'high') priority = 'high';
-    else if (sectionKey === 'medium') priority = 'medium';
-    else if (sectionKey === 'low') priority = 'low';
-    else if (sectionKey === 'ideas') {
-      priority = 'none';
+    if (sectionKey === 'high') priority = 'high';
+    if (sectionKey === 'medium') priority = 'medium';
+    if (sectionKey === 'low') priority = 'low';
+    if (sectionKey === 'ideas') {
       type = 'idea';
+      priority = 'none';
     }
 
-    const defaultProjectId = projects[0]?.id || '';
-
+    const defaultProj = projects[0]?.id || '';
     await createItem({
-      projectId: defaultProjectId,
+      projectId: defaultProj,
       title,
       type,
       priority,
@@ -59,43 +80,21 @@ export const MyQueueView: React.FC = () => {
     inlineInputRef.current?.focus();
   };
 
-  const sortQueueList = (list: Item[]) => {
-    return [...list].sort((a, b) => {
-      const aDone = a.status === 'done';
-      const bDone = b.status === 'done';
-      if (aDone !== bDone) return aDone ? 1 : -1;
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    });
-  };
-
-  const criticalItems = sortQueueList(queueItems.filter((i: Item) => i.priority === 'critical'));
-  const highItems = sortQueueList(queueItems.filter((i: Item) => i.priority === 'high'));
-  const mediumItems = sortQueueList(queueItems.filter((i: Item) => i.priority === 'medium'));
-  const lowItems = sortQueueList(queueItems.filter((i: Item) => i.priority === 'low'));
-  const ideasItems = sortQueueList(
-    queueItems.filter((i: Item) => i.type === 'idea' && i.priority !== 'critical' && i.priority !== 'high')
-  );
-
-  const getProjectName = (projectId: string) => {
-    return projects.find((p: Project) => p.id === projectId)?.name || '';
-  };
-
-  const handleToggleStatus = (e: React.MouseEvent, item: Item) => {
+  const handleToggleStatus = async (e: React.MouseEvent, item: Item) => {
     e.stopPropagation();
-    updateItem({
-      ...item,
-      status: item.status === 'done' ? 'inbox' : 'done',
-    });
+    const nextStatus = item.status === 'done' ? 'inbox' : 'done';
+    await updateItem({ ...item, status: nextStatus });
   };
 
   const renderSection = (title: string, sectionKey: SectionKey, list: Item[], dotColor: string) => {
-    const activeCount = list.filter((i) => i.status !== 'done').length;
+    const activeCount = list.filter((i: Item) => i.status !== 'done').length;
     const isAdding = addingSection === sectionKey;
 
     return (
-      <div className="bg-white dark:bg-[#18181b] rounded-[6px] border border-[#e5e7eb] dark:border-[#27272a] shadow-card p-4 space-y-2.5">
-        <div className="flex items-center justify-between pb-1 border-b border-[#f3f4f6] dark:border-[#27272a]">
-          <h2 className="text-xs font-bold text-[#111827] dark:text-[#f4f4f5] tracking-tight">
+      <div className="space-y-1">
+        {/* Section Header */}
+        <div className="flex items-center justify-between py-1 px-1 border-b border-[#f3f4f6] dark:border-[#27272a]">
+          <h2 className="text-xs font-semibold text-[#111827] dark:text-[#f4f4f5]">
             {title}
           </h2>
           <div className="flex items-center gap-1.5">
@@ -105,7 +104,6 @@ export const MyQueueView: React.FC = () => {
             <button
               onClick={() => handleStartAdding(sectionKey)}
               className="p-1 hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] rounded text-[#9ca3af] hover:text-[#111827] dark:hover:text-white transition-colors"
-              title={`Add item to ${title}`}
             >
               <Plus className="w-3 h-3" />
             </button>
@@ -127,13 +125,13 @@ export const MyQueueView: React.FC = () => {
                   setNewTitle('');
                 }
               }}
-              placeholder={`Add item to ${title}...`}
-              className="flex-1 bg-transparent px-2 py-1 text-xs text-[#111827] dark:text-[#f4f4f5] placeholder-[#9ca3af] outline-none"
+              placeholder={`Add to ${title}...`}
+              className="flex-1 bg-transparent text-xs text-[#111827] dark:text-[#f4f4f5] placeholder-[#9ca3af] dark:placeholder-[#71717a] outline-none"
             />
             <button
               type="button"
               onClick={() => handleAddItem(sectionKey)}
-              className="px-2 py-1 bg-[#111827] dark:bg-white text-white dark:text-[#111827] hover:bg-[#1f2937] dark:hover:bg-[#e4e4e7] rounded text-xs font-semibold"
+              className="px-2.5 py-1 bg-[#f3f4f6] dark:bg-[#27272a] hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] text-[#374151] dark:text-[#d4d4d8] border border-[#e5e7eb] dark:border-[#3f3f46] rounded text-xs font-semibold transition-colors"
             >
               Add
             </button>
@@ -151,20 +149,19 @@ export const MyQueueView: React.FC = () => {
         )}
 
         {list.length === 0 && !isAdding ? (
-          <div className="text-[11px] text-[#9ca3af] dark:text-[#71717a] py-2 italic">
-            No items in this queue
+          <div className="text-[11px] text-[#9ca3af] dark:text-[#71717a] py-2 italic px-1">
+            {SECTION_EMPTY_MESSAGES[sectionKey]}
           </div>
         ) : (
-          <div className="space-y-1">
+          <div className="space-y-0.5">
             {list.map((item: Item) => {
               const isDone = item.status === 'done';
 
               return (
                 <div
                   key={item.id}
-                  data-item-card="true"
                   onClick={() => setSelectedItemId(item.id)}
-                  className={`group flex items-center justify-between p-2 rounded-[4px] hover:bg-[#f9fafb] dark:hover:bg-[#27272a] border border-transparent hover:border-[#e5e7eb] dark:hover:border-[#3f3f46] cursor-pointer transition-colors ${
+                  className={`group flex items-center justify-between p-2 rounded-[4px] hover:bg-[#f9fafb] dark:hover:bg-[#27272a] cursor-pointer ${
                     isDone ? 'opacity-50' : ''
                   }`}
                 >
@@ -210,22 +207,22 @@ export const MyQueueView: React.FC = () => {
   if (queueItems.length === 0 && !addingSection) {
     return (
       <div className={`flex-1 h-full overflow-y-auto ${isPaneOpen ? 'pl-3 pr-2 py-3' : 'p-3'} flex flex-col custom-scrollbar`}>
-        <div className="flex-1 min-h-[360px] w-full flex flex-col items-center justify-center text-center p-6 border border-dashed border-[#e5e7eb] dark:border-[#27272a] rounded-[6px]">
-          <div className="w-10 h-10 rounded-full bg-[#f3f4f6] dark:bg-[#27272a] flex items-center justify-center mb-2.5">
-            <ListTodo className="w-5 h-5 text-[#9ca3af] dark:text-[#71717a]" />
+        <div className="flex-1 min-h-[360px] w-full flex flex-col items-center justify-center text-center p-8 border border-dashed border-[#e5e7eb] dark:border-[#27272a] rounded-[10px] bg-gradient-to-b from-transparent to-[#fafafa]/60 dark:to-[#18181b]/30">
+          <div className="w-12 h-12 rounded-2xl bg-white dark:bg-[#27272a] border border-[#e5e7eb] dark:border-[#3f3f46] shadow-xs flex items-center justify-center mb-3 transition-transform hover:scale-105">
+            <Sparkles className="w-6 h-6 text-emerald-500" />
           </div>
-          <h3 className="text-xs font-semibold text-[#111827] dark:text-[#f4f4f5]">
-            Queue is clear
+          <h3 className="text-sm font-semibold text-[#111827] dark:text-[#f4f4f5] tracking-tight">
+            Queue Zero — all caught up
           </h3>
-          <p className="text-[11px] text-[#6b7280] dark:text-[#a1a1aa] max-w-xs mt-1">
-            No active priority items in your queue.
+          <p className="text-xs text-[#6b7280] dark:text-[#a1a1aa] max-w-sm mt-1.5 leading-relaxed">
+            Your active queue is completely clear. Capture or queue up your next task whenever ready.
           </p>
           <button
             onClick={() => setQuickCaptureOpen(true)}
-            className="mt-3 flex items-center gap-1.5 px-3 py-1.5 bg-[#111827] dark:bg-white text-white dark:text-[#111827] rounded-[6px] text-xs font-medium hover:bg-[#1f2937] dark:hover:bg-[#e4e4e7] transition-all shadow-subtle"
+            className="mt-4 flex items-center gap-1.5 px-3.5 py-1.5 bg-[#111827] dark:bg-white text-white dark:text-[#111827] rounded-[6px] text-xs font-semibold hover:bg-[#1f2937] dark:hover:bg-[#e4e4e7] transition-all shadow-subtle active:scale-95"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>Capture item</span>
+            <span>Add to Queue (C)</span>
           </button>
         </div>
       </div>
@@ -234,13 +231,13 @@ export const MyQueueView: React.FC = () => {
 
   return (
     <div className={`flex-1 overflow-y-auto ${isPaneOpen ? 'pl-3 pr-2 py-3' : 'p-3'} space-y-3 select-none custom-scrollbar`}>
-      {/* Single-Column Stack of Queues (One on a row) */}
       <div className="flex flex-col gap-3">
         {renderSection('Critical', 'critical', criticalItems, 'bg-rose-500')}
         {renderSection('High', 'high', highItems, 'bg-orange-500')}
         {renderSection('Medium', 'medium', mediumItems, 'bg-amber-500')}
         {renderSection('Low', 'low', lowItems, 'bg-blue-500')}
         {renderSection('Ideas', 'ideas', ideasItems, 'bg-violet-500')}
+        {renderSection('Inbox / Tasks', 'inbox', inboxItems, 'bg-zinc-400')}
       </div>
     </div>
   );

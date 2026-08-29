@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useLeafStore } from '../store/useLeafStore';
 import {
   X,
-  ExternalLink,
+  // ExternalLink, (commented out - keeping single mini mode)
   Heading,
   Bold,
   Italic,
@@ -26,6 +26,8 @@ import {
   Folder,
   ChevronDown,
   Save,
+  Undo2,
+  Redo2,
 } from 'lucide-react';
 import { Item, ItemType, Priority, Status, ChecklistItem, Attachment } from '../types';
 import {
@@ -36,7 +38,8 @@ import {
   STATUS_CONFIG,
 } from '../utils/format';
 import { Checkbox } from './ui/Checkbox';
-import { openStickyNoteWindow } from '../utils/window';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+// import { openStickyNoteWindow } from '../utils/window';
 import { markdownToHtml, htmlToMarkdown, autoLinkHtml } from '../utils/markdown';
 
 const TYPE_ICONS: Record<ItemType, React.FC<{ className?: string }>> = {
@@ -89,12 +92,89 @@ export const ItemDetailPane: React.FC = () => {
   const [newProjectName, setNewProjectName] = useState('');
 
   const paneRef = useRef<HTMLElement>(null);
-  const titleInputRef = useRef<HTMLInputElement>(null);
+  const titleInputRef = useRef<HTMLTextAreaElement>(null);
   const editorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const metadataRef = useRef<HTMLDivElement>(null);
   const newProjectInputRef = useRef<HTMLInputElement>(null);
+  const lastLoadedItemIdRef = useRef<string | null>(null);
+
+  // Undo / Redo history tracking for rich editor
+  const historyRef = useRef<{ stack: string[]; index: number; isPerformingUndoRedo: boolean }>({
+    stack: [],
+    index: -1,
+    isPerformingUndoRedo: false,
+  });
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
+  const lastSnapshotTimeRef = useRef<number>(0);
+
+  const updateCanUndoRedo = () => {
+    setCanUndo(historyRef.current.index > 0);
+    setCanRedo(historyRef.current.index < historyRef.current.stack.length - 1);
+  };
+
+  const pushHistory = (newHtml: string, force: boolean = false) => {
+    if (historyRef.current.isPerformingUndoRedo) return;
+    const { stack, index } = historyRef.current;
+    if (index >= 0 && stack[index] === newHtml) return;
+
+    const now = Date.now();
+    const shouldDebounce = !force && (now - lastSnapshotTimeRef.current < 600) && index > 0;
+
+    if (shouldDebounce) {
+      stack[index] = newHtml;
+    } else {
+      const nextStack = stack.slice(0, index + 1);
+      nextStack.push(newHtml);
+      if (nextStack.length > 50) nextStack.shift();
+      historyRef.current.stack = nextStack;
+      historyRef.current.index = nextStack.length - 1;
+      lastSnapshotTimeRef.current = now;
+    }
+    updateCanUndoRedo();
+  };
+
+  const handleUndo = () => {
+    const { stack, index } = historyRef.current;
+    if (index > 0) {
+      const prevIndex = index - 1;
+      historyRef.current.isPerformingUndoRedo = true;
+      historyRef.current.index = prevIndex;
+      const prevHtml = stack[prevIndex];
+      if (editorRef.current) {
+        editorRef.current.innerHTML = prevHtml;
+      }
+      const md = htmlToMarkdown(prevHtml);
+      setContent(md);
+      triggerAutoSave({ content: md });
+      updateCanUndoRedo();
+      setTimeout(() => {
+        historyRef.current.isPerformingUndoRedo = false;
+      }, 20);
+    }
+  };
+
+  const handleRedo = () => {
+    const { stack, index } = historyRef.current;
+    if (index < stack.length - 1) {
+      const nextIndex = index + 1;
+      historyRef.current.isPerformingUndoRedo = true;
+      historyRef.current.index = nextIndex;
+      const nextHtml = stack[nextIndex];
+      if (editorRef.current) {
+        editorRef.current.innerHTML = nextHtml;
+      }
+      const md = htmlToMarkdown(nextHtml);
+      setContent(md);
+      triggerAutoSave({ content: md });
+      updateCanUndoRedo();
+      setTimeout(() => {
+        historyRef.current.isPerformingUndoRedo = false;
+      }, 20);
+    }
+  };
 
   const handleCreateProject = async () => {
     const trimmed = newProjectName.trim();
@@ -114,24 +194,77 @@ export const ItemDetailPane: React.FC = () => {
   // Sync form state when active item updates
   useEffect(() => {
     if (activeItem) {
-      if (document.activeElement !== titleInputRef.current && activeItem.title !== title) {
+      const isDifferentItem = activeItem.id !== lastLoadedItemIdRef.current;
+      lastLoadedItemIdRef.current = activeItem.id;
+
+      if (isDifferentItem) {
         setTitle(activeItem.title);
-      }
-      if (document.activeElement !== editorRef.current) {
         const itemContent = activeItem.content || '';
         setContent(itemContent);
+        const html = markdownToHtml(itemContent);
         if (editorRef.current) {
-          editorRef.current.innerHTML = markdownToHtml(itemContent);
+          editorRef.current.innerHTML = html;
+        }
+        historyRef.current = {
+          stack: [html],
+          index: 0,
+          isPerformingUndoRedo: false,
+        };
+        lastSnapshotTimeRef.current = Date.now();
+        updateCanUndoRedo();
+      } else {
+        if (document.activeElement !== titleInputRef.current && activeItem.title !== title) {
+          setTitle(activeItem.title);
         }
       }
+
       setProjectId(activeItem.projectId);
       setType(activeItem.type);
       setPriority(activeItem.priority);
       setStatus(activeItem.status);
       setChecklist(activeItem.checklist || []);
       setAttachments(activeItem.attachments || []);
+    } else {
+      lastLoadedItemIdRef.current = null;
     }
   }, [activeItem?.id, activeItem?.updatedAt]);
+
+  // Precise dynamic auto-resize based on current wrapped lines & container width
+  useLayoutEffect(() => {
+    const el = titleInputRef.current;
+    if (!el) return;
+
+    let isDisposed = false;
+
+    const adjustHeight = () => {
+      if (isDisposed || !el) return;
+      el.style.height = 'auto';
+      if (el.scrollHeight > 0) {
+        el.style.height = `${el.scrollHeight}px`;
+      }
+    };
+
+    adjustHeight();
+
+    // Observe width changes as pane animates / expands so height stays perfectly snug with zero gap
+    const observer = new ResizeObserver(() => {
+      adjustHeight();
+    });
+
+    observer.observe(el);
+
+    const r1 = requestAnimationFrame(adjustHeight);
+    const t1 = setTimeout(adjustHeight, 150);
+    const t2 = setTimeout(adjustHeight, 320);
+
+    return () => {
+      isDisposed = true;
+      observer.disconnect();
+      cancelAnimationFrame(r1);
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [title, isPaneOpen]);
 
   const handleClose = () => {
     setSelectedItemId(null);
@@ -305,6 +438,7 @@ export const ItemDetailPane: React.FC = () => {
     }
 
     const rawHtml = editor.innerHTML;
+    pushHistory(rawHtml, true);
     const md = htmlToMarkdown(rawHtml);
     setContent(md);
     triggerAutoSave({ content: md });
@@ -333,6 +467,7 @@ export const ItemDetailPane: React.FC = () => {
     }
 
     const rawHtml = editor.innerHTML;
+    pushHistory(rawHtml, true);
     const md = htmlToMarkdown(rawHtml);
     setContent(md);
     triggerAutoSave({ content: md });
@@ -366,6 +501,24 @@ export const ItemDetailPane: React.FC = () => {
 
   // Instantly format URLs into links when user presses Space or Enter, including merged edits
   const handleEditorKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    // Handle Undo / Redo shortcuts
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
+      if (e.shiftKey) {
+        e.preventDefault();
+        handleRedo();
+        return;
+      } else {
+        e.preventDefault();
+        handleUndo();
+        return;
+      }
+    }
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || e.key === 'Y')) {
+      e.preventDefault();
+      handleRedo();
+      return;
+    }
+
     if (e.key === ' ' || e.key === 'Enter') {
       const selection = window.getSelection();
       if (!selection || !selection.isCollapsed || !selection.anchorNode) return;
@@ -397,7 +550,9 @@ export const ItemDetailPane: React.FC = () => {
           selection.addRange(newRange);
 
           if (editorRef.current) {
-            const md = htmlToMarkdown(editorRef.current.innerHTML);
+            const rawHtml = editorRef.current.innerHTML;
+            pushHistory(rawHtml, true);
+            const md = htmlToMarkdown(rawHtml);
             setContent(md);
             triggerAutoSave({ content: md });
           }
@@ -465,7 +620,9 @@ export const ItemDetailPane: React.FC = () => {
           selection.addRange(newRange);
 
           if (editorRef.current) {
-            const md = htmlToMarkdown(editorRef.current.innerHTML);
+            const rawHtml = editorRef.current.innerHTML;
+            pushHistory(rawHtml, true);
+            const md = htmlToMarkdown(rawHtml);
             setContent(md);
             triggerAutoSave({ content: md });
           }
@@ -480,6 +637,7 @@ export const ItemDetailPane: React.FC = () => {
       const linked = autoLinkHtml(editorRef.current.innerHTML);
       if (linked !== editorRef.current.innerHTML) {
         editorRef.current.innerHTML = linked;
+        pushHistory(linked, true);
       }
       const md = htmlToMarkdown(editorRef.current.innerHTML);
       setContent(md);
@@ -502,6 +660,7 @@ export const ItemDetailPane: React.FC = () => {
         document.execCommand('createLink', false, finalUrl);
         if (editorRef.current) {
           const rawHtml = editorRef.current.innerHTML;
+          pushHistory(rawHtml, true);
           const md = htmlToMarkdown(rawHtml);
           setContent(md);
           triggerAutoSave({ content: md });
@@ -529,38 +688,71 @@ export const ItemDetailPane: React.FC = () => {
             isPaneOpen ? 'translate-x-0' : 'translate-x-[400px]'
           }`}
         >
-        {/* Top bar */}
-        <div className="p-3 border-b border-[#f3f4f6] dark:border-[#27272a] space-y-2.5">
-          <div className="flex items-center justify-between gap-2">
-            <input
-              ref={titleInputRef}
-              type="text"
-              value={title}
-              onChange={(e) => {
-                setTitle(e.target.value);
-                triggerAutoSave({ title: e.target.value });
-              }}
-              placeholder="Item title..."
-              className="flex-1 text-base font-bold text-[#111827] dark:text-[#f4f4f5] focus:outline-none bg-transparent hover:bg-[#f9fafb] dark:hover:bg-[#1f1f23] px-1.5 py-1 rounded-[6px] transition-colors"
-            />
-
-            <div className="flex items-center gap-1 text-[#6b7280] dark:text-[#a1a1aa]">
-              <button
-                onClick={() => openStickyNoteWindow(itemToRender.id)}
-                title="Detach into Floating Panel"
-                className="p-1.5 rounded-[4px] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] hover:text-[#111827] dark:hover:text-white transition-colors"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={handleClose}
-                title="Close"
-                className="p-1.5 rounded-[4px] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] hover:text-[#111827] dark:hover:text-white transition-colors"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
+        {/* Top Header Actions */}
+        <div className="px-3 pt-2.5 pb-1 flex items-center justify-between text-[#6b7280] dark:text-[#a1a1aa]">
+          <div className="flex items-center gap-1.5 text-[11px] font-medium text-[#9ca3af] dark:text-[#71717a] truncate">
+            {selectedProject ? (
+              <span className="truncate">{selectedProject.name}</span>
+            ) : (
+              <span>Details</span>
+            )}
           </div>
+
+          <div className="flex items-center gap-1">
+            {/* Detach panel button (commented out - keeping single mini mode)
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => openStickyNoteWindow(itemToRender.id)}
+                  className="p-1 rounded-[4px] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] hover:text-[#111827] dark:hover:text-white transition-colors"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Detach panel</p>
+              </TooltipContent>
+            </Tooltip>
+            */}
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={handleClose}
+                  className="p-1 rounded-[4px] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] hover:text-[#111827] dark:hover:text-white transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Close (Esc)</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        </div>
+
+        {/* Title & Metadata Section */}
+        <div className="px-3 pb-2.5 pt-0.5 border-b border-[#f3f4f6] dark:border-[#27272a] flex flex-col gap-2">
+          {/* Full-width Title Textarea */}
+          <textarea
+            ref={titleInputRef}
+            rows={1}
+            value={title}
+            onChange={(e) => {
+              setTitle(e.target.value);
+              triggerAutoSave({ title: e.target.value });
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                editorRef.current?.focus();
+              }
+            }}
+            placeholder="Item title..."
+            className={`w-full ${
+              title.length > 50 ? 'text-[13.5px] font-bold tracking-tight leading-snug' : 'text-[15px] font-bold tracking-tight leading-snug'
+            } text-[#09090b] dark:text-[#fafafa] placeholder:font-normal placeholder:text-[#9ca3af] dark:placeholder:text-[#52525b] focus:outline-none bg-transparent hover:bg-[#f9fafb] dark:hover:bg-[#1f1f23] px-1.5 py-0.5 rounded-[5px] transition-colors resize-none [field-sizing:content] max-h-[140px] overflow-y-auto custom-scrollbar m-0 block`}
+          />
 
           {/* Metadata Badges Row with Icons & Color Dots */}
           <div className="grid grid-cols-2 gap-2 text-xs relative" ref={metadataRef}>
@@ -816,64 +1008,149 @@ export const ItemDetailPane: React.FC = () => {
         <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
           {/* Markdown & Rich Text Toolbar */}
           <div className="flex items-center gap-1 py-1 px-1.5 bg-[#f9fafb] dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] text-[#4b5563] dark:text-[#a1a1aa]">
-            <button
-              type="button"
-              onClick={() => applyRichCommand('formatBlock', '<h3>')}
-              className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs"
-              title="Heading"
-            >
-              <Heading className="w-3.5 h-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => applyRichCommand('bold')}
-              className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs"
-              title="Bold"
-            >
-              <Bold className="w-3.5 h-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => applyRichCommand('italic')}
-              className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs"
-              title="Italic"
-            >
-              <Italic className="w-3.5 h-3.5" />
-            </button>
+            {/* Undo / Redo Actions */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={handleUndo}
+                  disabled={!canUndo}
+                  className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                >
+                  <Undo2 className="w-3.5 h-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Undo (Ctrl+Z)</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={handleRedo}
+                  disabled={!canRedo}
+                  className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                >
+                  <Redo2 className="w-3.5 h-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Redo (Ctrl+Y)</p>
+              </TooltipContent>
+            </Tooltip>
+
             <div className="w-px h-3 bg-[#e5e7eb] dark:bg-[#27272a] mx-0.5" />
-            <button
-              type="button"
-              onClick={() => applyRichCommand('insertUnorderedList')}
-              className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs"
-              title="Bullet List"
-            >
-              <List className="w-3.5 h-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => applyRichCommand('insertOrderedList')}
-              className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs"
-              title="Numbered List"
-            >
-              <ListOrdered className="w-3.5 h-3.5" />
-            </button>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => applyRichCommand('formatBlock', '<h3>')}
+                  className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs"
+                >
+                  <Heading className="w-3.5 h-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Heading</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => applyRichCommand('bold')}
+                  className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs"
+                >
+                  <Bold className="w-3.5 h-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Bold (Ctrl+B)</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => applyRichCommand('italic')}
+                  className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs"
+                >
+                  <Italic className="w-3.5 h-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Italic (Ctrl+I)</p>
+              </TooltipContent>
+            </Tooltip>
+
             <div className="w-px h-3 bg-[#e5e7eb] dark:bg-[#27272a] mx-0.5" />
-            <button
-              type="button"
-              onClick={handleLinkButtonClick}
-              className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs transition-colors"
-              title="Insert Link"
-            >
-              <Link className="w-3.5 h-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => applyRichCommand('code')}
-              className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs"
-              title="Inline Code / Preformatted"
-            >
-              <Code className="w-3.5 h-3.5" />
-            </button>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => applyRichCommand('insertUnorderedList')}
+                  className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs"
+                >
+                  <List className="w-3.5 h-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Bullet list</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => applyRichCommand('insertOrderedList')}
+                  className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs"
+                >
+                  <ListOrdered className="w-3.5 h-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Numbered list</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <div className="w-px h-3 bg-[#e5e7eb] dark:bg-[#27272a] mx-0.5" />
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={handleLinkButtonClick}
+                  className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs transition-colors"
+                >
+                  <Link className="w-3.5 h-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Link (Ctrl+K)</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => applyRichCommand('code')}
+                  className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs"
+                >
+                  <Code className="w-3.5 h-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Inline code</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
 
           {/* Rich Content WYSIWYG Editor */}
@@ -889,13 +1166,14 @@ export const ItemDetailPane: React.FC = () => {
             onInput={() => {
               if (editorRef.current) {
                 const rawHtml = editorRef.current.innerHTML;
+                pushHistory(rawHtml, false);
                 const md = htmlToMarkdown(rawHtml);
                 setContent(md);
                 triggerAutoSave({ content: md });
               }
             }}
             data-placeholder="Add details, notes, links, or markdown content..."
-            className="w-full min-h-[170px] p-2.5 bg-transparent text-[#111827] dark:text-[#f4f4f5] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] text-xs focus:outline-none focus:border-[#9ca3af] dark:focus:border-[#52525b] overflow-y-auto leading-relaxed empty:before:content-[attr(data-placeholder)] empty:before:text-[#9ca3af] dark:empty:before:text-[#71717a] empty:before:pointer-events-none max-w-none [&_b]:font-bold [&_strong]:font-bold [&_i]:italic [&_em]:italic [&_h1]:text-base [&_h1]:font-bold [&_h1]:my-1.5 [&_h2]:text-sm [&_h2]:font-bold [&_h2]:my-1 [&_h3]:text-xs [&_h3]:font-bold [&_h3]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-1 [&_a]:text-blue-500 [&_a]:underline [&_a]:cursor-pointer [&_a:hover]:text-blue-400 [&_a]:relative [&_a]:z-10 cursor-text [&_pre]:bg-black/10 dark:[&_pre]:bg-white/10 [&_pre]:p-2 [&_pre]:rounded [&_pre]:font-mono [&_code]:bg-black/10 dark:[&_code]:bg-white/10 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:font-mono"
+            className="w-full min-h-[140px] max-h-[220px] p-2.5 bg-transparent text-[#111827] dark:text-[#f4f4f5] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] text-xs focus:outline-none focus:border-[#9ca3af] dark:focus:border-[#52525b] overflow-y-auto custom-scrollbar leading-relaxed empty:before:content-[attr(data-placeholder)] empty:before:text-[#9ca3af] dark:empty:before:text-[#71717a] empty:before:pointer-events-none max-w-none [&_b]:font-bold [&_strong]:font-bold [&_i]:italic [&_em]:italic [&_h1]:text-base [&_h1]:font-bold [&_h1]:my-1.5 [&_h2]:text-sm [&_h2]:font-bold [&_h2]:my-1 [&_h3]:text-xs [&_h3]:font-bold [&_h3]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-1 [&_a]:text-blue-500 [&_a]:underline [&_a]:cursor-pointer [&_a:hover]:text-blue-400 [&_a]:relative [&_a]:z-10 cursor-text [&_pre]:bg-black/10 dark:[&_pre]:bg-white/10 [&_pre]:p-2 [&_pre]:rounded [&_pre]:font-mono [&_code]:bg-black/10 dark:[&_code]:bg-white/10 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:font-mono"
           />
 
           {/* Checklist Section */}
@@ -951,11 +1229,11 @@ export const ItemDetailPane: React.FC = () => {
                     }
                   }}
                   placeholder="Add checklist item..."
-                  className="flex-1 bg-[#f9fafb] dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[4px] px-2 py-1 text-xs text-[#111827] dark:text-[#f4f4f5] focus:outline-none focus:border-[#9ca3af] dark:focus:border-[#52525b]"
+                  className="flex-1 h-[28px] bg-[#f9fafb] dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[4px] px-2 text-xs text-[#111827] dark:text-[#f4f4f5] focus:outline-none focus:border-[#9ca3af] dark:focus:border-[#52525b]"
                 />
                 <button
                   onClick={addChecklistItem}
-                  className="p-1 bg-[#f3f4f6] dark:bg-[#27272a] text-[#374151] dark:text-[#d4d4d8] hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] rounded-[4px] text-xs transition-colors"
+                  className="w-[28px] h-[28px] flex items-center justify-center bg-[#f3f4f6] dark:bg-[#27272a] text-[#374151] dark:text-[#d4d4d8] hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] rounded-[4px] text-xs transition-colors shrink-0"
                 >
                   <Plus className="w-3.5 h-3.5" />
                 </button>

@@ -14,11 +14,13 @@ import {
   BookOpen,
   HelpCircle,
   FileText,
+  Minimize2,
 } from 'lucide-react';
 import { ItemType, Priority, Project, Item } from '../types';
 import { ITEM_TYPE_CONFIG, PRIORITY_CONFIG } from '../utils/format';
 import { WindowControls } from './WindowControls';
 import { SearchInput } from './ui/SearchInput';
+import { enterMiniMode } from '../utils/window';
 
 const TYPE_ICONS: Record<ItemType, React.FC<{ className?: string }>> = {
   task: CheckSquare,
@@ -145,7 +147,6 @@ export const HeaderBar: React.FC = () => {
           {viewMode.type === 'project' && activeProj && (
             <button
               onClick={() => setProjectModalOpen(true, activeProj)}
-              title="Edit project name & settings"
               className="p-1 rounded-[4px] hover:bg-[#ebecee] dark:hover:bg-[#27272a] text-[#9ca3af] hover:text-[#111827] dark:hover:text-white transition-colors"
             >
               <SquarePen className="w-3.5 h-3.5" />
@@ -391,6 +392,15 @@ export const HeaderBar: React.FC = () => {
         >
           <Plus className="w-3.5 h-3.5" />
           <span>New Item</span>
+        </button>
+
+        {/* Mini Mode Action */}
+        <button
+          onClick={enterMiniMode}
+          className="flex items-center gap-1 px-2.5 py-1 rounded-[6px] border border-[#e5e7eb] dark:border-[#27272a] bg-[#f4f5f6] dark:bg-[#1c1c1f] text-xs font-medium text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#27272a] hover:text-[#111827] dark:hover:text-white shrink-0 whitespace-nowrap transition-colors"
+        >
+          <Minimize2 className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
+          <span className="hidden xl:inline">Mini Mode</span>
         </button>
 
         {/* Window Controls */}

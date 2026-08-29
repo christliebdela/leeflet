@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { Item, Attachment } from '../types';
 import { formatFileSize } from '../utils/format';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 type Tab = 'preferences' | 'shortcuts';
 
@@ -43,9 +44,9 @@ const SHORTCUTS_DATA: ShortcutItem[] = [
   { id: '7', label: 'Go to My Queue', category: 'Views & Projects', keys: ['Ctrl + Q'] },
   { id: '8', label: 'Go to All Items', category: 'Views & Projects', keys: ['Ctrl + Shift + A'] },
   { id: '9', label: 'Switch Projects (1-9)', category: 'Views & Projects', keys: ['1 - 9'] },
-  { id: '10', label: 'Save / Submit Item', category: 'Item Actions', keys: ['Enter'] },
   { id: '11', label: 'Delete Selected Card', category: 'Item Actions', keys: ['Del / Backspace'] },
   { id: '12', label: 'Add Checklist Item', category: 'Item Actions', keys: ['Enter'] },
+  { id: '13', label: 'Mini Mode (Queue Card)', category: 'Views & Projects', keys: ['M'] },
 ];
 
 export const WorkspaceModal: React.FC = () => {
@@ -250,14 +251,9 @@ export const WorkspaceModal: React.FC = () => {
                   className="w-3.5 h-3.5 object-contain brightness-0 dark:brightness-0 dark:invert"
                 />
               </div>
-              <div>
-                <h2 className="text-xs font-bold text-[#111827] dark:text-[#f4f4f5] tracking-tight leading-tight">
-                  Settings
-                </h2>
-                <p className="text-[10px] text-[#6b7280] dark:text-[#71717a] leading-none">
-                  Shortcuts & Preferences
-                </p>
-              </div>
+              <h2 className="text-xs font-bold text-[#111827] dark:text-[#f4f4f5] tracking-tight">
+                Settings
+              </h2>
             </div>
 
             <div className="flex items-center gap-1.5">
@@ -267,7 +263,6 @@ export const WorkspaceModal: React.FC = () => {
               <button
                 onClick={() => setWorkspaceModalOpen(false)}
                 className="p-1 rounded-[5px] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white transition-colors"
-                title="Close Settings"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -427,34 +422,48 @@ export const WorkspaceModal: React.FC = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        onClick={handleCopyPath}
-                        className="px-2 py-1 bg-[#f4f5f6] dark:bg-[#27272a] hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] text-[#374151] dark:text-[#d4d4d8] rounded-[4px] border border-[#e5e7eb] dark:border-[#3f3f46] text-[11px] font-medium flex items-center gap-1 transition-colors"
-                        title="Copy folder path"
-                      >
-                        {copiedPath ? <Check className="w-3 h-3 text-[#10b981]" /> : <Copy className="w-3 h-3" />}
-                        <span>{copiedPath ? 'Copied' : 'Copy'}</span>
-                      </button>
-                      <button
-                        onClick={handleOpenFolder}
-                        className="p-1 bg-[#f4f5f6] dark:bg-[#27272a] hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] text-[#374151] dark:text-[#d4d4d8] rounded-[4px] border border-[#e5e7eb] dark:border-[#3f3f46] transition-colors"
-                        title="Open folder in File Explorer"
-                      >
-                        <Folder className="w-3 h-3" />
-                      </button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={handleCopyPath}
+                            className="p-1.5 bg-[#f4f5f6] dark:bg-[#27272a] hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] text-[#374151] dark:text-[#d4d4d8] rounded-[4px] border border-[#e5e7eb] dark:border-[#3f3f46] transition-colors"
+                          >
+                            {copiedPath ? <Check className="w-3.5 h-3.5 text-[#10b981]" /> : <Copy className="w-3.5 h-3.5" />}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{copiedPath ? 'Copied to clipboard' : 'Copy folder path'}</p>
+                        </TooltipContent>
+                      </Tooltip>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={handleOpenFolder}
+                            className="p-1.5 bg-[#f4f5f6] dark:bg-[#27272a] hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] text-[#374151] dark:text-[#d4d4d8] rounded-[4px] border border-[#e5e7eb] dark:border-[#3f3f46] transition-colors"
+                          >
+                            <Folder className="w-3.5 h-3.5" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Open folder in File Explorer</p>
+                        </TooltipContent>
+                      </Tooltip>
                     </div>
                   </div>
 
                   {/* Stats Row */}
                   <div className="flex items-center justify-between py-1.5 border-b border-[#f3f4f6] dark:border-[#27272a]">
                     <span className="text-[#6b7280] dark:text-[#a1a1aa]">Total Items</span>
-                    <span className="font-semibold text-[#111827] dark:text-white">{items.length} items</span>
+                    <span className="font-semibold text-[#111827] dark:text-white">
+                      {items.length} {items.length === 1 ? 'item' : 'items'}
+                    </span>
                   </div>
 
                   <div className="flex items-center justify-between py-1.5 border-b border-[#f3f4f6] dark:border-[#27272a]">
                     <span className="text-[#6b7280] dark:text-[#a1a1aa]">Attachments Storage</span>
                     <span className="font-semibold text-[#111827] dark:text-white">
-                      {totalAttachments} files ({formatFileSize(totalAttachmentsSize + 12400)})
+                      {totalAttachments} {totalAttachments === 1 ? 'file' : 'files'} ({formatFileSize(totalAttachmentsSize)})
                     </span>
                   </div>
 
@@ -464,14 +473,20 @@ export const WorkspaceModal: React.FC = () => {
                       <div className="text-[#111827] dark:text-[#f4f4f5] font-medium">Backup Data</div>
                       <div className="text-[10.5px] text-[#6b7280] dark:text-[#71717a]">Export offline JSON archive</div>
                     </div>
-                    <button
-                      onClick={handleExport}
-                      disabled={isExporting}
-                      className="px-2.5 py-1 bg-[#f4f5f6] dark:bg-[#27272a] hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] text-[#374151] dark:text-[#d4d4d8] rounded-[4px] border border-[#e5e7eb] dark:border-[#3f3f46] text-[11px] font-medium flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0 disabled:opacity-50"
-                    >
-                      <Upload className="w-3 h-3 shrink-0" />
-                      <span className="whitespace-nowrap">{isExporting ? 'Exporting...' : 'Export JSON'}</span>
-                    </button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={handleExport}
+                          disabled={isExporting}
+                          className="p-1.5 bg-[#f4f5f6] dark:bg-[#27272a] hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] text-[#374151] dark:text-[#d4d4d8] rounded-[4px] border border-[#e5e7eb] dark:border-[#3f3f46] transition-colors shrink-0 disabled:opacity-50"
+                        >
+                          <Upload className="w-3.5 h-3.5 shrink-0" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{isExporting ? 'Exporting...' : 'Export JSON backup'}</p>
+                      </TooltipContent>
+                    </Tooltip>
                   </div>
 
                   {/* Restore Row */}
@@ -480,13 +495,19 @@ export const WorkspaceModal: React.FC = () => {
                       <div className="text-[#111827] dark:text-[#f4f4f5] font-medium">Restore Data</div>
                       <div className="text-[10.5px] text-[#6b7280] dark:text-[#71717a]">Import from backup JSON file</div>
                     </div>
-                    <button
-                      onClick={handleImportNative}
-                      className="px-2.5 py-1 bg-[#f4f5f6] dark:bg-[#27272a] hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] text-[#374151] dark:text-[#d4d4d8] rounded-[4px] border border-[#e5e7eb] dark:border-[#3f3f46] text-[11px] font-medium flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0"
-                    >
-                      <RotateCcw className="w-3 h-3 shrink-0" />
-                      <span className="whitespace-nowrap">Import JSON</span>
-                    </button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={handleImportNative}
+                          className="p-1.5 bg-[#f4f5f6] dark:bg-[#27272a] hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] text-[#374151] dark:text-[#d4d4d8] rounded-[4px] border border-[#e5e7eb] dark:border-[#3f3f46] transition-colors shrink-0"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5 shrink-0" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Import JSON backup</p>
+                      </TooltipContent>
+                    </Tooltip>
                     <input
                       type="file"
                       ref={fileInputRef}
@@ -502,16 +523,22 @@ export const WorkspaceModal: React.FC = () => {
                       <div className="text-[#111827] dark:text-[#f4f4f5] font-medium">Onboarding Tour</div>
                       <div className="text-[10.5px] text-[#6b7280] dark:text-[#71717a]">Replay setup & welcome experience</div>
                     </div>
-                    <button
-                      onClick={() => {
-                        setWorkspaceModalOpen(false);
-                        setOnboardingOpen(true);
-                      }}
-                      className="px-2.5 py-1 bg-[#f4f5f6] dark:bg-[#27272a] hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] text-[#374151] dark:text-[#d4d4d8] rounded-[4px] border border-[#e5e7eb] dark:border-[#3f3f46] text-[11px] font-medium flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0"
-                    >
-                      <Sparkles className="w-3 h-3 text-[#6b7280] dark:text-[#a1a1aa] shrink-0" />
-                      <span className="whitespace-nowrap">Replay Tour</span>
-                    </button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={() => {
+                            setWorkspaceModalOpen(false);
+                            setOnboardingOpen(true);
+                          }}
+                          className="p-1.5 bg-[#f4f5f6] dark:bg-[#27272a] hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] text-[#374151] dark:text-[#d4d4d8] rounded-[4px] border border-[#e5e7eb] dark:border-[#3f3f46] transition-colors shrink-0"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa] shrink-0" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Replay onboarding tour</p>
+                      </TooltipContent>
+                    </Tooltip>
                   </div>
                 </div>
               </div>
@@ -539,24 +566,37 @@ export const WorkspaceModal: React.FC = () => {
                       <div className="text-[10.5px] text-[#6b7280] dark:text-[#71717a]">Creator & Developer</div>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => openExternalUrl('https://github.com/christliebdela')}
-                        className="p-1.5 rounded-[5px] bg-[#f4f5f6] dark:bg-[#27272a] hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] text-[#111827] dark:text-[#f4f4f5] border border-[#e5e7eb] dark:border-[#3f3f46] transition-colors"
-                        title="GitHub (christliebdela)"
-                      >
-                        <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
-                          <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
-                        </svg>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => openExternalUrl('https://christliebdela.vercel.app/')}
-                        className="p-1.5 rounded-[5px] bg-[#f4f5f6] dark:bg-[#27272a] hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] text-[#111827] dark:text-[#f4f4f5] border border-[#e5e7eb] dark:border-[#3f3f46] transition-colors"
-                        title="Website (christliebdela.vercel.app)"
-                      >
-                        <Globe className="w-3.5 h-3.5" />
-                      </button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={() => openExternalUrl('https://github.com/christliebdela')}
+                            className="p-1.5 rounded-[5px] bg-[#f4f5f6] dark:bg-[#27272a] hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] text-[#111827] dark:text-[#f4f4f5] border border-[#e5e7eb] dark:border-[#3f3f46] transition-colors"
+                          >
+                            <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                              <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+                            </svg>
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>GitHub (christliebdela)</p>
+                        </TooltipContent>
+                      </Tooltip>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={() => openExternalUrl('https://christliebdela.vercel.app/')}
+                            className="p-1.5 rounded-[5px] bg-[#f4f5f6] dark:bg-[#27272a] hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] text-[#111827] dark:text-[#f4f4f5] border border-[#e5e7eb] dark:border-[#3f3f46] transition-colors"
+                          >
+                            <Globe className="w-3.5 h-3.5" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Website (christliebdela.vercel.app)</p>
+                        </TooltipContent>
+                      </Tooltip>
                     </div>
                   </div>
                 </div>
@@ -566,14 +606,7 @@ export const WorkspaceModal: React.FC = () => {
         </div>
 
         {/* Bottom Footer */}
-        <div className="p-3 border-t border-[#f3f4f6] dark:border-[#27272a] flex items-center justify-between bg-[#fafafa] dark:bg-[#1a1a1d] shrink-0">
-          <div className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#10b981]" />
-            <span className="text-[10.5px] font-medium text-[#6b7280] dark:text-[#a1a1aa]">
-              Local Storage Connected
-            </span>
-          </div>
-
+        <div className="p-3 border-t border-[#f3f4f6] dark:border-[#27272a] flex items-center justify-end bg-[#fafafa] dark:bg-[#1a1a1d] shrink-0">
           <button
             onClick={() => setWorkspaceModalOpen(false)}
             className="px-3 py-1 bg-[#111827] dark:bg-white hover:bg-[#1f2937] dark:hover:bg-[#e4e4e7] text-white dark:text-[#111827] rounded-[5px] text-xs font-semibold transition-colors"

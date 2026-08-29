@@ -32,6 +32,7 @@ export const ItemListView: React.FC = () => {
     setQuickCaptureOpen,
     reorderItems,
     filterOptions,
+    setFilterOptions,
     isWorkspaceModalOpen,
   } = useLeafStore();
 
@@ -135,13 +136,15 @@ export const ItemListView: React.FC = () => {
     return 0;
   });
 
-  // Dynamic context-aware empty state icon, title, and description matching sidebar
+  // Dynamic context-aware empty state icon, title, and action
   const getEmptyState = () => {
     if (filterOptions.searchQuery.trim()) {
       return {
         Icon: Search,
-        title: 'No matching items',
-        description: `No items found matching "${filterOptions.searchQuery}". Try a different search term.`,
+        title: 'Zero results found',
+        description: `No items match "${filterOptions.searchQuery}". Try adjusting your keywords or filters.`,
+        actionLabel: 'Clear Search',
+        onAction: () => setFilterOptions({ searchQuery: '' }),
       };
     }
 
@@ -149,21 +152,28 @@ export const ItemListView: React.FC = () => {
       case 'inbox':
         return {
           Icon: Inbox,
-          title: 'Your backlog is empty',
-          description: 'Capture quick thoughts, ideas, and unassigned tasks into your backlog.',
+          title: 'Inbox Zero — clear desk, clear focus',
+          description: 'Your backlog is clear. Capture your next thought or task whenever ready.',
+          actionLabel: 'Capture Thought',
+          onAction: () => setQuickCaptureOpen(true),
         };
       case 'all':
         return {
           Icon: Layers,
-          title: 'No items in workspace',
-          description: 'Capture an idea, task, bug, or note to get started.',
+          title: 'A fresh canvas',
+          description: 'Nothing captured in this workspace yet. Dump your thoughts, track bugs, or organize tasks.',
+          actionLabel: 'Create First Item',
+          onAction: () => setQuickCaptureOpen(true),
         };
       case 'project': {
         const proj = projects.find((p) => p.id === viewMode.projectId);
+        const name = proj?.name || 'This project';
         return {
           Icon: Folder,
-          title: proj ? `${proj.name} is empty` : 'Project is empty',
-          description: 'No items captured in this project yet.',
+          title: `${name} is ready for action`,
+          description: `No tasks or notes inside this project yet. Start tracking items to get organized.`,
+          actionLabel: `Add to ${name}`,
+          onAction: () => setQuickCaptureOpen(true),
         };
       }
       case 'type_filter':
@@ -171,75 +181,99 @@ export const ItemListView: React.FC = () => {
           case 'bug':
             return {
               Icon: Bug,
-              title: 'No bugs logged',
-              description: 'Reported bugs and defects will appear here.',
+              title: 'Zero bugs reported',
+              description: 'No issues or defects on the log. Everything is running smoothly.',
+              actionLabel: 'Report a Bug',
+              onAction: () => setQuickCaptureOpen(true),
             };
           case 'idea':
             return {
               Icon: Lightbulb,
-              title: 'No ideas captured',
-              description: 'Jot down ideas, features, and inspirations.',
+              title: 'No ideas captured yet',
+              description: 'Have a feature concept or workflow thought? Jot it down before it slips away.',
+              actionLabel: 'Jot an Idea',
+              onAction: () => setQuickCaptureOpen(true),
             };
           case 'task':
             return {
               Icon: CheckSquare,
-              title: 'No tasks scheduled',
-              description: 'Action items and todos will appear here.',
+              title: 'No pending tasks',
+              description: 'Your to-do list is clear. Add an action item or take a quick breather.',
+              actionLabel: 'New Task',
+              onAction: () => setQuickCaptureOpen(true),
             };
           case 'improvement':
             return {
               Icon: Sparkles,
               title: 'No improvements logged',
-              description: 'Optimizations and enhancements will appear here.',
+              description: 'Spot something to refine or level up? Capture enhancements right here.',
+              actionLabel: 'Log Improvement',
+              onAction: () => setQuickCaptureOpen(true),
             };
           case 'research':
             return {
               Icon: BookOpen,
               title: 'No research notes',
-              description: 'Readings, findings, and explorations will appear here.',
+              description: 'Keep track of articles, bookmarks, and deep dives here.',
+              actionLabel: 'Add Research Note',
+              onAction: () => setQuickCaptureOpen(true),
             };
           case 'question':
             return {
               Icon: HelpCircle,
               title: 'No open questions',
-              description: 'Questions and investigations will appear here.',
+              description: 'Open questions, investigations, and follow-ups will appear here.',
+              actionLabel: 'Ask a Question',
+              onAction: () => setQuickCaptureOpen(true),
             };
           case 'note':
             return {
               Icon: FileText,
-              title: 'No quick notes',
-              description: 'General notes and snippets will appear here.',
+              title: 'Blank notepad',
+              description: 'Meeting notes, code snippets, and scratchpad thoughts live here.',
+              actionLabel: 'Quick Note',
+              onAction: () => setQuickCaptureOpen(true),
             };
           default:
             return {
               Icon: Layers,
-              title: 'No items found',
-              description: 'Capture an item to get started.',
+              title: 'All caught up',
+              description: 'No items matching this view. Ready to add something new?',
+              actionLabel: 'New Item',
+              onAction: () => setQuickCaptureOpen(true),
             };
         }
       case 'priority_filter':
         return {
           Icon: AlertCircle,
-          title: 'No high priority items',
-          description: 'Items marked with high or critical priority will appear here.',
+          title: 'No urgent priorities',
+          description: 'Nothing critical currently flagged. Enjoy the calm focus.',
+          actionLabel: 'Add Priority Task',
+          onAction: () => setQuickCaptureOpen(true),
         };
       case 'completed':
         return {
           Icon: CheckCircle2,
-          title: 'No completed items',
-          description: 'Completed tasks and resolved bugs will be archived here.',
+          title: 'No completed items yet',
+          description: 'Checked-off tasks and resolved bugs will stack up here.',
+          actionLabel: 'Go to Queue',
+          onAction: () => useLeafStore.getState().setViewMode({ type: 'my_queue' }),
         };
       case 'archived':
         return {
           Icon: Archive,
           title: 'Archive is empty',
-          description: 'Items you archive will be kept here safely.',
+          description: 'Archived tasks and retired projects will be preserved here.',
+          actionLabel: 'Back to Backlog',
+          onAction: () => useLeafStore.getState().setViewMode({ type: 'inbox' }),
         };
       default:
         return {
           Icon: Layers,
-          title: 'No items found',
-          description: 'Capture an idea, task, bug, or note to get started.',
+          title: 'No items in this view',
+          description: 'Capture an idea, task, bug, or note to get things rolling.',
+          actionLabel: 'New Item (C)',
+          onAction: () => setQuickCaptureOpen(true),
         };
     }
   };
@@ -252,22 +286,22 @@ export const ItemListView: React.FC = () => {
   return (
     <div className={`flex-1 h-full overflow-y-auto overflow-x-hidden ${isPaneOpen ? 'pl-3 pr-2 py-3' : 'p-3'} flex flex-col custom-scrollbar`}>
       {displayItems.length === 0 ? (
-        <div className="flex-1 min-h-[360px] w-full flex flex-col items-center justify-center text-center p-6 border border-dashed border-[#e5e7eb] dark:border-[#27272a] rounded-[6px]">
-          <div className="w-10 h-10 rounded-full bg-[#f3f4f6] dark:bg-[#27272a] flex items-center justify-center mb-2.5">
-            <EmptyIcon className="w-5 h-5 text-[#9ca3af] dark:text-[#71717a]" />
+        <div className="flex-1 min-h-[360px] w-full flex flex-col items-center justify-center text-center p-8 border border-dashed border-[#e5e7eb] dark:border-[#27272a] rounded-[10px] bg-gradient-to-b from-transparent to-[#fafafa]/60 dark:to-[#18181b]/30">
+          <div className="w-12 h-12 rounded-2xl bg-white dark:bg-[#27272a] border border-[#e5e7eb] dark:border-[#3f3f46] shadow-xs flex items-center justify-center mb-3 transition-transform hover:scale-105">
+            <EmptyIcon className="w-6 h-6 text-[#6b7280] dark:text-[#a1a1aa]" />
           </div>
-          <h3 className="text-xs font-semibold text-[#111827] dark:text-[#f4f4f5]">
+          <h3 className="text-sm font-semibold text-[#111827] dark:text-[#f4f4f5] tracking-tight">
             {emptyState.title}
           </h3>
-          <p className="text-[11px] text-[#6b7280] dark:text-[#a1a1aa] max-w-xs mt-1">
+          <p className="text-xs text-[#6b7280] dark:text-[#a1a1aa] max-w-sm mt-1.5 leading-relaxed">
             {emptyState.description}
           </p>
           <button
-            onClick={() => setQuickCaptureOpen(true)}
-            className="mt-3 flex items-center gap-1.5 px-3 py-1.5 bg-[#111827] dark:bg-white text-white dark:text-[#111827] rounded-[6px] text-xs font-medium hover:bg-[#1f2937] dark:hover:bg-[#e4e4e7] transition-all shadow-subtle shrink-0 whitespace-nowrap"
+            onClick={emptyState.onAction}
+            className="mt-4 flex items-center gap-1.5 px-3.5 py-1.5 bg-[#111827] dark:bg-white text-white dark:text-[#111827] rounded-[6px] text-xs font-semibold hover:bg-[#1f2937] dark:hover:bg-[#e4e4e7] transition-all shadow-subtle shrink-0 whitespace-nowrap active:scale-95"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>New Item</span>
+            <span>{emptyState.actionLabel}</span>
           </button>
         </div>
       ) : (
@@ -327,7 +361,6 @@ export const ItemListView: React.FC = () => {
                 <div className="flex items-center gap-2 min-w-0 flex-1 mr-2 overflow-hidden">
                   <div
                     className="cursor-grab active:cursor-grabbing text-[#d1d5db] dark:text-[#52525b] group-hover:text-[#9ca3af] dark:group-hover:text-[#a1a1aa] transition-colors shrink-0"
-                    title="Drag to reorder"
                   >
                     <GripVertical className="w-3.5 h-3.5" />
                   </div>
@@ -353,19 +386,18 @@ export const ItemListView: React.FC = () => {
                 </div>
 
                 {/* Right Columns: Type, Priority, Date */}
-                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
                   {/* Type Column (compact icon badge or label) */}
                   {isPaneOpen ? (
                     <span
-                      title={`Type: ${typeConfig.label}`}
-                      className={`inline-flex items-center px-1.5 py-0 text-[9px] font-medium leading-[13px] rounded-full border ${typeConfig.bg} ${typeConfig.color} ${typeConfig.border} shrink-0`}
+                      className={`inline-flex items-center px-1.5 py-0 text-[9px] font-medium leading-[13px] rounded-full border ${typeConfig.bg} ${typeConfig.color} ${typeConfig.border} shrink-0 whitespace-nowrap`}
                     >
                       {typeConfig.label}
                     </span>
                   ) : (
-                    <div className="w-14 sm:w-16 flex items-center justify-start shrink-0">
+                    <div className="min-w-[78px] flex items-center justify-start shrink-0">
                       <span
-                        className={`inline-flex items-center px-1.5 py-0 text-[9.5px] font-medium leading-[14px] rounded-full border ${typeConfig.bg} ${typeConfig.color} ${typeConfig.border}`}
+                        className={`inline-flex items-center px-1.5 py-0 text-[9.5px] font-medium leading-[14px] rounded-full border ${typeConfig.bg} ${typeConfig.color} ${typeConfig.border} shrink-0 whitespace-nowrap`}
                       >
                         {typeConfig.label}
                       </span>
@@ -376,28 +408,27 @@ export const ItemListView: React.FC = () => {
                   {item.priority !== 'none' ? (
                     isPaneOpen ? (
                       <span
-                        title={`Priority: ${priorityConfig.label}`}
                         className="inline-flex items-center shrink-0"
                       >
                         <span className={`w-1.5 h-1.5 rounded-full ${priorityConfig.dotColor} shrink-0`} />
                       </span>
                     ) : (
-                      <div className="w-16 sm:w-18 flex items-center justify-start shrink-0">
-                        <span className="inline-flex items-center gap-1.5 text-[11px] text-[#6b7280] dark:text-[#a1a1aa] truncate">
+                      <div className="min-w-[64px] flex items-center justify-start shrink-0">
+                        <span className="inline-flex items-center gap-1.5 text-[11px] text-[#6b7280] dark:text-[#a1a1aa] whitespace-nowrap">
                           <span className={`w-1.5 h-1.5 rounded-full ${priorityConfig.dotColor} shrink-0`} />
-                          <span className="truncate">{priorityConfig.label}</span>
+                          <span>{priorityConfig.label}</span>
                         </span>
                       </div>
                     )
                   ) : !isPaneOpen ? (
-                    <div className="w-16 sm:w-18 flex items-center justify-start shrink-0">
+                    <div className="min-w-[64px] flex items-center justify-start shrink-0">
                       <span className="text-[11px] text-[#9ca3af] dark:text-[#52525b]">—</span>
                     </div>
                   ) : null}
 
                   {/* Date Column (Full view only) */}
                   {!isPaneOpen && (
-                    <div className="text-[11px] text-[#9ca3af] dark:text-[#71717a] w-12 sm:w-14 text-right shrink-0 hidden md:block">
+                    <div className="text-[11px] text-[#9ca3af] dark:text-[#71717a] w-14 text-right shrink-0 hidden md:block">
                       {formatDate(item.createdAt)}
                     </div>
                   )}

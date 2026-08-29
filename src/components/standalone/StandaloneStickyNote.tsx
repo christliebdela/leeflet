@@ -397,7 +397,6 @@ export const StandaloneStickyNote: React.FC<StandaloneStickyNoteProps> = ({ item
                 ? 'bg-[#111827] text-white dark:bg-white dark:text-[#111827]'
                 : `${currentTheme.subtleBg} ${currentTheme.mutedText}`
             }`}
-            title={isAlwaysOnTop ? 'Unpin from Top' : 'Pin Always on Top'}
           >
             <Pin className="w-3.5 h-3.5" />
           </button>
@@ -409,7 +408,6 @@ export const StandaloneStickyNote: React.FC<StandaloneStickyNoteProps> = ({ item
               setIsTypeDropdownOpen(false);
             }}
             className={`p-1 ${currentTheme.subtleBg} rounded-[4px] ${currentTheme.mutedText} transition-colors`}
-            title="Options & Color"
           >
             <MoreHorizontal className="w-3.5 h-3.5" />
           </button>
@@ -449,7 +447,6 @@ export const StandaloneStickyNote: React.FC<StandaloneStickyNoteProps> = ({ item
           <button
             onClick={closeWindow}
             className={`p-1 ${currentTheme.subtleBg} rounded-[4px] ${currentTheme.mutedText} transition-colors`}
-            title="Close Panel"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -499,7 +496,6 @@ export const StandaloneStickyNote: React.FC<StandaloneStickyNoteProps> = ({ item
                 setTimeout(() => stickyChecklistInputRef.current?.focus(), 40);
               }}
               className="p-0.5 hover:bg-black/5 dark:hover:bg-white/5 rounded text-current opacity-70 hover:opacity-100 transition-opacity"
-              title="Add Item"
             >
               <Plus className="w-3 h-3" />
             </button>

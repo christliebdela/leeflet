@@ -142,13 +142,29 @@ export const QuickCaptureModal: React.FC = () => {
 
   useEffect(() => {
     if (isQuickCaptureOpen) {
-      if (isInProjectView && activeProject) {
+      // 1. Context-aware Project
+      if (viewMode.type === 'project' && activeProject) {
         setProjectId(activeProject.id);
       } else if (selectedProjectId) {
         setProjectId(selectedProjectId);
       } else if (projects.length > 0 && !projectId) {
         setProjectId(projects[0].id);
       }
+
+      // 2. Context-aware Type
+      if (viewMode.type === 'type_filter') {
+        setType(viewMode.itemType);
+      } else {
+        setType('task');
+      }
+
+      // 3. Context-aware Priority
+      if (viewMode.type === 'priority_filter') {
+        setPriority(viewMode.priority);
+      } else {
+        setPriority('none');
+      }
+
       setTimeout(() => textareaRef.current?.focus(), 50);
     } else {
       setTitle('');
@@ -156,12 +172,13 @@ export const QuickCaptureModal: React.FC = () => {
       setShowChecklist(false);
       setNewChecklistText('');
     }
-  }, [isQuickCaptureOpen, isInProjectView, activeProject, selectedProjectId, projects, projectId]);
+  }, [isQuickCaptureOpen, viewMode, activeProject, selectedProjectId, projects, projectId]);
 
   if (!isQuickCaptureOpen) return null;
 
   const handleSave = async () => {
-    if (!title.trim()) return;
+    const raw = title.trim();
+    if (!raw) return;
 
     const targetProjectId = isInProjectView && activeProject
       ? activeProject.id
@@ -175,9 +192,15 @@ export const QuickCaptureModal: React.FC = () => {
       position: idx,
     }));
 
+    // First line is heading/title, subsequent lines are details/body
+    const lines = title.split('\n');
+    const firstLine = lines[0].trim();
+    const bodyContent = lines.slice(1).join('\n').trim();
+
     await createItem({
       projectId: targetProjectId,
-      title: title.trim(),
+      title: firstLine || raw,
+      content: bodyContent || '',
       type,
       priority,
       status: 'inbox',
@@ -211,7 +234,7 @@ export const QuickCaptureModal: React.FC = () => {
       className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 select-none animate-in fade-in duration-150"
     >
       <div
-        className="w-full max-w-[390px] max-h-[340px] bg-white dark:bg-[#18181b] rounded-[12px] border border-[#e5e7eb] dark:border-[#27272a] shadow-modal relative animate-in fade-in zoom-in-95 duration-100 flex flex-col overflow-hidden"
+        className="w-full max-w-[430px] max-h-[350px] bg-white dark:bg-[#18181b] rounded-[12px] border border-[#e5e7eb] dark:border-[#27272a] shadow-modal relative animate-in fade-in zoom-in-95 duration-100 flex flex-col overflow-hidden"
         onKeyDown={handleKeyDown}
       >
         {/* Top Header */}
@@ -257,7 +280,7 @@ export const QuickCaptureModal: React.FC = () => {
             rows={showChecklist || checklist.length > 0 ? 2 : 4}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Add a task, idea, bug, note, or research..."
+            placeholder="Add a title or task... (Shift+Enter for details/body)"
             className="w-full bg-[#f9fafb] dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] focus:border-[#9ca3af] dark:focus:border-[#52525b] rounded-[8px] p-2.5 text-xs text-[#111827] dark:text-[#f4f4f5] placeholder-[#9ca3af] dark:placeholder-[#71717a] outline-none focus:outline-none focus:ring-0 resize-none leading-relaxed min-h-[64px] shrink-0"
           />
 

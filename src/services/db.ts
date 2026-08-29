@@ -21,19 +21,35 @@ export class DatabaseService {
     }
   }
 
-  public async getActiveWorkspace(): Promise<Workspace | null> {
-    if (!this.activeWorkspaceId) {
+  public getActiveWorkspaceId(): string | null {
+    try {
       const saved = localStorage.getItem(ACTIVE_WS_KEY);
       if (saved) {
         this.activeWorkspaceId = saved;
+        return saved;
       }
+      if (!this.activeWorkspaceId) {
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && k.startsWith(STORAGE_KEY_PREFIX) && !k.endsWith('_projects') && !k.endsWith('_items')) {
+            const id = k.replace(STORAGE_KEY_PREFIX, '');
+            this.activeWorkspaceId = id;
+            localStorage.setItem(ACTIVE_WS_KEY, id);
+            return id;
+          }
+        }
+      }
+    } catch {
+      // Storage unavailable
     }
+    return this.activeWorkspaceId;
+  }
 
-    if (!this.activeWorkspaceId) {
-      return null;
-    }
+  public async getActiveWorkspace(): Promise<Workspace | null> {
+    const wsId = this.getActiveWorkspaceId();
+    if (!wsId) return null;
 
-    const wsJson = localStorage.getItem(`${STORAGE_KEY_PREFIX}${this.activeWorkspaceId}`);
+    const wsJson = localStorage.getItem(`${STORAGE_KEY_PREFIX}${wsId}`);
     if (!wsJson) return null;
 
     try {
@@ -81,7 +97,7 @@ export class DatabaseService {
   // --- Projects ---
 
   public async getProjects(): Promise<Project[]> {
-    const wsId = this.activeWorkspaceId;
+    const wsId = this.getActiveWorkspaceId();
     if (!wsId) return [];
     const json = localStorage.getItem(`${STORAGE_KEY_PREFIX}${wsId}_projects`);
     if (!json) return [];
@@ -97,7 +113,7 @@ export class DatabaseService {
   }
 
   public async createProject(data: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>): Promise<Project> {
-    const wsId = this.activeWorkspaceId;
+    const wsId = this.getActiveWorkspaceId();
     if (!wsId) throw new Error('No active workspace');
 
     const projects = await this.getProjects();
@@ -116,7 +132,7 @@ export class DatabaseService {
   }
 
   public async updateProject(project: Project): Promise<void> {
-    const wsId = this.activeWorkspaceId;
+    const wsId = this.getActiveWorkspaceId();
     if (!wsId) return;
 
     const projects = await this.getProjects();
@@ -128,7 +144,7 @@ export class DatabaseService {
   }
 
   public async deleteProject(projectId: string): Promise<void> {
-    const wsId = this.activeWorkspaceId;
+    const wsId = this.getActiveWorkspaceId();
     if (!wsId) return;
 
     const projects = (await this.getProjects()).filter(p => p.id !== projectId);
@@ -142,7 +158,7 @@ export class DatabaseService {
   // --- Items ---
 
   public async getItems(filters?: FilterOptions): Promise<Item[]> {
-    const wsId = this.activeWorkspaceId;
+    const wsId = this.getActiveWorkspaceId();
     if (!wsId) return [];
 
     const json = localStorage.getItem(`${STORAGE_KEY_PREFIX}${wsId}_items`);
@@ -229,7 +245,7 @@ export class DatabaseService {
     checklist?: ChecklistItem[];
     attachments?: Attachment[];
   }): Promise<Item> {
-    const wsId = this.activeWorkspaceId;
+    const wsId = this.getActiveWorkspaceId();
     if (!wsId) throw new Error('No active workspace');
 
     const items = await this.getItems();
@@ -258,7 +274,7 @@ export class DatabaseService {
   }
 
   public async updateItem(item: Item): Promise<void> {
-    const wsId = this.activeWorkspaceId;
+    const wsId = this.getActiveWorkspaceId();
     if (!wsId) return;
 
     const items = await this.getItems();
@@ -276,7 +292,7 @@ export class DatabaseService {
   }
 
   public async deleteItem(id: string): Promise<void> {
-    const wsId = this.activeWorkspaceId;
+    const wsId = this.getActiveWorkspaceId();
     if (!wsId) return;
 
     const items = (await this.getItems()).filter(i => i.id !== id);

@@ -78,7 +78,6 @@ export const SearchInput: React.FC<SearchInputProps> = ({
             type="button"
             onClick={handleClear}
             className="p-1 rounded-[4px] text-[#9ca3af] hover:text-[#111827] dark:hover:text-white hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] transition-colors"
-            title="Clear search"
           >
             <X className="w-3.5 h-3.5" />
           </button>

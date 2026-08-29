@@ -107,7 +107,6 @@ export const OnboardingModal: React.FC = () => {
           {workspace && (
             <button
               onClick={() => setOnboardingOpen(false)}
-              title="Exit Tour (Esc)"
               className="p-1 rounded-[4px] text-[#6b7280] dark:text-[#a1a1aa] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] hover:text-[#111827] dark:hover:text-white transition-colors -mr-1"
             >
               <X className="w-3.5 h-3.5" />

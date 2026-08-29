@@ -44,6 +44,8 @@ export const StandaloneQuickCapture: React.FC = () => {
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
 
+  const titleRef = useRef('');
+  const newProjectNameRef = useRef('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const checklistInputRef = useRef<HTMLTextAreaElement>(null);
   const bodyScrollRef = useRef<HTMLDivElement>(null);
@@ -61,6 +63,7 @@ export const StandaloneQuickCapture: React.FC = () => {
       setProjects(updated);
       setProjectId(created.id);
       setNewProjectName('');
+      newProjectNameRef.current = '';
       setIsCreatingProject(false);
       setIsProjectMenuOpen(false);
       broadcastSync({ type: 'projects_reload' });
@@ -102,7 +105,6 @@ export const StandaloneQuickCapture: React.FC = () => {
     }
   };
 
-  const titleRef = useRef(title);
   useEffect(() => {
     titleRef.current = title;
   }, [title]);
@@ -142,8 +144,8 @@ export const StandaloneQuickCapture: React.FC = () => {
         const monitor = await currentMonitor();
         if (monitor) {
           const scaleFactor = monitor.scaleFactor || 1;
-          const physicalW = Math.round(390 * scaleFactor);
-          const physicalH = Math.round(245 * scaleFactor);
+          const physicalW = Math.round(430 * scaleFactor);
+          const physicalH = Math.round(250 * scaleFactor);
           const marginY = Math.round(65 * scaleFactor);
           const physicalX = monitor.position.x + Math.round((monitor.size.width - physicalW) / 2);
           const physicalY = monitor.position.y + monitor.size.height - physicalH - marginY;
@@ -179,8 +181,8 @@ export const StandaloneQuickCapture: React.FC = () => {
     };
 
     const handleBlur = () => {
-      // Auto-close if nothing is typed in
-      if (!titleRef.current.trim()) {
+      // Auto-close if nothing is typed in and not creating project
+      if (!titleRef.current.trim() && !newProjectNameRef.current.trim()) {
         closeWindow();
       }
     };
@@ -214,7 +216,7 @@ export const StandaloneQuickCapture: React.FC = () => {
         const { getCurrentWindow } = await import('@tauri-apps/api/window');
         const win = getCurrentWindow();
         unlistenFocus = await win.onFocusChanged(({ payload: focused }) => {
-          if (!focused && !titleRef.current.trim()) {
+          if (!focused && !titleRef.current.trim() && !newProjectNameRef.current.trim()) {
             closeWindow();
           }
         });
@@ -233,7 +235,8 @@ export const StandaloneQuickCapture: React.FC = () => {
   }, [projectId]);
 
   const handleSave = async () => {
-    if (!title.trim()) return;
+    const raw = title.trim();
+    if (!raw) return;
 
     const checklistItems: ChecklistItem[] = checklist.map((c, idx) => ({
       id: c.id || crypto.randomUUID(),
@@ -243,9 +246,15 @@ export const StandaloneQuickCapture: React.FC = () => {
       position: idx,
     }));
 
+    // First line is heading/title, subsequent lines are details/body
+    const lines = title.split('\n');
+    const firstLine = lines[0].trim();
+    const bodyContent = lines.slice(1).join('\n').trim();
+
     const newItem = await dbService.createItem({
       projectId,
-      title: title.trim(),
+      title: firstLine || raw,
+      content: bodyContent || '',
       type,
       priority,
       status: 'inbox',
@@ -322,7 +331,7 @@ export const StandaloneQuickCapture: React.FC = () => {
               handleSave();
             }
           }}
-          placeholder="Add a task, idea, bug, note, or research..."
+          placeholder="Add a title or task... (Shift+Enter for details/body)"
           className="w-full bg-[#f9fafb] dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] focus:border-[#9ca3af] dark:focus:border-[#52525b] rounded-[8px] p-2.5 text-xs text-[#111827] dark:text-[#f4f4f5] placeholder-[#9ca3af] dark:placeholder-[#71717a] outline-none focus:outline-none focus:ring-0 resize-none leading-relaxed min-h-[64px] shrink-0"
         />
 
@@ -390,7 +399,7 @@ export const StandaloneQuickCapture: React.FC = () => {
       </div>
 
       {/* Bottom Metadata Toolbar & Action Button */}
-      <div className="px-3.5 py-2.5 bg-[#fafafa] dark:bg-[#141416] border-t border-[#f3f4f6] dark:border-[#27272a] flex items-center justify-between gap-3 flex-nowrap">
+      <div className="px-3.5 py-2.5 bg-[#fafafa] dark:bg-[#141416] border-t border-[#f3f4f6] dark:border-[#27272a] flex items-center justify-between gap-2 flex-nowrap">
         <div className="flex items-center gap-1.5 min-w-0 flex-nowrap">
           {/* Project Selector Pill */}
           <div className="relative" ref={projectRef}>
@@ -442,7 +451,10 @@ export const StandaloneQuickCapture: React.FC = () => {
                           ref={newProjectInputRef}
                           type="text"
                           value={newProjectName}
-                          onChange={(e) => setNewProjectName(e.target.value)}
+                          onChange={(e) => {
+                            setNewProjectName(e.target.value);
+                            newProjectNameRef.current = e.target.value;
+                          }}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                               e.preventDefault();
@@ -453,6 +465,7 @@ export const StandaloneQuickCapture: React.FC = () => {
                               e.stopPropagation();
                               setIsCreatingProject(false);
                               setNewProjectName('');
+                              newProjectNameRef.current = '';
                             }
                           }}
                           placeholder="Project name..."

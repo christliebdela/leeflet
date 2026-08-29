@@ -15,8 +15,8 @@ export async function openQuickCaptureWindow(): Promise<void> {
       return;
     }
 
-    const logicalWidth = 390;
-    const logicalHeight = 245;
+    const logicalWidth = 430;
+    const logicalHeight = 250;
 
     let targetPhysicalX: number | undefined;
     let targetPhysicalY: number | undefined;
@@ -145,40 +145,52 @@ export async function openQueueWidgetWindow(): Promise<void> {
       return;
     }
 
-    const width = 280;
-    const height = 360;
+    const width = 330;
+    const height = 420;
     let x: number | undefined;
     let y: number | undefined;
 
-    try {
-      const monitor = await currentMonitor();
-      if (monitor) {
-        const scaleFactor = monitor.scaleFactor || 1;
-        const screenWidth = monitor.size.width / scaleFactor;
-        const monitorX = monitor.position.x / scaleFactor;
-        const monitorY = monitor.position.y / scaleFactor;
+    const savedX = localStorage.getItem('leaf_queue_widget_pos_x');
+    const savedY = localStorage.getItem('leaf_queue_widget_pos_y');
+    const savedAlwaysOnTop = localStorage.getItem('leaf_queue_widget_always_on_top') === 'true';
 
-        // Position at top-right corner
-        x = Math.round(monitorX + screenWidth - width - 24);
-        y = Math.round(monitorY + 60);
+    if (savedX !== null && savedY !== null && !isNaN(Number(savedX)) && !isNaN(Number(savedY))) {
+      x = parseInt(savedX, 10);
+      y = parseInt(savedY, 10);
+    } else {
+      try {
+        const monitor = await currentMonitor();
+        if (monitor) {
+          const scaleFactor = monitor.scaleFactor || 1;
+          const screenWidth = monitor.size.width / scaleFactor;
+          const screenHeight = monitor.size.height / scaleFactor;
+          const monitorX = monitor.position.x / scaleFactor;
+          const monitorY = monitor.position.y / scaleFactor;
+
+          // Position in the bottom-right corner for first-time open
+          x = Math.round(monitorX + screenWidth - width - 24);
+          y = Math.round(monitorY + screenHeight - height - 48);
+        }
+      } catch {
+        // Fallback
       }
-    } catch {
-      // Fallback
     }
 
     const win = new WebviewWindow('queue_widget', {
       url: '/?window=queue_widget',
-      title: 'My Queue',
+      title: 'My Queue (Mini Mode)',
       width,
       height,
       x,
       y,
-      minWidth: 240,
-      minHeight: 260,
+      minWidth: 300,
+      maxWidth: 480,
+      minHeight: 280,
+      maxHeight: 720,
       resizable: true,
       decorations: false,
       transparent: true,
-      alwaysOnTop: true,
+      alwaysOnTop: savedAlwaysOnTop,
       shadow: true,
       skipTaskbar: true,
     });
@@ -188,6 +200,32 @@ export async function openQueueWidgetWindow(): Promise<void> {
     });
   } catch (err) {
     console.error('Failed to open queue widget window:', err);
+  }
+}
+
+export async function enterMiniMode(): Promise<void> {
+  try {
+    await openQueueWidgetWindow();
+    const mainWin = await WebviewWindow.getByLabel('main');
+    if (mainWin) {
+      await mainWin.hide();
+    }
+  } catch (err) {
+    // Web browser localhost fallback
+    window.open('/?window=queue_widget', 'leaf_queue_widget', 'width=320,height=420');
+  }
+}
+
+export async function exitMiniMode(): Promise<void> {
+  try {
+    const mainWin = await WebviewWindow.getByLabel('main');
+    if (mainWin) {
+      await mainWin.show();
+      await mainWin.unminimize();
+      await mainWin.setFocus();
+    }
+  } catch (err) {
+    console.error('Failed to exit mini mode:', err);
   }
 }
 

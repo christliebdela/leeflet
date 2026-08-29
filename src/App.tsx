@@ -10,7 +10,8 @@ import { StickyNoteView } from './components/StickyNoteView';
 import { OnboardingModal } from './components/OnboardingModal';
 import { WorkspaceModal } from './components/WorkspaceModal';
 import { ProjectModal } from './components/ProjectModal';
-import { openQuickCaptureWindow } from './utils/window';
+import { openQuickCaptureWindow, enterMiniMode } from './utils/window';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 export const App: React.FC = () => {
   const {
@@ -99,7 +100,19 @@ export const App: React.FC = () => {
         return;
       }
 
-      // 5. Number keys 1-9 to switch between projects when not typing
+      // 5. Mini Mode: 'm' / 'M' (when not typing) or Ctrl+M
+      if (!isInput && (e.key === 'm' || e.key === 'M') && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
+        e.preventDefault();
+        enterMiniMode();
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'm' || e.key === 'M')) {
+        e.preventDefault();
+        enterMiniMode();
+        return;
+      }
+
+      // 6. Number keys 1-9 to switch between projects when not typing
       if (!isInput && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
         const num = parseInt(e.key, 10);
         if (!isNaN(num) && num >= 1 && num <= projects.length) {
@@ -163,39 +176,41 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className="h-screen w-screen flex bg-[#f8f9fa] dark:bg-[#0f0f11] text-[#111827] dark:text-[#f4f4f5] overflow-hidden select-none">
-      {/* Left Sidebar */}
-      <Sidebar />
+    <TooltipProvider delayDuration={150}>
+      <div className="h-screen w-screen flex bg-[#f8f9fa] dark:bg-[#0f0f11] text-[#111827] dark:text-[#f4f4f5] overflow-hidden select-none">
+        {/* Left Sidebar */}
+        <Sidebar />
 
-      {/* Main Content Area */}
-      <div className="flex-1 h-full flex flex-col min-w-0 overflow-hidden relative">
-        {/* Fixed Unified Header */}
-        <HeaderBar />
+        {/* Main Content Area */}
+        <div className="flex-1 h-full flex flex-col min-w-0 overflow-hidden relative">
+          {/* Fixed Unified Header */}
+          <HeaderBar />
 
-        {/* Dynamic Body Content & Detail / Settings Pane */}
-        <main className="flex-1 min-h-0 flex overflow-hidden relative">
-          <div className="flex-1 min-w-0 h-full flex flex-col overflow-hidden">
-            {viewMode.type === 'my_queue' ? (
-              <MyQueueView />
-            ) : (
-              <ItemListView />
-            )}
-          </div>
+          {/* Dynamic Body Content & Detail / Settings Pane */}
+          <main className="flex-1 min-h-0 flex overflow-hidden relative">
+            <div className="flex-1 min-w-0 h-full flex flex-col overflow-hidden">
+              {viewMode.type === 'my_queue' ? (
+                <MyQueueView />
+              ) : (
+                <ItemListView />
+              )}
+            </div>
 
-          {/* Item Detail Split Slide-In Pane */}
-          <ItemDetailPane />
+            {/* Item Detail Split Slide-In Pane */}
+            <ItemDetailPane />
 
-          {/* Settings Split Slide-In Pane */}
-          <WorkspaceModal />
-        </main>
+            {/* Settings Split Slide-In Pane */}
+            <WorkspaceModal />
+          </main>
+        </div>
+
+        {/* Modals and Overlays */}
+        <QuickCaptureModal />
+        <StickyNoteView />
+        <OnboardingModal />
+        <ProjectModal />
       </div>
-
-      {/* Modals and Overlays */}
-      <QuickCaptureModal />
-      <StickyNoteView />
-      <OnboardingModal />
-      <ProjectModal />
-    </div>
+    </TooltipProvider>
   );
 };
 
