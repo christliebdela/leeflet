@@ -720,7 +720,7 @@ export const StandaloneQueueWidget: React.FC = () => {
       >
         <div className="flex flex-col items-center gap-1.5" data-tauri-drag-region>
           <img
-            src="/leaf_logo.png"
+            src="/logo_alpha.png"
             alt="leeflet"
             className="w-10 h-10 object-contain animate-pulse"
             data-tauri-drag-region

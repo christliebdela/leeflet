@@ -253,7 +253,7 @@ export const App: React.FC = () => {
       <div className="h-screen w-screen bg-[#f8f9fa] dark:bg-[#0f0f11] flex flex-col items-center justify-center animate-in fade-in duration-200 select-none relative px-6">
         <div className="flex flex-col items-center gap-2.5">
           <img
-            src="/leaf_logo.png"
+            src="/logo_alpha.png"
             alt="leeflet"
             className="w-14 h-14 object-contain animate-pulse"
           />
