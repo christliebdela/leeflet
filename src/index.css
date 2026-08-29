@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer utilities {
+  .font-brand {
+    font-family: 'Instrument Serif', 'Newsreader', 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
+    font-style: italic;
+    letter-spacing: -0.015em;
+  }
+}
+
 @layer base {
   * {
     box-sizing: border-box;

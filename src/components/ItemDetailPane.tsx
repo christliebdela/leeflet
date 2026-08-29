@@ -715,19 +715,12 @@ export const ItemDetailPane: React.FC = () => {
             </Tooltip>
             */}
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={handleClose}
-                  className="p-1 rounded-[4px] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] hover:text-[#111827] dark:hover:text-white transition-colors"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Close (Esc)</p>
-              </TooltipContent>
-            </Tooltip>
+            <button
+              onClick={handleClose}
+              className="p-1 rounded-[4px] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] hover:text-[#111827] dark:hover:text-white transition-colors"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
 

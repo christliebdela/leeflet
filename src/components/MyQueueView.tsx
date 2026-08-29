@@ -209,7 +209,7 @@ export const MyQueueView: React.FC = () => {
       <div className={`flex-1 h-full overflow-y-auto ${isPaneOpen ? 'pl-3 pr-2 py-3' : 'p-3'} flex flex-col custom-scrollbar`}>
         <div className="flex-1 min-h-[360px] w-full flex flex-col items-center justify-center text-center p-8 border border-dashed border-[#e5e7eb] dark:border-[#27272a] rounded-[10px] bg-gradient-to-b from-transparent to-[#fafafa]/60 dark:to-[#18181b]/30">
           <div className="w-12 h-12 rounded-2xl bg-white dark:bg-[#27272a] border border-[#e5e7eb] dark:border-[#3f3f46] shadow-xs flex items-center justify-center mb-3 transition-transform hover:scale-105">
-            <Sparkles className="w-6 h-6 text-emerald-500" />
+            <Sparkles className="w-6 h-6 text-[#6b7280] dark:text-[#a1a1aa]" />
           </div>
           <h3 className="text-sm font-semibold text-[#111827] dark:text-[#f4f4f5] tracking-tight">
             Queue Zero — all caught up
@@ -222,7 +222,7 @@ export const MyQueueView: React.FC = () => {
             className="mt-4 flex items-center gap-1.5 px-3.5 py-1.5 bg-[#111827] dark:bg-white text-white dark:text-[#111827] rounded-[6px] text-xs font-semibold hover:bg-[#1f2937] dark:hover:bg-[#e4e4e7] transition-all shadow-subtle active:scale-95"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>Add to Queue (C)</span>
+            <span>Add to Queue</span>
           </button>
         </div>
       </div>

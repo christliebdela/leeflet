@@ -20,9 +20,11 @@ import {
   Globe,
   AlertCircle,
   Plus,
+  Coffee,
 } from 'lucide-react';
 import { Item, Attachment } from '../types';
 import { formatFileSize } from '../utils/format';
+import { toast } from '../store/useToastStore';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 type Tab = 'preferences' | 'shortcuts';
@@ -36,17 +38,19 @@ interface ShortcutItem {
 
 const SHORTCUTS_DATA: ShortcutItem[] = [
   { id: '1', label: 'New Item (In-App)', category: 'Creation & Global', keys: ['N', 'Ctrl + N'] },
-  { id: '2', label: 'Quick Capture (Desktop Floating Panel)', category: 'Creation & Global', keys: ['Alt + L'] },
+  { id: '2', label: 'Quick Capture (Desktop Floating Panel)', category: 'Creation & Global', keys: ['Alt + L', 'Alt + N'] },
   { id: '3', label: 'Search Workspace', category: 'Creation & Global', keys: ['Ctrl + K', '/'] },
-  { id: '4', label: 'Open Settings Sheet', category: 'Creation & Global', keys: ['S', 'Ctrl + ,'] },
-  { id: '5', label: 'Close Sheet / Modal', category: 'Creation & Global', keys: ['Esc'] },
-  { id: '6', label: 'Go to Backlog', category: 'Views & Projects', keys: ['Ctrl + I'] },
-  { id: '7', label: 'Go to My Queue', category: 'Views & Projects', keys: ['Ctrl + Q'] },
-  { id: '8', label: 'Go to All Items', category: 'Views & Projects', keys: ['Ctrl + Shift + A'] },
-  { id: '9', label: 'Switch Projects (1-9)', category: 'Views & Projects', keys: ['1 - 9'] },
-  { id: '11', label: 'Delete Selected Card', category: 'Item Actions', keys: ['Del / Backspace'] },
-  { id: '12', label: 'Add Checklist Item', category: 'Item Actions', keys: ['Enter'] },
-  { id: '13', label: 'Mini Mode (Queue Card)', category: 'Views & Projects', keys: ['M'] },
+  { id: '4', label: 'Coffee Break / Standby', category: 'Creation & Global', keys: ['Z'] },
+  { id: '5', label: 'Open Settings Sheet', category: 'Creation & Global', keys: ['S', 'Ctrl + ,'] },
+  { id: '6', label: 'Close Sheet / Modal', category: 'Creation & Global', keys: ['Esc'] },
+  { id: '7', label: 'Go to Backlog', category: 'Views & Projects', keys: ['Ctrl + I'] },
+  { id: '8', label: 'Go to My Queue', category: 'Views & Projects', keys: ['Ctrl + Q'] },
+  { id: '9', label: 'Go to All Items', category: 'Views & Projects', keys: ['Ctrl + Shift + A'] },
+  { id: '10', label: 'Switch Projects (1-9)', category: 'Views & Projects', keys: ['1 - 9'] },
+  { id: '11', label: 'Mini Mode (Queue Card)', category: 'Views & Projects', keys: ['M'] },
+  { id: '12', label: 'Pin on Top (Mini Mode)', category: 'Views & Projects', keys: ['P'] },
+  { id: '13', label: 'Delete Selected Card', category: 'Item Actions', keys: ['Del / Backspace'] },
+  { id: '14', label: 'Add Checklist Item', category: 'Item Actions', keys: ['Enter'] },
 ];
 
 export const WorkspaceModal: React.FC = () => {
@@ -57,6 +61,8 @@ export const WorkspaceModal: React.FC = () => {
     setWorkspaceModalOpen,
     setOnboardingOpen,
     setQuickCaptureOpen,
+    standbyJokesEnabled,
+    setStandbyJokesEnabled,
     initialize,
   } = useLeafStore();
 
@@ -110,7 +116,7 @@ export const WorkspaceModal: React.FC = () => {
     try {
       setIsExporting(true);
       const jsonStr = await dbService.exportWorkspaceData();
-      const defaultFilename = `leaf-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      const defaultFilename = `leeflet-backup-${new Date().toISOString().slice(0, 10)}.json`;
 
       // 1. Native Tauri Save File Dialog + Direct Rust File Write
       try {
@@ -123,7 +129,7 @@ export const WorkspaceModal: React.FC = () => {
 
         if (filePath) {
           await invoke('write_file_to_path', { path: filePath, content: jsonStr });
-          alert('Workspace backup exported successfully!');
+          toast.success('Workspace backup exported successfully!');
           return;
         } else {
           // User clicked Cancel
@@ -143,9 +149,10 @@ export const WorkspaceModal: React.FC = () => {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      toast.success('Workspace backup exported successfully!');
     } catch (err) {
       console.error('Export error:', err);
-      alert('Failed to export workspace data.');
+      toast.error('Failed to export workspace data.');
     } finally {
       setIsExporting(false);
     }
@@ -163,9 +170,9 @@ export const WorkspaceModal: React.FC = () => {
       if (selected && typeof selected === 'string') {
         const text = await invoke<string>('read_file_from_path', { path: selected });
         await dbService.importWorkspaceData(text);
-        alert('Workspace restored successfully!');
-        await initialize();
+        toast.success('Workspace restored successfully!');
         setWorkspaceModalOpen(false);
+        await initialize('restoring workspace backup...');
         return;
       }
     } catch (err) {
@@ -183,11 +190,11 @@ export const WorkspaceModal: React.FC = () => {
       try {
         const text = event.target?.result as string;
         await dbService.importWorkspaceData(text);
-        alert('Workspace restored successfully!');
-        await initialize();
+        toast.success('Workspace restored successfully!');
         setWorkspaceModalOpen(false);
+        await initialize('restoring workspace backup...');
       } catch {
-        alert('Failed to import workspace. Invalid JSON format.');
+        toast.error('Failed to import workspace. Invalid JSON format.');
       }
     };
     reader.readAsText(file);
@@ -196,6 +203,7 @@ export const WorkspaceModal: React.FC = () => {
   const handleCopyPath = () => {
     navigator.clipboard.writeText(workspace.path);
     setCopiedPath(true);
+    toast.info('Workspace path copied to clipboard');
     setTimeout(() => setCopiedPath(false), 2000);
   };
 
@@ -208,7 +216,7 @@ export const WorkspaceModal: React.FC = () => {
         const { openPath } = await import('@tauri-apps/plugin-opener');
         await openPath(workspace.path);
       } catch {
-        alert(`Workspace folder path:\n${workspace.path}`);
+        toast.info(`Workspace path: ${workspace.path}`);
       }
     }
   };
@@ -248,7 +256,7 @@ export const WorkspaceModal: React.FC = () => {
                 <img
                   src="/leaf_logo.png"
                   alt="Leaf"
-                  className="w-3.5 h-3.5 object-contain brightness-0 dark:brightness-0 dark:invert"
+                  className="w-3.5 h-3.5 object-contain"
                 />
               </div>
               <h2 className="text-xs font-bold text-[#111827] dark:text-[#f4f4f5] tracking-tight">
@@ -256,17 +264,12 @@ export const WorkspaceModal: React.FC = () => {
               </h2>
             </div>
 
-            <div className="flex items-center gap-1.5">
-              <kbd className="hidden sm:inline-block px-1.5 py-0.5 rounded bg-[#f3f4f6] dark:bg-[#27272a] border border-[#e5e7eb] dark:border-[#3f3f46] font-mono text-[9px] font-semibold text-[#6b7280] dark:text-[#a1a1aa]">
-                Esc
-              </kbd>
-              <button
-                onClick={() => setWorkspaceModalOpen(false)}
-                className="p-1 rounded-[5px] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white transition-colors"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
+            <button
+              onClick={() => setWorkspaceModalOpen(false)}
+              className="p-1 rounded-[5px] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white transition-colors"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
           </div>
 
           {/* Clean Modern Tab Navigation */}
@@ -323,14 +326,14 @@ export const WorkspaceModal: React.FC = () => {
                     .map((item) => (
                       <div
                         key={item.id}
-                        className="flex items-center justify-between py-1.5 border-b border-[#f3f4f6] dark:border-[#27272a] last:border-b-0"
+                        className="flex items-center justify-between gap-3 py-1.5 border-b border-[#f3f4f6] dark:border-[#27272a] last:border-b-0"
                       >
-                        <span className="text-[#6b7280] dark:text-[#a1a1aa]">{item.label}</span>
-                        <div className="flex items-center gap-1">
+                        <span className="text-[#6b7280] dark:text-[#a1a1aa] min-w-0">{item.label}</span>
+                        <div className="flex items-center gap-1 shrink-0 whitespace-nowrap">
                           {item.keys.map((k, idx) => (
                             <React.Fragment key={idx}>
-                              {idx > 0 && <span className="text-[10px] text-[#9ca3af]">or</span>}
-                              <kbd className="px-1.5 py-0.5 rounded bg-[#f3f4f6] dark:bg-[#27272a] border border-[#e5e7eb] dark:border-[#3f3f46] font-mono text-[10px] font-semibold text-[#111827] dark:text-white">
+                              {idx > 0 && <span className="text-[10px] text-[#9ca3af] shrink-0">or</span>}
+                              <kbd className="px-1.5 py-0.5 rounded bg-[#f3f4f6] dark:bg-[#27272a] border border-[#e5e7eb] dark:border-[#3f3f46] font-mono text-[10px] font-semibold text-[#111827] dark:text-white whitespace-nowrap shrink-0 inline-block">
                                 {k}
                               </kbd>
                             </React.Fragment>
@@ -353,14 +356,14 @@ export const WorkspaceModal: React.FC = () => {
                     .map((item) => (
                       <div
                         key={item.id}
-                        className="flex items-center justify-between py-1.5 border-b border-[#f3f4f6] dark:border-[#27272a] last:border-b-0"
+                        className="flex items-center justify-between gap-3 py-1.5 border-b border-[#f3f4f6] dark:border-[#27272a] last:border-b-0"
                       >
-                        <span className="text-[#6b7280] dark:text-[#a1a1aa]">{item.label}</span>
-                        <div className="flex items-center gap-1">
+                        <span className="text-[#6b7280] dark:text-[#a1a1aa] min-w-0">{item.label}</span>
+                        <div className="flex items-center gap-1 shrink-0 whitespace-nowrap">
                           {item.keys.map((k, idx) => (
                             <React.Fragment key={idx}>
-                              {idx > 0 && <span className="text-[10px] text-[#9ca3af]">or</span>}
-                              <kbd className="px-1.5 py-0.5 rounded bg-[#f3f4f6] dark:bg-[#27272a] border border-[#e5e7eb] dark:border-[#3f3f46] font-mono text-[10px] font-semibold text-[#111827] dark:text-white">
+                              {idx > 0 && <span className="text-[10px] text-[#9ca3af] shrink-0">or</span>}
+                              <kbd className="px-1.5 py-0.5 rounded bg-[#f3f4f6] dark:bg-[#27272a] border border-[#e5e7eb] dark:border-[#3f3f46] font-mono text-[10px] font-semibold text-[#111827] dark:text-white whitespace-nowrap shrink-0 inline-block">
                                 {k}
                               </kbd>
                             </React.Fragment>
@@ -383,14 +386,14 @@ export const WorkspaceModal: React.FC = () => {
                     .map((item) => (
                       <div
                         key={item.id}
-                        className="flex items-center justify-between py-1.5 border-b border-[#f3f4f6] dark:border-[#27272a] last:border-b-0"
+                        className="flex items-center justify-between gap-3 py-1.5 border-b border-[#f3f4f6] dark:border-[#27272a] last:border-b-0"
                       >
-                        <span className="text-[#6b7280] dark:text-[#a1a1aa]">{item.label}</span>
-                        <div className="flex items-center gap-1">
+                        <span className="text-[#6b7280] dark:text-[#a1a1aa] min-w-0">{item.label}</span>
+                        <div className="flex items-center gap-1 shrink-0 whitespace-nowrap">
                           {item.keys.map((k, idx) => (
                             <React.Fragment key={idx}>
-                              {idx > 0 && <span className="text-[10px] text-[#9ca3af]">or</span>}
-                              <kbd className="px-1.5 py-0.5 rounded bg-[#f3f4f6] dark:bg-[#27272a] border border-[#e5e7eb] dark:border-[#3f3f46] font-mono text-[10px] font-semibold text-[#111827] dark:text-white">
+                              {idx > 0 && <span className="text-[10px] text-[#9ca3af] shrink-0">or</span>}
+                              <kbd className="px-1.5 py-0.5 rounded bg-[#f3f4f6] dark:bg-[#27272a] border border-[#e5e7eb] dark:border-[#3f3f46] font-mono text-[10px] font-semibold text-[#111827] dark:text-white whitespace-nowrap shrink-0 inline-block">
                                 {k}
                               </kbd>
                             </React.Fragment>
@@ -543,6 +546,40 @@ export const WorkspaceModal: React.FC = () => {
                 </div>
               </div>
 
+              {/* Coffee Break & Standby Section */}
+              <div className="p-3 bg-white dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#2e2e32] rounded-[8px] space-y-2">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-[#111827] dark:text-[#f4f4f5]">
+                  <Coffee className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
+                  <span>Coffee Break & Standby</span>
+                </div>
+                <div className="space-y-1 text-xs">
+                  <div className="flex items-center justify-between py-1.5">
+                    <div className="pr-3">
+                      <div className="text-[#111827] dark:text-[#f4f4f5] font-medium">Developer Jokes</div>
+                      <div className="text-[10.5px] text-[#6b7280] dark:text-[#71717a]">
+                        Display a random programming joke during standby
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={standbyJokesEnabled}
+                      onClick={() => setStandbyJokesEnabled(!standbyJokesEnabled)}
+                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        standbyJokesEnabled ? 'bg-[#111827] dark:bg-white' : 'bg-[#e5e7eb] dark:bg-[#3f3f46]'
+                      }`}
+                    >
+                      <span
+                        aria-hidden="true"
+                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white dark:bg-[#18181b] shadow-sm ring-0 transition duration-200 ease-in-out ${
+                          standbyJokesEnabled ? 'translate-x-4' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               {/* Developer & About Section */}
               <div className="p-3 bg-white dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#2e2e32] rounded-[8px] space-y-2">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-[#111827] dark:text-[#f4f4f5]">
@@ -552,7 +589,7 @@ export const WorkspaceModal: React.FC = () => {
                 <div className="space-y-1 text-xs">
                   <div className="flex items-center justify-between py-1.5 border-b border-[#f3f4f6] dark:border-[#27272a]">
                     <div>
-                      <div className="text-[#111827] dark:text-[#f4f4f5] font-medium">Leaf</div>
+                      <div className="font-brand text-lg text-[#111827] dark:text-[#f4f4f5]">leeflet</div>
                       <div className="text-[10.5px] text-[#6b7280] dark:text-[#71717a]">Local-First Desktop Workspace</div>
                     </div>
                     <span className="px-1.5 py-0.5 rounded bg-[#f4f5f6] dark:bg-[#27272a] border border-[#e5e7eb] dark:border-[#3f3f46] font-mono text-[10px] font-semibold text-[#6b7280] dark:text-[#a1a1aa]">

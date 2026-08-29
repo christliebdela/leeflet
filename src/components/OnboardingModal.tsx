@@ -15,14 +15,14 @@ export const OnboardingModal: React.FC = () => {
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [workspaceName, setWorkspaceName] = useState('My Workspace');
-  const [workspaceLocation, setWorkspaceLocation] = useState('C:\\leaf');
+  const [workspaceLocation, setWorkspaceLocation] = useState('C:\\leeflet');
   const [projectName, setProjectName] = useState('My Project');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (workspace) {
       setWorkspaceName(workspace.name || 'My Workspace');
-      setWorkspaceLocation(workspace.path || 'C:\\leaf');
+      setWorkspaceLocation(workspace.path || 'C:\\leeflet');
     }
   }, [workspace, isOnboardingOpen]);
 
@@ -122,12 +122,13 @@ export const OnboardingModal: React.FC = () => {
                 <img
                   src="/leaf_logo.png"
                   alt="leaf"
-                  className="w-5 h-5 object-contain brightness-0 dark:brightness-0 dark:invert"
+                  className="w-6 h-6 object-contain"
                 />
               </div>
               <div>
-                <h1 className="text-sm font-bold text-[#111827] dark:text-[#f4f4f5] tracking-tight">
-                  Welcome to Leaf
+                <h1 className="text-sm font-semibold text-[#111827] dark:text-[#f4f4f5] tracking-tight flex items-baseline gap-1.5">
+                  <span>Welcome to</span>
+                  <span className="font-brand text-lg font-normal">leeflet</span>
                 </h1>
                 <p className="text-[11px] text-[#6b7280] dark:text-[#a1a1aa]">
                   Local-first desktop workspace

@@ -224,7 +224,7 @@ export const StandaloneStickyNote: React.FC<StandaloneStickyNoteProps> = ({ item
   // Synchronize OS Taskbar Window Title with the Item Title
   useEffect(() => {
     if (item?.title) {
-      const winTitle = `${item.title} — leaf`;
+      const winTitle = `${item.title} — leeflet`;
       document.title = winTitle;
       import('@tauri-apps/api/window')
         .then(({ getCurrentWindow }) => {
@@ -232,10 +232,10 @@ export const StandaloneStickyNote: React.FC<StandaloneStickyNoteProps> = ({ item
         })
         .catch(() => {});
     } else if (item) {
-      document.title = 'leaf';
+      document.title = 'leeflet';
       import('@tauri-apps/api/window')
         .then(({ getCurrentWindow }) => {
-          getCurrentWindow().setTitle('leaf').catch(() => {});
+          getCurrentWindow().setTitle('leeflet').catch(() => {});
         })
         .catch(() => {});
     }

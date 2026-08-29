@@ -22,6 +22,7 @@ import {
   Sun,
   Moon,
   Minimize2,
+  Coffee,
 } from 'lucide-react';
 import { ViewMode, ItemType, Priority, Project, Item } from '../types';
 import { enterMiniMode } from '../utils/window';
@@ -104,11 +105,11 @@ export const Sidebar: React.FC = () => {
             <img
               src="/leaf_logo.png"
               alt="leaf"
-              className="w-5 h-5 object-contain brightness-0 dark:brightness-0 dark:invert transition-all"
+              className="w-5 h-5 object-contain transition-all"
             />
           </div>
-          <span className="font-bold text-base tracking-tight text-[#111827] dark:text-[#f4f4f5]" data-tauri-drag-region>
-            leaf
+          <span className="font-brand text-xl tracking-tight text-[#111827] dark:text-[#f4f4f5] select-none" data-tauri-drag-region>
+            leeflet
           </span>
         </div>
 
@@ -433,6 +434,20 @@ export const Sidebar: React.FC = () => {
             </div>
             <kbd className="w-4 h-4 flex items-center justify-center rounded-[3px] bg-[#ebecee] dark:bg-[#27272a] border border-[#e5e7eb] dark:border-[#3f3f46] font-mono text-[9px] font-semibold text-[#6b7280] dark:text-[#a1a1aa] shrink-0 leading-none">
               S
+            </kbd>
+          </button>
+
+          {/* Coffee Break / Mask */}
+          <button
+            onClick={() => useLeafStore.getState().setStandby(true)}
+            className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] transition-colors text-xs font-medium text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white"
+          >
+            <div className="flex items-center gap-2">
+              <Coffee className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
+              <span>Coffee Break</span>
+            </div>
+            <kbd className="w-4 h-4 flex items-center justify-center rounded-[3px] bg-[#ebecee] dark:bg-[#27272a] border border-[#e5e7eb] dark:border-[#3f3f46] font-mono text-[9px] font-semibold text-[#6b7280] dark:text-[#a1a1aa] shrink-0 leading-none">
+              Z
             </kbd>
           </button>
         </div>

@@ -18,10 +18,17 @@ interface LeafState {
   editingProject: Project | null;
   stickyNoteItemId: string | null;
   isLoading: boolean;
+  loadingMessage: string;
+  isStandby: boolean;
+  standbyJokesEnabled: boolean;
   theme: 'light' | 'dark';
 
   // Actions
-  initialize: () => Promise<void>;
+  initialize: (customLoadingMessage?: string) => Promise<void>;
+  setLoadingMessage: (msg: string) => void;
+  setStandby: (isStandby: boolean) => void;
+  toggleStandby: () => void;
+  setStandbyJokesEnabled: (enabled: boolean) => void;
   setTheme: (theme: 'light' | 'dark') => void;
   toggleTheme: () => void;
   createWorkspace: (name: string, locationPath: string) => Promise<Workspace>;
@@ -83,7 +90,18 @@ export const useLeafStore = create<LeafState>((set, get) => ({
   editingProject: null,
   stickyNoteItemId: null,
   isLoading: true,
+  loadingMessage: 'loading workspace...',
+  isStandby: false,
+  standbyJokesEnabled: typeof window !== 'undefined' && localStorage.getItem('leaf_standby_jokes_enabled') === 'true',
   theme: getInitialTheme(),
+
+  setLoadingMessage: (loadingMessage: string) => set({ loadingMessage }),
+  setStandby: (isStandby: boolean) => set({ isStandby }),
+  toggleStandby: () => set((state) => ({ isStandby: !state.isStandby })),
+  setStandbyJokesEnabled: (enabled: boolean) => {
+    localStorage.setItem('leaf_standby_jokes_enabled', String(enabled));
+    set({ standbyJokesEnabled: enabled });
+  },
 
   setTheme: (theme: 'light' | 'dark') => {
     localStorage.setItem('leaf_theme', theme);
@@ -126,8 +144,11 @@ export const useLeafStore = create<LeafState>((set, get) => ({
     get().setTheme(next);
   },
 
-  initialize: async () => {
-    set({ isLoading: true });
+  initialize: async (customLoadingMessage?: string) => {
+    set({
+      isLoading: true,
+      loadingMessage: customLoadingMessage || 'loading workspace...',
+    });
     // Apply theme class
     const curTheme = get().theme;
     if (curTheme === 'dark') {
@@ -162,10 +183,15 @@ export const useLeafStore = create<LeafState>((set, get) => ({
       });
     }
 
+    const startTime = Date.now();
     try {
       const ws = await dbService.getActiveWorkspace();
       if (!ws) {
-        set({ isOnboardingOpen: true, isLoading: false });
+        const elapsed = Date.now() - startTime;
+        if (elapsed < 1000) {
+          await new Promise((resolve) => setTimeout(resolve, 1000 - elapsed));
+        }
+        set({ isOnboardingOpen: true, isLoading: false, loadingMessage: 'loading workspace...' });
         return;
       }
 
@@ -173,7 +199,11 @@ export const useLeafStore = create<LeafState>((set, get) => ({
       await get().loadProjects();
       await get().loadItems();
     } finally {
-      set({ isLoading: false });
+      const elapsed = Date.now() - startTime;
+      if (elapsed < 1000) {
+        await new Promise((resolve) => setTimeout(resolve, 1000 - elapsed));
+      }
+      set({ isLoading: false, loadingMessage: 'loading workspace...' });
     }
   },
 

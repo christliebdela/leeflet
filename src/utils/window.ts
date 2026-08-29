@@ -112,7 +112,7 @@ export async function openStickyNoteWindow(itemId: string): Promise<void> {
 
     const win = new WebviewWindow(label, {
       url: `/?window=sticky&id=${itemId}`,
-      title: 'leaf',
+      title: 'leeflet',
       width,
       height,
       x,
@@ -188,11 +188,20 @@ export async function openQueueWidgetWindow(): Promise<void> {
       minHeight: 280,
       maxHeight: 720,
       resizable: true,
+      maximizable: false,
       decorations: false,
       transparent: true,
       alwaysOnTop: savedAlwaysOnTop,
       shadow: true,
       skipTaskbar: true,
+    });
+
+    win.once('tauri://created', async () => {
+      try {
+        await win.setMaximizable(false);
+      } catch {
+        // ignore
+      }
     });
 
     win.once('tauri://error', (e) => {

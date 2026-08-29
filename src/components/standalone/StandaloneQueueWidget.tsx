@@ -14,10 +14,13 @@ import {
   CheckSquare,
   Square,
   Trash2,
+  Sparkles,
+  Coffee,
 } from 'lucide-react';
 import { broadcastSync, subscribeToSync } from '../../utils/sync';
 import { exitMiniMode } from '../../utils/window';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
+import { fetchRandomDevJoke } from '../../utils/jokes';
 
 type SectionKey = 'critical' | 'high' | 'medium' | 'low' | 'ideas' | 'inbox';
 
@@ -116,9 +119,41 @@ export const StandaloneQueueWidget: React.FC = () => {
   const [isAlwaysOnTop, setIsAlwaysOnTop] = useState(() => localStorage.getItem('leaf_queue_widget_always_on_top') === 'true');
   const [colorPreset, setColorPreset] = useState<ColorPreset>(() => (localStorage.getItem('leaf_queue_widget_color') as ColorPreset) || 'theme');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isStandby, setIsStandby] = useState(false);
+  const [standbyJoke, setStandbyJoke] = useState<string | null>(null);
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const [newChecklistText, setNewChecklistText] = useState<Record<string, string>>({});
   const inlineInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch joke on standby if enabled
+  useEffect(() => {
+    const jokesEnabled = localStorage.getItem('leaf_standby_jokes_enabled') === 'true';
+    if (isStandby && jokesEnabled) {
+      let isCurrent = true;
+      fetchRandomDevJoke().then((joke) => {
+        if (isCurrent) setStandbyJoke(joke);
+      });
+      return () => {
+        isCurrent = false;
+      };
+    } else {
+      setStandbyJoke(null);
+    }
+  }, [isStandby]);
+
+  // Ensure Mini Mode widget cannot be maximized
+  useEffect(() => {
+    (async () => {
+      try {
+        const { getCurrentWindow } = await import('@tauri-apps/api/window');
+        const win = getCurrentWindow();
+        await win.setMaximizable(false);
+        if (await win.isMaximized()) {
+          await win.unmaximize();
+        }
+      } catch {}
+    })();
+  }, []);
 
   const closeWindow = async () => {
     try {
@@ -213,13 +248,28 @@ export const StandaloneQueueWidget: React.FC = () => {
     setNewChecklistText((prev) => ({ ...prev, [item.id]: '' }));
   };
 
-  // Keyboard shortcuts (M to restore Full App, P for Pin, Esc to exit)
+  // Keyboard shortcuts (M to restore Full App, P for Pin, Z for Standby, Esc to exit)
   useEffect(() => {
     const handleKeyDown = async (e: KeyboardEvent) => {
+      // If in Standby, resume ONLY on Z key
+      if (isStandby) {
+        if (e.key === 'z' || e.key === 'Z') {
+          e.preventDefault();
+          setIsStandby(false);
+        }
+        return;
+      }
+
       const activeEl = document.activeElement as HTMLElement | null;
       const isInput = Boolean(activeEl) && ['INPUT', 'TEXTAREA'].includes(activeEl?.tagName || '');
 
       if (!isInput) {
+        if ((e.key === 'z' || e.key === 'Z') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+          e.preventDefault();
+          setIsStandby(true);
+          return;
+        }
+
         if ((e.key === 'm' || e.key === 'M') && !e.ctrlKey && !e.metaKey && !e.altKey) {
           e.preventDefault();
           await exitMiniMode();
@@ -247,7 +297,7 @@ export const StandaloneQueueWidget: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [addingSection, isAlwaysOnTop]);
+  }, [addingSection, isAlwaysOnTop, isStandby]);
 
   // Remember window position on drag / move
   useEffect(() => {
@@ -636,28 +686,69 @@ export const StandaloneQueueWidget: React.FC = () => {
     );
   };
 
+  if (isStandby) {
+    return (
+      <div
+        className={`w-screen h-screen ${currentTheme.bg} border ${currentTheme.border} flex flex-col items-center justify-center p-4 relative select-none animate-in fade-in duration-200`}
+        data-tauri-drag-region
+      >
+        <div className="flex flex-col items-center gap-1.5" data-tauri-drag-region>
+          <img
+            src="/leaf_logo.png"
+            alt="leeflet"
+            className="w-10 h-10 object-contain animate-pulse"
+            data-tauri-drag-region
+          />
+          <span className={`font-brand text-2xl font-normal tracking-tight ${currentTheme.text}`} data-tauri-drag-region>
+            leeflet
+          </span>
+        </div>
+
+        {/* Bottom Subtext */}
+        <div className="absolute bottom-3 flex flex-col items-center gap-0.5 text-center pointer-events-none max-w-[280px] px-2">
+          <span className={`text-[10px] font-mono ${currentTheme.mutedText} tracking-wide leading-tight line-clamp-2`}>
+            {standbyJoke || 'taking a coffee break...'}
+          </span>
+          {!standbyJoke && (
+            <span className={`text-[9.5px] font-mono ${currentTheme.mutedText}`}>
+              press z to resume
+            </span>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <TooltipProvider delayDuration={150}>
       <div className={`w-screen h-screen ${currentTheme.bg} border ${currentTheme.border} ${currentTheme.text} p-3 flex flex-col justify-between overflow-hidden font-sans relative`}>
         {/* Header with Drag Region */}
         <div
           data-tauri-drag-region
+          onDoubleClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
           className={`flex items-center justify-between pb-2.5 border-b ${colorPreset === 'theme' ? 'border-[#f3f4f6] dark:border-[#27272a]' : 'border-black/10'} cursor-move select-none`}
         >
           <div className="flex items-center gap-2" data-tauri-drag-region>
             <img
               src="/leaf_logo.png"
               alt="leaf"
-              className={`w-4 h-4 object-contain ${
-                colorPreset === 'theme' ? 'brightness-0 dark:brightness-0 dark:invert' : 'brightness-0'
-              }`}
+              className="w-4 h-4 object-contain"
               data-tauri-drag-region
             />
             <span
-              className={`text-xs font-bold ${currentTheme.text} tracking-tight`}
+              className={`font-brand text-base tracking-tight ${currentTheme.text}`}
               data-tauri-drag-region
             >
-              My Queue
+              leeflet
+            </span>
+            <span
+              className={`text-[11px] font-medium opacity-60 ${currentTheme.text} -ml-0.5`}
+              data-tauri-drag-region
+            >
+              queue
             </span>
             <span
               className={`text-[9.5px] font-semibold ${colorPreset === 'theme' ? 'text-[#6b7280] dark:text-[#a1a1aa] bg-[#f3f4f6] dark:bg-[#27272a]' : 'text-current bg-black/10'} px-1.5 py-0 leading-[14px] rounded-full`}
@@ -711,6 +802,21 @@ export const StandaloneQueueWidget: React.FC = () => {
               </div>
             )}
 
+            {/* Standby toggle */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setIsStandby(true)}
+                  className={`p-1 rounded transition-colors ${currentTheme.subtleBg} ${currentTheme.mutedText}`}
+                >
+                  <Coffee className="w-3.5 h-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Coffee Break (Z)</p>
+              </TooltipContent>
+            </Tooltip>
+
             {/* Pin / Always-on-top toggle */}
             <Tooltip>
               <TooltipTrigger asChild>
@@ -749,19 +855,12 @@ export const StandaloneQueueWidget: React.FC = () => {
             </Tooltip>
 
             {/* Close Widget */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={closeWindow}
-                  className={`p-1 ${currentTheme.subtleBg} rounded ${currentTheme.mutedText} transition-colors`}
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Close (Esc)</p>
-              </TooltipContent>
-            </Tooltip>
+            <button
+              onClick={closeWindow}
+              className={`p-1 ${currentTheme.subtleBg} rounded ${currentTheme.mutedText} transition-colors`}
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
 
@@ -769,8 +868,14 @@ export const StandaloneQueueWidget: React.FC = () => {
         <div className="py-2.5 flex-1 overflow-y-auto space-y-3 no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {queueItems.length === 0 ? (
             <div className="h-full min-h-[220px] flex flex-col items-center justify-center text-center p-4">
-              <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 flex items-center justify-center mb-2 text-emerald-500">
-                <CheckCircle2 className="w-5 h-5" />
+              <div
+                className={`w-10 h-10 rounded-2xl flex items-center justify-center mb-2.5 shadow-xs transition-transform hover:scale-105 ${
+                  colorPreset === 'theme'
+                    ? 'bg-black/5 dark:bg-white/5 border border-[#e5e7eb] dark:border-[#27272a] text-[#6b7280] dark:text-[#a1a1aa]'
+                    : 'bg-black/10 text-current'
+                }`}
+              >
+                <Sparkles className="w-5 h-5" />
               </div>
               <p className={`text-xs font-bold ${currentTheme.text}`}>Queue Zero — all caught up</p>
               <p className={`text-[10.5px] ${currentTheme.mutedText} max-w-[200px] mt-1 leading-relaxed`}>

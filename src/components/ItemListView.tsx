@@ -272,7 +272,7 @@ export const ItemListView: React.FC = () => {
           Icon: Layers,
           title: 'No items in this view',
           description: 'Capture an idea, task, bug, or note to get things rolling.',
-          actionLabel: 'New Item (C)',
+          actionLabel: 'New Item',
           onAction: () => setQuickCaptureOpen(true),
         };
     }

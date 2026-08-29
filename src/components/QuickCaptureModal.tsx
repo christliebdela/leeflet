@@ -243,9 +243,14 @@ export const QuickCaptureModal: React.FC = () => {
             <img
               src="/leaf_logo.png"
               alt="leaf"
-              className="w-4 h-4 object-contain brightness-0 dark:brightness-0 dark:invert transition-all"
+              className="w-4 h-4 object-contain transition-all"
             />
-            <span className="text-xs font-bold text-[#111827] dark:text-[#f4f4f5]">New Item</span>
+            <span className="font-brand text-base tracking-tight text-[#111827] dark:text-[#f4f4f5]">
+              leeflet
+            </span>
+            <span className="text-[11px] font-medium text-[#6b7280] dark:text-[#a1a1aa] -ml-0.5">
+              capture
+            </span>
           </div>
 
           <button

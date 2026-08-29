@@ -385,13 +385,13 @@ export const HeaderBar: React.FC = () => {
           )}
         </div>
 
-        {/* + New Item Button */}
+        {/* + New Button */}
         <button
           onClick={() => setQuickCaptureOpen(true)}
           className="flex items-center gap-1 px-3 py-1 bg-[#111827] dark:bg-white hover:bg-[#1f2937] dark:hover:bg-[#e4e4e7] text-white dark:text-[#111827] rounded-[6px] text-xs font-semibold shadow-subtle shrink-0 whitespace-nowrap transition-all active:scale-[0.98]"
         >
           <Plus className="w-3.5 h-3.5" />
-          <span>New Item</span>
+          <span>New</span>
         </button>
 
         {/* Mini Mode Action */}
