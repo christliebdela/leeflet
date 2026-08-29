@@ -262,7 +262,7 @@ export const StandaloneQueueWidget: React.FC = () => {
         if (e.key === 'z' || e.key === 'Z') {
           e.preventDefault();
           setIsStandby(false);
-        } else if (e.key === '>') {
+        } else if (e.key === '>' || e.key === 'ArrowRight') {
           e.preventDefault();
           const jokesEnabled = localStorage.getItem('leaf_standby_jokes_enabled') === 'true';
           if (jokesEnabled) {
@@ -279,7 +279,7 @@ export const StandaloneQueueWidget: React.FC = () => {
               return prev;
             });
           }
-        } else if (e.key === '<') {
+        } else if (e.key === '<' || e.key === 'ArrowLeft') {
           e.preventDefault();
           setJokeHistoryIndex((i) => Math.max(0, i - 1));
         }

@@ -41,7 +41,7 @@ const SHORTCUTS_DATA: ShortcutItem[] = [
   { id: '2', label: 'Quick Capture (Desktop Floating Panel)', category: 'Creation & Global', keys: ['Alt + L', 'Alt + N'] },
   { id: '3', label: 'Search Workspace', category: 'Creation & Global', keys: ['Ctrl + K', '/'] },
   { id: '4', label: 'Coffee Break / Standby', category: 'Creation & Global', keys: ['Z'] },
-  { id: '4a', label: 'Next / Previous Joke (Standby)', category: 'Creation & Global', keys: ['>', '<'] },
+  { id: '4a', label: 'Next / Previous Joke (Standby)', category: 'Creation & Global', keys: ['> / ArrowRight', '< / ArrowLeft'] },
   { id: '5', label: 'Open Settings Sheet', category: 'Creation & Global', keys: ['S', 'Ctrl + ,'] },
   { id: '6', label: 'Close Sheet / Modal', category: 'Creation & Global', keys: ['Esc'] },
   { id: '7', label: 'Go to Backlog', category: 'Views & Projects', keys: ['Ctrl + I'] },
