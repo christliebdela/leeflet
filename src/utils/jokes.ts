@@ -1,5 +1,5 @@
-// Short, punchy offline fallback pool (all ≤ 80 chars — safe for mini mode)
-const PUNCHY_DEV_JOKES: string[] = [
+// ─── Offline pool (≤ 80 chars — safe for both full & mini mode) ─────────────
+const OFFLINE_JOKES: string[] = [
   "it works on my machine.",
   "// todo: fix this before production",
   "git commit -m 'fixed bug, created 3 new ones'",
@@ -32,129 +32,227 @@ const PUNCHY_DEV_JOKES: string[] = [
   "a watched build never compiles.",
 ];
 
-const SEEN_JOKES_KEY = 'leaf_seen_jokes';
-const SEEN_JOKES_MAX = 50;
-const MINI_MODE_MAX_CHARS = 80;
+// ─── Pool storage ────────────────────────────────────────────────────────────
+const POOL_KEY = 'leaf_joke_pool_v2';
+const POOL_TTL_MS = 7 * 24 * 60 * 60 * 1000; // refresh weekly
+const MINI_MAX_CHARS = 80;
 
 /** Block list for jokes that slip through API safe filters */
-const CONTENT_BLOCK_PATTERNS = [
+const BLOCK_PATTERNS = [
   /\b(momm?a|your m(?:om|other|um))\b/i,
   /\bfat\b.*\b(save|store|disk|file|byte|GB|MB|FAT)\b/i,
 ];
 
-function isJokeAcceptable(joke: string): boolean {
-  return !CONTENT_BLOCK_PATTERNS.some((pattern) => pattern.test(joke));
+interface JokePool {
+  full: string[];  // all jokes, any length
+  mini: string[];  // short jokes only (≤ MINI_MAX_CHARS)
+  builtAt: number;
 }
 
-function getSeenJokes(): string[] {
+function isAcceptable(joke: string): boolean {
+  return joke.length > 0 && !BLOCK_PATTERNS.some((p) => p.test(joke));
+}
+
+function shuffle<T>(arr: T[]): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function loadPool(): JokePool | null {
   try {
-    return JSON.parse(localStorage.getItem(SEEN_JOKES_KEY) || '[]');
+    const raw = localStorage.getItem(POOL_KEY);
+    if (!raw) return null;
+    const pool: JokePool = JSON.parse(raw);
+    // Discard if expired or exhausted
+    if (Date.now() - pool.builtAt > POOL_TTL_MS) return null;
+    if (pool.full.length === 0) return null;
+    return pool;
   } catch {
-    return [];
+    return null;
   }
 }
 
-function markJokeSeen(joke: string): void {
+function savePool(pool: JokePool): void {
   try {
-    const seen = getSeenJokes();
-    const updated = [joke, ...seen.filter((j) => j !== joke)].slice(0, SEEN_JOKES_MAX);
-    localStorage.setItem(SEEN_JOKES_KEY, JSON.stringify(updated));
+    localStorage.setItem(POOL_KEY, JSON.stringify(pool));
   } catch {}
 }
 
-function pickFreshOfflineJoke(miniMode: boolean): string | null {
-  const seen = new Set(getSeenJokes());
-  const pool = miniMode
-    ? PUNCHY_DEV_JOKES.filter((j) => j.length <= MINI_MODE_MAX_CHARS)
-    : PUNCHY_DEV_JOKES;
-  const fresh = pool.filter((j) => !seen.has(j));
-  const source = fresh.length > 0 ? fresh : pool;
-  return source[Math.floor(Math.random() * source.length)] ?? null;
+function popJoke(pool: JokePool, miniMode: boolean): string | null {
+  const jokes = miniMode ? pool.mini : pool.full;
+  if (jokes.length === 0) return null;
+  const joke = jokes.shift()!;
+  // Keep both pools in sync — remove from full if popped from mini
+  if (miniMode) {
+    const idx = pool.full.indexOf(joke);
+    if (idx !== -1) pool.full.splice(idx, 1);
+  } else {
+    // If popped joke was short, also remove from mini to stay in sync
+    const idx = pool.mini.indexOf(joke);
+    if (idx !== -1) pool.mini.splice(idx, 1);
+  }
+  return joke;
 }
 
-// ─── API fetchers ────────────────────────────────────────────────────────────
+// ─── API bulk fetchers ────────────────────────────────────────────────────────
 
-async function fetchFromJokeAPI(signal: AbortSignal): Promise<string | null> {
-  const res = await fetch(
-    'https://v2.jokeapi.dev/joke/Programming?safe-mode&blacklistFlags=nsfw,religious,political,racist,sexist,explicit',
-    { signal }
+async function fetchJokeAPIBatch(): Promise<string[]> {
+  // 5 concurrent requests × 10 jokes = up to 50
+  const results = await Promise.allSettled(
+    Array.from({ length: 5 }, () =>
+      fetch(
+        'https://v2.jokeapi.dev/joke/Programming?safe-mode&blacklistFlags=nsfw,religious,political,racist,sexist,explicit&amount=10',
+        { signal: AbortSignal.timeout(5000) }
+      ).then((r) => r.json())
+    )
   );
-  if (!res.ok) return null;
-  const data = await res.json();
-  if (data.type === 'single' && data.joke) return data.joke.trim();
-  if (data.type === 'twopart' && data.setup && data.delivery)
-    return `${data.setup.trim()} — ${data.delivery.trim()}`;
-  return null;
+  const jokes: string[] = [];
+  for (const r of results) {
+    if (r.status !== 'fulfilled') continue;
+    const data = r.value;
+    const items = data.jokes ?? (data.error === false ? [data] : []);
+    for (const item of items) {
+      if (item.type === 'single' && item.joke) {
+        jokes.push(item.joke.trim().replace(/\r?\n|\r/g, ' '));
+      } else if (item.type === 'twopart' && item.setup && item.delivery) {
+        jokes.push(`${item.setup.trim()} — ${item.delivery.trim()}`);
+      }
+    }
+  }
+  return jokes;
 }
 
-async function fetchFromOfficialJokeAPI(signal: AbortSignal): Promise<string | null> {
-  // Returns an array with one joke: { setup, punchline }
-  const res = await fetch(
-    'https://official-joke-api.appspot.com/jokes/programming/random',
-    { signal }
+async function fetchOfficialJokeAPIBatch(): Promise<string[]> {
+  // 5 concurrent requests × 10 jokes = up to 50
+  const results = await Promise.allSettled(
+    Array.from({ length: 5 }, () =>
+      fetch('https://official-joke-api.appspot.com/jokes/programming/ten', {
+        signal: AbortSignal.timeout(5000),
+      }).then((r) => r.json())
+    )
   );
-  if (!res.ok) return null;
-  const data = await res.json();
-  const item = Array.isArray(data) ? data[0] : data;
-  if (item?.setup && item?.punchline) return `${item.setup.trim()} — ${item.punchline.trim()}`;
-  return null;
+  const jokes: string[] = [];
+  for (const r of results) {
+    if (r.status !== 'fulfilled' || !Array.isArray(r.value)) continue;
+    for (const item of r.value) {
+      if (item?.setup && item?.punchline) {
+        jokes.push(`${item.setup.trim()} — ${item.punchline.trim()}`);
+      }
+    }
+  }
+  return jokes;
 }
 
-async function fetchFromChuckNorrisAPI(signal: AbortSignal): Promise<string | null> {
-  const res = await fetch('https://api.chucknorris.io/jokes/random?category=dev', { signal });
-  if (!res.ok) return null;
-  const data = await res.json();
-  if (data?.value) return data.value.trim();
-  return null;
+async function fetchChuckNorrisBatch(): Promise<string[]> {
+  // 20 concurrent individual requests = up to 20 dev jokes
+  const results = await Promise.allSettled(
+    Array.from({ length: 20 }, () =>
+      fetch('https://api.chucknorris.io/jokes/random?category=dev', {
+        signal: AbortSignal.timeout(5000),
+      }).then((r) => r.json())
+    )
+  );
+  const jokes: string[] = [];
+  for (const r of results) {
+    if (r.status !== 'fulfilled' || !r.value?.value) continue;
+    jokes.push(r.value.value.trim().replace(/\r?\n|\r/g, ' '));
+  }
+  return jokes;
 }
 
-const API_FETCHERS = [fetchFromJokeAPI, fetchFromOfficialJokeAPI, fetchFromChuckNorrisAPI];
+// ─── Pool builder ─────────────────────────────────────────────────────────────
 
-// ─── Main export ─────────────────────────────────────────────────────────────
+let buildPromise: Promise<JokePool> | null = null;
+
+async function buildPool(): Promise<JokePool> {
+  // Fetch all sources concurrently
+  const [jokeAPI, officialAPI, chuckAPI] = await Promise.allSettled([
+    fetchJokeAPIBatch(),
+    fetchOfficialJokeAPIBatch(),
+    fetchChuckNorrisBatch(),
+  ]);
+
+  const raw = [
+    ...(jokeAPI.status === 'fulfilled' ? jokeAPI.value : []),
+    ...(officialAPI.status === 'fulfilled' ? officialAPI.value : []),
+    ...(chuckAPI.status === 'fulfilled' ? chuckAPI.value : []),
+    ...OFFLINE_JOKES,
+  ];
+
+  // Deduplicate + filter
+  const seen = new Set<string>();
+  const full: string[] = [];
+  for (const joke of raw) {
+    const clean = joke.trim();
+    if (!seen.has(clean) && isAcceptable(clean)) {
+      seen.add(clean);
+      full.push(clean);
+    }
+  }
+
+  const mini = full.filter((j) => j.length <= MINI_MAX_CHARS);
+
+  const pool: JokePool = {
+    full: shuffle(full),
+    mini: shuffle(mini),
+    builtAt: Date.now(),
+  };
+
+  savePool(pool);
+  return pool;
+}
+
+// ─── Public API ───────────────────────────────────────────────────────────────
+
+let cachedPool: JokePool | null = null;
 
 /**
- * Fetches a fresh dev joke.
+ * Pre-warms the joke pool in the background.
+ * Call this on app startup so standby is always instant.
+ */
+export function warmJokePool(): void {
+  if (cachedPool && cachedPool.full.length > 0) return;
+  const persisted = loadPool();
+  if (persisted) {
+    cachedPool = persisted;
+    return;
+  }
+  // Fetch in background — don't await
+  buildPromise = buildPool().then((pool) => {
+    cachedPool = pool;
+    buildPromise = null;
+    return pool;
+  });
+}
+
+/**
+ * Returns the next joke from the pre-built pool instantly.
+ * Falls back to offline one-liner if pool isn't ready yet.
  * @param miniMode - When true, only short jokes (≤ 80 chars) are returned.
  */
 export async function fetchRandomDevJoke(miniMode = false): Promise<string> {
-  const seen = new Set(getSeenJokes());
-
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
-
-    // Shuffle APIs so we don't always hit the same one first
-    const shuffled = [...API_FETCHERS].sort(() => Math.random() - 0.5);
-
-    for (const fetcher of shuffled) {
-      try {
-        const raw = await fetcher(controller.signal);
-        if (!raw) continue;
-
-        const cleanJoke = raw.replace(/\r?\n|\r/g, ' ');
-        const lengthOk = !miniMode || cleanJoke.length <= MINI_MODE_MAX_CHARS;
-
-        if (lengthOk && !seen.has(cleanJoke) && isJokeAcceptable(cleanJoke)) {
-          clearTimeout(timeoutId);
-          markJokeSeen(cleanJoke);
-          return cleanJoke;
-        }
-      } catch {
-        // This specific fetcher failed — try next
-      }
-    }
-
-    clearTimeout(timeoutId);
-  } catch {
-    // AbortController or global failure — fall through
+  // If a build is in progress, wait for it (only happens on very first call before warm completes)
+  if (buildPromise) {
+    cachedPool = await buildPromise;
   }
 
-  // Offline fallback
-  const offlineJoke = pickFreshOfflineJoke(miniMode);
-  if (offlineJoke) {
-    markJokeSeen(offlineJoke);
-    return offlineJoke;
+  // Load from localStorage if not in memory
+  if (!cachedPool) {
+    cachedPool = loadPool();
   }
 
-  return 'taking a coffee break...';
+  // Build fresh pool if missing/exhausted
+  if (!cachedPool || (miniMode ? cachedPool.mini.length : cachedPool.full.length) === 0) {
+    buildPromise = buildPool();
+    cachedPool = await buildPromise;
+    buildPromise = null;
+  }
+
+  const joke = popJoke(cachedPool, miniMode);
+  savePool(cachedPool); // persist updated index
+
+  return joke ?? 'taking a coffee break...';
 }

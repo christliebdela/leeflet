@@ -13,7 +13,7 @@ import { ProjectModal } from './components/ProjectModal';
 import { openQuickCaptureWindow, enterMiniMode } from './utils/window';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { ToastContainer } from './components/ui/ToastContainer';
-import { fetchRandomDevJoke } from './utils/jokes';
+import { fetchRandomDevJoke, warmJokePool } from './utils/jokes';
 
 export const App: React.FC = () => {
   const {
@@ -54,6 +54,8 @@ export const App: React.FC = () => {
   // One-time workspace initialization on mount
   useEffect(() => {
     initialize();
+    // Pre-build joke pool in background so standby is instant
+    warmJokePool();
   }, [initialize]);
 
   // Global & In-App Keyboard Shortcuts

@@ -20,7 +20,7 @@ import {
 import { broadcastSync, subscribeToSync } from '../../utils/sync';
 import { exitMiniMode } from '../../utils/window';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
-import { fetchRandomDevJoke } from '../../utils/jokes';
+import { fetchRandomDevJoke, warmJokePool } from '../../utils/jokes';
 
 type SectionKey = 'critical' | 'high' | 'medium' | 'low' | 'ideas' | 'inbox';
 
@@ -141,8 +141,10 @@ export const StandaloneQueueWidget: React.FC = () => {
     }
   }, [isStandby]);
 
-  // Ensure Mini Mode widget cannot be maximized
+  // Ensure Mini Mode widget cannot be maximized + warm joke pool
   useEffect(() => {
+    // Pre-warm joke pool on mount so standby is instant
+    warmJokePool();
     (async () => {
       try {
         const { getCurrentWindow } = await import('@tauri-apps/api/window');
