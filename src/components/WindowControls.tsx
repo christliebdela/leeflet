@@ -16,6 +16,8 @@ export const WindowControls: React.FC = () => {
 
         unlisten = await win.onResized(async () => {
           try {
+            const isMin = await win.isMinimized();
+            if (isMin) return;
             const isMax = await win.isMaximized();
             setIsMaximized(isMax);
           } catch {

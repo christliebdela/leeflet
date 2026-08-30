@@ -56,11 +56,17 @@ export const App: React.FC = () => {
         try {
           await win.setShadow(false);
         } catch {}
-        const max = await win.isMaximized();
-        setIsMaximized(max);
+
+        const isMin = await win.isMinimized();
+        if (!isMin) {
+          const max = await win.isMaximized();
+          setIsMaximized(max);
+        }
 
         unlisten = await win.onResized(async () => {
           try {
+            const isMinNow = await win.isMinimized();
+            if (isMinNow) return;
             const m = await win.isMaximized();
             setIsMaximized(m);
           } catch {}
@@ -279,7 +285,7 @@ export const App: React.FC = () => {
   if (isStandby) {
     return (
       <div
-        className={`h-screen w-screen bg-[#f8f9fa] dark:bg-[#0f0f11] flex flex-col items-center justify-center animate-in fade-in duration-200 select-none relative px-6 transition-[border-radius] duration-150 ${
+        className={`h-screen w-screen bg-[#f8f9fa] dark:bg-[#0f0f11] flex flex-col items-center justify-center animate-in fade-in duration-200 select-none relative px-6 ${
           isMaximized
             ? 'rounded-none border-0'
             : 'rounded-[18px] border border-[#e5e7eb] dark:border-[#27272a] shadow-modal'
@@ -314,7 +320,7 @@ export const App: React.FC = () => {
   return (
     <TooltipProvider delayDuration={150}>
       <div
-        className={`h-screen w-screen flex bg-[#f8f9fa] dark:bg-[#0f0f11] text-[#111827] dark:text-[#f4f4f5] overflow-hidden select-none transition-[border-radius] duration-150 ${
+        className={`h-screen w-screen flex bg-[#f8f9fa] dark:bg-[#0f0f11] text-[#111827] dark:text-[#f4f4f5] overflow-hidden select-none ${
           isMaximized
             ? 'rounded-none border-0'
             : 'rounded-[18px] border border-[#e5e7eb] dark:border-[#27272a] shadow-modal'
