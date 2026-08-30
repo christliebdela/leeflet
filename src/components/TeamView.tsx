@@ -158,9 +158,9 @@ export const TeamView: React.FC = () => {
 
           <button
             onClick={() => setIsInviteModalOpen(true)}
-            className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[#111827] dark:bg-white text-white dark:text-[#111827] rounded-[6px] text-xs font-semibold hover:bg-[#1f2937] dark:hover:bg-[#e4e4e7] transition-all shadow-subtle shrink-0 active:scale-95"
+            className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[#f9fafb] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#323238] text-[#374151] dark:text-[#f4f4f5] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] hover:border-[#d1d5db] dark:hover:border-[#3f3f46] rounded-[6px] text-xs font-medium transition-colors shrink-0 shadow-2xs active:scale-95"
           >
-            <UserPlus className="w-3.5 h-3.5" />
+            <UserPlus className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
             <span>Invite Member</span>
           </button>
         </div>
