@@ -18,7 +18,7 @@ import {
   Archive,
   Search,
 } from 'lucide-react';
-import { Item, ChecklistItem } from '../types';
+import { Item, ChecklistItem, Project } from '../types';
 import { formatDate, ITEM_TYPE_CONFIG, PRIORITY_CONFIG } from '../utils/format';
 import { MiddleTruncate } from './ui/MiddleTruncate';
 
@@ -319,6 +319,7 @@ export const ItemListView: React.FC = () => {
             const isDragOverAfter = dragOverInfo?.id === item.id && dragOverInfo.position === 'after';
             const typeConfig = ITEM_TYPE_CONFIG[item.type] || ITEM_TYPE_CONFIG.task;
             const priorityConfig = PRIORITY_CONFIG[item.priority] || PRIORITY_CONFIG.none;
+            const project = projects.find((p: Project) => p.id === item.projectId);
 
             return (
               <div
@@ -409,8 +410,37 @@ export const ItemListView: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Right Columns: Type, Priority, Date */}
+                {/* Right Columns: Project, Type, Priority, Date */}
                 <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+                  {/* Project Column (Shown in Backlog and multi-project views) */}
+                  {viewMode.type !== 'project' && (
+                    isPaneOpen ? (
+                      <span
+                        title={project?.name || 'No Project'}
+                        className="inline-flex items-center gap-1.5 text-[10px] text-[#6b7280] dark:text-[#a1a1aa] font-medium max-w-[80px] shrink-0 truncate"
+                      >
+                        <span
+                          className="w-1.5 h-1.5 rounded-full shrink-0"
+                          style={{ backgroundColor: project?.color || '#9ca3af' }}
+                        />
+                        <span className="truncate">{project?.name || 'No Project'}</span>
+                      </span>
+                    ) : (
+                      <div className="min-w-[80px] max-w-[125px] flex items-center justify-start shrink-0">
+                        <span
+                          title={project?.name || 'No Project'}
+                          className="inline-flex items-center gap-1.5 text-[11px] text-[#6b7280] dark:text-[#a1a1aa] font-medium truncate"
+                        >
+                          <span
+                            className="w-1.5 h-1.5 rounded-full shrink-0"
+                            style={{ backgroundColor: project?.color || '#9ca3af' }}
+                          />
+                          <span className="truncate">{project?.name || 'No Project'}</span>
+                        </span>
+                      </div>
+                    )
+                  )}
+
                   {/* Type Column (compact icon badge or label) */}
                   {isPaneOpen ? (
                     <span
