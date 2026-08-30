@@ -23,7 +23,8 @@
         "decorations": false,
         "center": true,
         "transparent": true,
-        "shadow": true
+        "shadow": true,
+        "dragDropEnabled": false
       },
       {
         "label": "quick_capture",
@@ -38,7 +39,8 @@
         "alwaysOnTop": true,
         "shadow": true,
         "visible": false,
-        "skipTaskbar": true
+        "skipTaskbar": true,
+        "dragDropEnabled": false
       }
     ],
     "security": {

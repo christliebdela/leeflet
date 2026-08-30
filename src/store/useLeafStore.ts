@@ -51,7 +51,7 @@ interface LeafState {
   }) => Promise<Item>;
   updateItem: (item: Item) => Promise<void>;
   deleteItem: (id: string) => Promise<void>;
-  reorderItems: (sourceId: string, targetId: string) => void;
+  reorderItems: (sourceId: string, targetId: string, position?: 'before' | 'after') => void;
   
   setSelectedItemId: (id: string | null) => void;
   setSelectedProjectId: (id: string | null) => void;
@@ -280,15 +280,21 @@ export const useLeafStore = create<LeafState>((set, get) => ({
     await get().loadItems();
   },
 
-  reorderItems: async (sourceId: string, targetId: string) => {
+  reorderItems: async (sourceId: string, targetId: string, position: 'before' | 'after' = 'before') => {
+    if (sourceId === targetId) return;
+
     const items = [...get().items];
     const sourceIndex = items.findIndex((i) => i.id === sourceId);
-    const targetIndex = items.findIndex((i) => i.id === targetId);
-    if (sourceIndex === -1 || targetIndex === -1 || sourceIndex === targetIndex) {
-      return;
-    }
+    if (sourceIndex === -1) return;
+
     const [movedItem] = items.splice(sourceIndex, 1);
-    items.splice(targetIndex, 0, movedItem);
+
+    const newTargetIndex = items.findIndex((i) => i.id === targetId);
+    if (newTargetIndex === -1) return;
+
+    const insertIndex = position === 'after' ? newTargetIndex + 1 : newTargetIndex;
+    items.splice(insertIndex, 0, movedItem);
+
     set({
       items,
       filterOptions: { ...get().filterOptions, sortBy: 'manual' },

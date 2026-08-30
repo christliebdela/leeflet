@@ -37,7 +37,7 @@ export const ItemListView: React.FC = () => {
   } = useLeafStore();
 
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
-  const [dragOverItemId, setDragOverItemId] = useState<string | null>(null);
+  const [dragOverInfo, setDragOverInfo] = useState<{ id: string; position: 'before' | 'after' } | null>(null);
 
   // Filter items based on active view mode and filter options
   const displayItems = items.filter((item: Item) => {
@@ -315,7 +315,8 @@ export const ItemListView: React.FC = () => {
           {displayItems.map((item: Item) => {
             const isSelected = selectedItemId === item.id;
             const isDragged = draggedItemId === item.id;
-            const isDragOver = dragOverItemId === item.id;
+            const isDragOverBefore = dragOverInfo?.id === item.id && dragOverInfo.position === 'before';
+            const isDragOverAfter = dragOverInfo?.id === item.id && dragOverInfo.position === 'after';
             const typeConfig = ITEM_TYPE_CONFIG[item.type] || ITEM_TYPE_CONFIG.task;
             const priorityConfig = PRIORITY_CONFIG[item.priority] || PRIORITY_CONFIG.none;
 
@@ -331,36 +332,46 @@ export const ItemListView: React.FC = () => {
                 }}
                 onDragOver={(e) => {
                   e.preventDefault();
+                  e.stopPropagation();
                   e.dataTransfer.dropEffect = 'move';
-                  if (dragOverItemId !== item.id) {
-                    setDragOverItemId(item.id);
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const isTopHalf = (e.clientY - rect.top) < (rect.height / 2);
+                  const position = isTopHalf ? 'before' : 'after';
+                  if (!dragOverInfo || dragOverInfo.id !== item.id || dragOverInfo.position !== position) {
+                    setDragOverInfo({ id: item.id, position });
                   }
                 }}
-                onDragLeave={() => {
-                  if (dragOverItemId === item.id) {
-                    setDragOverItemId(null);
+                onDragLeave={(e) => {
+                  if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                    if (dragOverInfo?.id === item.id) {
+                      setDragOverInfo(null);
+                    }
                   }
                 }}
                 onDragEnd={() => {
                   setDraggedItemId(null);
-                  setDragOverItemId(null);
+                  setDragOverInfo(null);
                 }}
                 onDrop={(e) => {
                   e.preventDefault();
+                  e.stopPropagation();
                   const sourceId = e.dataTransfer.getData('text/plain') || draggedItemId;
+                  const position = dragOverInfo?.id === item.id ? dragOverInfo.position : 'before';
                   if (sourceId && sourceId !== item.id) {
-                    reorderItems(sourceId, item.id);
+                    reorderItems(sourceId, item.id, position);
                   }
                   setDraggedItemId(null);
-                  setDragOverItemId(null);
+                  setDragOverInfo(null);
                 }}
                 onClick={() => setSelectedItemId(isSelected ? null : item.id)}
                 className={`group flex items-center justify-between p-2.5 sm:p-3 rounded-[6px] border transition-all cursor-pointer select-none min-w-0 overflow-hidden ${
                   isSelected
                     ? 'border-[#9ca3af] dark:border-[#52525b] bg-[#f9fafb] dark:bg-[#1f1f23] shadow-sm'
                     : 'border-[#e5e7eb] dark:border-[#27272a] bg-white dark:bg-[#18181b] hover:border-[#d1d5db] dark:hover:border-[#3f3f46]'
-                } ${isDragged ? 'opacity-40' : ''} ${
-                  isDragOver ? 'border-t-2 border-t-[#111827] dark:border-t-white' : ''
+                } ${isDragged ? 'opacity-30 scale-[0.99]' : ''} ${
+                  isDragOverBefore ? 'border-t-2 border-t-[#111827] dark:border-t-white' : ''
+                } ${
+                  isDragOverAfter ? 'border-b-2 border-b-[#111827] dark:border-b-white' : ''
                 }`}
               >
                 {/* Left Section: Drag handle, Title with MiddleTruncate, Checklist count */}

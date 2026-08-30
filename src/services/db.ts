@@ -230,7 +230,7 @@ export class DatabaseService {
   }
 
   public async saveItemsOrder(items: Item[]): Promise<void> {
-    const wsId = this.activeWorkspaceId;
+    const wsId = this.getActiveWorkspaceId();
     if (!wsId) return;
     this.saveWorkspaceItems(wsId, items);
   }
