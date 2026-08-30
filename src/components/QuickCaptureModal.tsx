@@ -477,7 +477,7 @@ export const QuickCaptureModal: React.FC = () => {
               </button>
 
               {isTypeMenuOpen && (
-                <div className="absolute left-0 bottom-full mb-1.5 w-36 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] shadow-modal p-1 z-50 space-y-0.5">
+                <div className="absolute left-0 bottom-full mb-1.5 w-36 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] shadow-modal p-1 z-50 space-y-0.5 max-h-44 overflow-y-auto custom-scrollbar">
                   {(['task', 'bug', 'idea', 'improvement', 'research', 'question', 'note'] as ItemType[]).map((t) => {
                     const ItemIcon = TYPE_ICONS[t];
                     const cfg = ITEM_TYPE_CONFIG[t];
@@ -523,7 +523,7 @@ export const QuickCaptureModal: React.FC = () => {
               </button>
 
               {isPriorityMenuOpen && (
-                <div className="absolute left-0 bottom-full mb-1.5 w-32 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] shadow-modal p-1 z-50 space-y-0.5">
+                <div className="absolute left-0 bottom-full mb-1.5 w-32 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] shadow-modal p-1 z-50 space-y-0.5 max-h-44 overflow-y-auto custom-scrollbar">
                   {(['none', 'low', 'medium', 'high', 'critical'] as Priority[]).map((p) => {
                     const pCfg = PRIORITY_CONFIG[p];
                     return (
