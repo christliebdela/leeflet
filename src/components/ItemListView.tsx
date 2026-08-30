@@ -364,16 +364,23 @@ export const ItemListView: React.FC = () => {
                   setDragOverInfo(null);
                 }}
                 onClick={() => setSelectedItemId(isSelected ? null : item.id)}
-                className={`group flex items-center justify-between p-2.5 sm:p-3 rounded-[6px] border transition-all cursor-pointer select-none min-w-0 overflow-hidden ${
+                className={`group relative flex items-center justify-between p-2.5 sm:p-3 rounded-[6px] border transition-all cursor-pointer select-none min-w-0 ${
                   isSelected
                     ? 'border-[#9ca3af] dark:border-[#52525b] bg-[#f9fafb] dark:bg-[#1f1f23] shadow-sm'
                     : 'border-[#e5e7eb] dark:border-[#27272a] bg-white dark:bg-[#18181b] hover:border-[#d1d5db] dark:hover:border-[#3f3f46]'
-                } ${isDragged ? 'opacity-30 scale-[0.99]' : ''} ${
-                  isDragOverBefore ? 'border-t-2 border-t-[#111827] dark:border-t-white' : ''
-                } ${
-                  isDragOverAfter ? 'border-b-2 border-b-[#111827] dark:border-b-white' : ''
-                }`}
+                } ${isDragged ? 'opacity-30 scale-[0.99]' : ''}`}
               >
+                {/* Floating Insertion Indicator Line (positioned in-between cards) */}
+                {isDragOverBefore && (
+                  <div className="absolute -top-1.5 left-1 right-1 h-0.5 bg-[#111827] dark:bg-white rounded-full z-20 pointer-events-none flex items-center shadow-xs">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#111827] dark:bg-white -ml-0.5 shadow-sm" />
+                  </div>
+                )}
+                {isDragOverAfter && (
+                  <div className="absolute -bottom-1.5 left-1 right-1 h-0.5 bg-[#111827] dark:bg-white rounded-full z-20 pointer-events-none flex items-center shadow-xs">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#111827] dark:bg-white -ml-0.5 shadow-sm" />
+                  </div>
+                )}
                 {/* Left Section: Drag handle, Title with MiddleTruncate, Checklist count */}
                 <div className="flex items-center gap-2 min-w-0 flex-1 mr-2 overflow-hidden">
                   <div
