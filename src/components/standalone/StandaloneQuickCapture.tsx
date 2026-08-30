@@ -330,42 +330,42 @@ export const StandaloneQuickCapture: React.FC = () => {
     >
       {/* Unsaved Changes Confirmation Prompt Overlay */}
       {showDiscardPrompt && (
-        <div className="absolute inset-0 bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-xs rounded-[12px] z-50 flex flex-col items-center justify-center p-6 text-center animate-in fade-in zoom-in-95 duration-150">
-          <div className="w-10 h-10 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-2.5">
-            <AlertTriangle className="w-5 h-5" />
+        <div className="absolute inset-0 bg-white dark:bg-[#18181b] rounded-[12px] z-50 flex flex-col items-center justify-center p-5 text-center animate-in fade-in zoom-in-95 duration-150">
+          <div className="w-9 h-9 aspect-square rounded-full bg-amber-500/10 dark:bg-amber-400/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 mb-2.5">
+            <AlertTriangle className="w-4.5 h-4.5 shrink-0" />
           </div>
-          <h3 className="text-sm font-bold text-[#111827] dark:text-white mb-1.5">
+          <h3 className="text-[13px] font-bold text-[#111827] dark:text-white mb-1">
             Save unsaved item?
           </h3>
-          <p className="text-xs text-[#6b7280] dark:text-[#a1a1aa] mb-5 max-w-[280px] leading-relaxed">
+          <p className="text-[11.5px] text-[#6b7280] dark:text-[#a1a1aa] mb-4 max-w-[270px] leading-relaxed">
             You have typed content in this item. Would you like to save it or proceed without saving?
           </p>
-          <div className="flex flex-col gap-2 w-full max-w-[280px]">
-            <button
-              type="button"
-              onClick={handleSave}
-              className="w-full py-2 px-3 bg-[#111827] hover:bg-[#1f2937] dark:bg-white dark:hover:bg-[#e4e4e7] text-white dark:text-[#111827] rounded-[7px] text-xs font-semibold shadow-subtle transition-all active:scale-[0.98]"
-            >
-              Save & Close
-            </button>
+          <div className="flex items-center gap-2 w-full max-w-[270px]">
             <button
               type="button"
               onClick={closeWindow}
-              className="w-full py-2 px-3 bg-[#f3f4f6] dark:bg-[#27272a] text-[#dc2626] dark:text-[#f87171] hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-[7px] text-xs font-semibold border border-[#e5e7eb] dark:border-[#3f3f46] transition-all"
+              className="flex-1 py-1.5 px-3 bg-[#f3f4f6] dark:bg-[#27272a] text-[#dc2626] dark:text-[#f87171] hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-[7px] text-xs font-semibold border border-[#e5e7eb] dark:border-[#3f3f46] transition-all"
             >
-              Proceed Without Saving
+              Discard
             </button>
             <button
               type="button"
-              onClick={() => {
-                setShowDiscardPrompt(false);
-                setTimeout(() => textareaRef.current?.focus(), 50);
-              }}
-              className="w-full py-1.5 px-3 text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white rounded-[7px] text-xs font-medium transition-all"
+              onClick={handleSave}
+              className="flex-1 py-1.5 px-3 bg-[#111827] hover:bg-[#1f2937] dark:bg-white dark:hover:bg-[#e4e4e7] text-white dark:text-[#111827] rounded-[7px] text-xs font-semibold shadow-subtle transition-all active:scale-[0.98]"
             >
-              Keep Editing
+              Save & Close
             </button>
           </div>
+          <button
+            type="button"
+            onClick={() => {
+              setShowDiscardPrompt(false);
+              setTimeout(() => textareaRef.current?.focus(), 50);
+            }}
+            className="mt-2.5 text-[11px] text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white font-medium transition-colors"
+          >
+            Keep editing
+          </button>
         </div>
       )}
 
