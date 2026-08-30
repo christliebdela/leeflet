@@ -84,7 +84,8 @@ export type ViewMode =
   | { type: 'type_filter'; itemType: ItemType }
   | { type: 'priority_filter'; priority: Priority }
   | { type: 'completed' }
-  | { type: 'archived' };
+  | { type: 'archived' }
+  | { type: 'team' };
 
 export interface FilterOptions {
   searchQuery: string;

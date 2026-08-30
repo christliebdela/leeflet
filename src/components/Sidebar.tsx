@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useLeafStore } from '../store/useLeafStore';
 import {
-  Inbox,
   ListTodo,
   Layers,
+  Users,
   Folder,
   Plus,
   ChevronRight,
@@ -60,7 +60,6 @@ export const Sidebar: React.FC = () => {
   const queueCount = items.filter(
     (i: Item) => (i.priority === 'critical' || i.priority === 'high' || i.priority === 'medium' || i.priority === 'low' || i.type === 'idea') && i.status !== 'done' && i.status !== 'archived'
   ).length;
-  const allCount = items.filter((i: Item) => i.status !== 'archived').length;
 
   const bugsCount = items.filter((i: Item) => i.type === 'bug' && i.status !== 'archived').length;
   const ideasCount = items.filter((i: Item) => i.type === 'idea' && i.status !== 'archived').length;
@@ -126,7 +125,7 @@ export const Sidebar: React.FC = () => {
               }`}
             >
               <div className="flex items-center gap-2">
-                <Inbox className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
+                <Layers className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
                 <span>Backlog</span>
               </div>
               {inboxCount > 0 && (
@@ -167,22 +166,20 @@ export const Sidebar: React.FC = () => {
             </button>
 
             <button
-              onClick={() => setViewMode({ type: 'all' })}
+              onClick={() => setViewMode({ type: 'team' })}
               className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] transition-colors font-medium text-xs ${
-                isViewActive({ type: 'all' })
+                isViewActive({ type: 'team' })
                   ? 'bg-[#e5e7eb] dark:bg-[#27272a] text-[#111827] dark:text-white'
                   : 'text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white'
               }`}
             >
               <div className="flex items-center gap-2">
-                <Layers className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
-                <span>All Items</span>
+                <Users className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
+                <span>Team</span>
               </div>
-              {allCount > 0 && (
-                <span className="text-[11px] text-[#6b7280] dark:text-[#71717a] font-normal">
-                  {allCount}
-                </span>
-              )}
+              <span className="text-[10.5px] text-[#9ca3af] dark:text-[#71717a] font-normal">
+                Soon
+              </span>
             </button>
           </div>
 

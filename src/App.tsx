@@ -4,6 +4,7 @@ import { Sidebar } from './components/Sidebar';
 import { HeaderBar } from './components/HeaderBar';
 import { ItemListView } from './components/ItemListView';
 import { MyQueueView } from './components/MyQueueView';
+import { TeamView } from './components/TeamView';
 import { ItemDetailPane } from './components/ItemDetailPane';
 import { QuickCaptureModal } from './components/QuickCaptureModal';
 import { StickyNoteView } from './components/StickyNoteView';
@@ -157,13 +158,6 @@ export const App: React.FC = () => {
         return;
       }
 
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'a' || e.key === 'A')) {
-        e.preventDefault();
-        setViewMode({ type: 'all' });
-        setSelectedItemId(null);
-        return;
-      }
-
       // 5. Mini Mode: 'm' / 'M' (when not typing) or Ctrl+M
       if (!isInput && (e.key === 'm' || e.key === 'M') && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
         e.preventDefault();
@@ -293,6 +287,8 @@ export const App: React.FC = () => {
             <div className="flex-1 min-w-0 h-full flex flex-col overflow-hidden">
               {viewMode.type === 'my_queue' ? (
                 <MyQueueView />
+              ) : viewMode.type === 'team' ? (
+                <TeamView />
               ) : (
                 <ItemListView />
               )}

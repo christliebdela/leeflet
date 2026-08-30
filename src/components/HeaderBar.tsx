@@ -78,6 +78,9 @@ export const HeaderBar: React.FC = () => {
     if (viewMode.type === 'my_queue') {
       return { title: 'My Queue' };
     }
+    if (viewMode.type === 'team') {
+      return { title: 'Team Collaboration' };
+    }
     if (viewMode.type === 'all') {
       return { title: 'All Items' };
     }
@@ -152,7 +155,7 @@ export const HeaderBar: React.FC = () => {
             </button>
           )}
         </div>
-        {viewMode.type !== 'my_queue' && totalCount > 0 && (
+        {viewMode.type !== 'my_queue' && viewMode.type !== 'team' && totalCount > 0 && (
           <span
             className="text-xs text-[#6b7280] dark:text-[#a1a1aa] font-normal shrink-0"
             data-tauri-drag-region

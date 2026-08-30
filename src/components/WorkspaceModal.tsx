@@ -46,7 +46,6 @@ const SHORTCUTS_DATA: ShortcutItem[] = [
   { id: '6', label: 'Close Sheet / Modal', category: 'Creation & Global', keys: ['Esc'] },
   { id: '7', label: 'Go to Backlog', category: 'Views & Projects', keys: ['Ctrl + I'] },
   { id: '8', label: 'Go to My Queue', category: 'Views & Projects', keys: ['Ctrl + Q'] },
-  { id: '9', label: 'Go to All Items', category: 'Views & Projects', keys: ['Ctrl + Shift + A'] },
   { id: '10', label: 'Switch Projects (1-9)', category: 'Views & Projects', keys: ['1 - 9'] },
   { id: '11', label: 'Mini Mode (Queue Card)', category: 'Views & Projects', keys: ['M'] },
   { id: '12', label: 'Pin on Top (Mini Mode)', category: 'Views & Projects', keys: ['P'] },
