@@ -14,7 +14,6 @@ import {
   ChevronDown,
   X,
   Plus,
-  AlertTriangle,
 } from 'lucide-react';
 import { ITEM_TYPE_CONFIG, PRIORITY_CONFIG } from '../utils/format';
 
@@ -42,14 +41,35 @@ export const QuickCaptureModal: React.FC = () => {
   const isInProjectView = viewMode.type === 'project';
   const activeProject = isInProjectView ? projects.find((p: Project) => p.id === viewMode.projectId) : null;
 
-  const [title, setTitle] = useState('');
+  // Draft persistence so unsaved changes reload when reopened (just like Alt+N view)
+  const [title, setTitle] = useState(() => {
+    try {
+      return localStorage.getItem('leaf_capture_draft_title') || '';
+    } catch {
+      return '';
+    }
+  });
   const [projectId, setProjectId] = useState(
     isInProjectView && activeProject ? activeProject.id : (selectedProjectId || (projects[0]?.id || ''))
   );
   const [type, setType] = useState<ItemType>('task');
   const [priority, setPriority] = useState<Priority>('none');
-  const [checklist, setChecklist] = useState<{ id: string; title: string; isCompleted: boolean }[]>([]);
-  const [showChecklist, setShowChecklist] = useState(false);
+  const [checklist, setChecklist] = useState<{ id: string; title: string; isCompleted: boolean }[]>(() => {
+    try {
+      const saved = localStorage.getItem('leaf_capture_draft_checklist');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [showChecklist, setShowChecklist] = useState(() => {
+    try {
+      const saved = localStorage.getItem('leaf_capture_draft_checklist');
+      return saved ? JSON.parse(saved).length > 0 : false;
+    } catch {
+      return false;
+    }
+  });
   const [newChecklistText, setNewChecklistText] = useState('');
 
   const [isTypeMenuOpen, setIsTypeMenuOpen] = useState(false);
@@ -57,7 +77,32 @@ export const QuickCaptureModal: React.FC = () => {
   const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
-  const [showDiscardPrompt, setShowDiscardPrompt] = useState(false);
+  // const [_showDiscardPrompt, _setShowDiscardPrompt] = useState(false);
+
+  // Persist draft changes
+  useEffect(() => {
+    try {
+      if (title) {
+        localStorage.setItem('leaf_capture_draft_title', title);
+      } else {
+        localStorage.removeItem('leaf_capture_draft_title');
+      }
+    } catch {
+      // ignore
+    }
+  }, [title]);
+
+  useEffect(() => {
+    try {
+      if (checklist.length > 0) {
+        localStorage.setItem('leaf_capture_draft_checklist', JSON.stringify(checklist));
+      } else {
+        localStorage.removeItem('leaf_capture_draft_checklist');
+      }
+    } catch {
+      // ignore
+    }
+  }, [checklist]);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const checklistInputRef = useRef<HTMLTextAreaElement>(null);
@@ -114,6 +159,8 @@ export const QuickCaptureModal: React.FC = () => {
     }
   };
 
+  /*
+  // Commented out confirm modal for now - using draft persistence flow like Alt+N view
   const hasUnsavedContent = Boolean(
     title.trim() ||
     checklist.length > 0 ||
@@ -146,23 +193,19 @@ export const QuickCaptureModal: React.FC = () => {
       forceClose();
     }
   };
+  */
 
   // Global window Escape listener
   useEffect(() => {
     const handleWindowKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isQuickCaptureOpen) {
-        if (showDiscardPrompt) {
-          setShowDiscardPrompt(false);
-          setTimeout(() => textareaRef.current?.focus(), 50);
-          return;
-        }
         if (isProjectMenuOpen || isTypeMenuOpen || isPriorityMenuOpen) {
           setIsProjectMenuOpen(false);
           setIsTypeMenuOpen(false);
           setIsPriorityMenuOpen(false);
           return;
         }
-        handleRequestClose();
+        setQuickCaptureOpen(false);
       }
     };
 
@@ -188,35 +231,32 @@ export const QuickCaptureModal: React.FC = () => {
 
   useEffect(() => {
     if (isQuickCaptureOpen) {
-      // 1. Context-aware Project
-      if (viewMode.type === 'project' && activeProject) {
-        setProjectId(activeProject.id);
-      } else if (selectedProjectId) {
-        setProjectId(selectedProjectId);
-      } else if (projects.length > 0 && !projectId) {
-        setProjectId(projects[0].id);
-      }
+      if (!title.trim() && checklist.length === 0) {
+        // 1. Context-aware Project
+        if (viewMode.type === 'project' && activeProject) {
+          setProjectId(activeProject.id);
+        } else if (selectedProjectId) {
+          setProjectId(selectedProjectId);
+        } else if (projects.length > 0 && !projectId) {
+          setProjectId(projects[0].id);
+        }
 
-      // 2. Context-aware Type
-      if (viewMode.type === 'type_filter') {
-        setType(viewMode.itemType);
-      } else {
-        setType('task');
-      }
+        // 2. Context-aware Type
+        if (viewMode.type === 'type_filter') {
+          setType(viewMode.itemType);
+        } else {
+          setType('task');
+        }
 
-      // 3. Context-aware Priority
-      if (viewMode.type === 'priority_filter') {
-        setPriority(viewMode.priority);
-      } else {
-        setPriority('none');
+        // 3. Context-aware Priority
+        if (viewMode.type === 'priority_filter') {
+          setPriority(viewMode.priority);
+        } else {
+          setPriority('none');
+        }
       }
 
       setTimeout(() => textareaRef.current?.focus(), 50);
-    } else {
-      setTitle('');
-      setChecklist([]);
-      setShowChecklist(false);
-      setNewChecklistText('');
     }
   }, [isQuickCaptureOpen, viewMode, activeProject, selectedProjectId, projects, projectId]);
 
@@ -257,18 +297,16 @@ export const QuickCaptureModal: React.FC = () => {
     setChecklist([]);
     setShowChecklist(false);
     setNewChecklistText('');
-    setShowDiscardPrompt(false);
+    try {
+      localStorage.removeItem('leaf_capture_draft_title');
+      localStorage.removeItem('leaf_capture_draft_checklist');
+    } catch {
+      // ignore
+    }
     setQuickCaptureOpen(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (showDiscardPrompt) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        handleSave();
-      }
-      return;
-    }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSave();
@@ -283,7 +321,7 @@ export const QuickCaptureModal: React.FC = () => {
   return (
     <div
       onClick={(e) => {
-        if (e.target === e.currentTarget) handleRequestClose();
+        if (e.target === e.currentTarget) setQuickCaptureOpen(false);
       }}
       className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 select-none animate-in fade-in duration-150"
     >
@@ -291,7 +329,7 @@ export const QuickCaptureModal: React.FC = () => {
         className="w-full max-w-[430px] max-h-[350px] bg-white dark:bg-[#18181b] rounded-[12px] border border-[#e5e7eb] dark:border-[#27272a] shadow-modal relative animate-in fade-in zoom-in-95 duration-100 flex flex-col overflow-hidden"
         onKeyDown={handleKeyDown}
       >
-        {/* Unsaved Changes Confirmation Prompt Overlay */}
+        {/* Unsaved Changes Confirmation Prompt Overlay (commented out for now - preserves draft like Alt+N view)
         {showDiscardPrompt && (
           <div className="absolute inset-0 bg-white dark:bg-[#18181b] rounded-[12px] z-50 flex flex-col items-center justify-center p-5 text-center animate-in fade-in zoom-in-95 duration-150">
             <div className="w-9 h-9 aspect-square rounded-full bg-amber-500/10 dark:bg-amber-400/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 mb-2.5">
@@ -331,6 +369,7 @@ export const QuickCaptureModal: React.FC = () => {
             </button>
           </div>
         )}
+        */}
 
         {/* Top Header */}
         <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-[#f3f4f6] dark:border-[#27272a] rounded-t-[12px]">
@@ -349,7 +388,7 @@ export const QuickCaptureModal: React.FC = () => {
           </div>
 
           <button
-            onClick={handleRequestClose}
+            onClick={() => setQuickCaptureOpen(false)}
             className="text-[10px] font-semibold bg-[#f3f4f6] dark:bg-[#27272a] text-[#6b7280] dark:text-[#a1a1aa] px-1.5 py-0.5 rounded-[6px] border border-[#e5e7eb] dark:border-[#3f3f46] hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46]"
           >
             Esc

@@ -14,7 +14,6 @@ import {
   ChevronDown,
   X,
   Plus,
-  AlertTriangle,
 } from 'lucide-react';
 import { broadcastSync } from '../../utils/sync';
 import { ITEM_TYPE_CONFIG, PRIORITY_CONFIG } from '../../utils/format';
@@ -44,13 +43,13 @@ export const StandaloneQuickCapture: React.FC = () => {
   const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
-  const [showDiscardPrompt, setShowDiscardPrompt] = useState(false);
+  // const [showDiscardPrompt, setShowDiscardPrompt] = useState(false);
 
   const titleRef = useRef('');
   const newProjectNameRef = useRef('');
   const checklistRef = useRef(checklist);
   const newChecklistTextRef = useRef(newChecklistText);
-  const showDiscardPromptRef = useRef(false);
+  // const showDiscardPromptRef = useRef(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const checklistInputRef = useRef<HTMLTextAreaElement>(null);
   const bodyScrollRef = useRef<HTMLDivElement>(null);
@@ -126,31 +125,24 @@ export const StandaloneQuickCapture: React.FC = () => {
     newChecklistTextRef.current = newChecklistText;
   }, [newChecklistText]);
 
-  useEffect(() => {
-    showDiscardPromptRef.current = showDiscardPrompt;
-  }, [showDiscardPrompt]);
+  const closeWindow = async () => {
+    try {
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      const win = getCurrentWindow();
+      await win.hide();
+    } catch {
+      window.close();
+    }
+  };
 
+  /*
+  // Commented out confirm modal for now - preserves draft when opened again
   const hasUnsavedContent = () => Boolean(
     titleRef.current.trim() ||
     newProjectNameRef.current.trim() ||
     checklistRef.current.length > 0 ||
     newChecklistTextRef.current.trim()
   );
-
-  const closeWindow = async () => {
-    try {
-      const { getCurrentWindow } = await import('@tauri-apps/api/window');
-      const win = getCurrentWindow();
-      setShowDiscardPrompt(false);
-      setTitle('');
-      setChecklist([]);
-      setShowChecklist(false);
-      setNewChecklistText('');
-      await win.hide();
-    } catch {
-      window.close();
-    }
-  };
 
   const handleRequestClose = () => {
     if (showDiscardPromptRef.current) {
@@ -163,6 +155,7 @@ export const StandaloneQuickCapture: React.FC = () => {
       closeWindow();
     }
   };
+  */
 
   const applyCurrentTheme = () => {
     const savedTheme = localStorage.getItem('leaf_theme') as 'light' | 'dark' | null;
@@ -230,18 +223,13 @@ export const StandaloneQuickCapture: React.FC = () => {
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (showDiscardPromptRef.current) {
-          setShowDiscardPrompt(false);
-          setTimeout(() => textareaRef.current?.focus(), 50);
-          return;
-        }
         if (isProjectMenuOpen || isTypeMenuOpen || isPriorityMenuOpen) {
           setIsProjectMenuOpen(false);
           setIsTypeMenuOpen(false);
           setIsPriorityMenuOpen(false);
           return;
         }
-        handleRequestClose();
+        closeWindow();
       }
     };
 
@@ -316,6 +304,10 @@ export const StandaloneQuickCapture: React.FC = () => {
     });
 
     broadcastSync({ type: 'item_created', item: newItem });
+    setTitle('');
+    setChecklist([]);
+    setShowChecklist(false);
+    setNewChecklistText('');
     closeWindow();
   };
 
@@ -328,7 +320,7 @@ export const StandaloneQuickCapture: React.FC = () => {
     <div
       className="w-screen h-screen bg-white dark:bg-[#18181b] border border-[#e5e7eb] dark:border-[#27272a] rounded-[12px] shadow-modal relative flex flex-col select-none font-sans overflow-hidden animate-capture-bounce"
     >
-      {/* Unsaved Changes Confirmation Prompt Overlay */}
+      {/* Unsaved Changes Confirmation Prompt Overlay (commented out for now - preserves draft when opened again)
       {showDiscardPrompt && (
         <div className="absolute inset-0 bg-white dark:bg-[#18181b] rounded-[12px] z-50 flex flex-col items-center justify-center p-5 text-center animate-in fade-in zoom-in-95 duration-150">
           <div className="w-9 h-9 aspect-square rounded-full bg-amber-500/10 dark:bg-amber-400/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 mb-2.5">
@@ -368,6 +360,7 @@ export const StandaloneQuickCapture: React.FC = () => {
           </button>
         </div>
       )}
+      */}
 
       {/* Top Header */}
       <div
@@ -388,7 +381,7 @@ export const StandaloneQuickCapture: React.FC = () => {
         </div>
 
         <button
-          onClick={handleRequestClose}
+          onClick={closeWindow}
           className="text-[10px] font-semibold bg-[#f3f4f6] dark:bg-[#27272a] text-[#6b7280] dark:text-[#a1a1aa] px-1.5 py-0.5 rounded-[6px] border border-[#e5e7eb] dark:border-[#3f3f46] hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] transition-colors"
         >
           Esc
@@ -420,13 +413,6 @@ export const StandaloneQuickCapture: React.FC = () => {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           onKeyDown={(e) => {
-            if (showDiscardPrompt) {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                handleSave();
-              }
-              return;
-            }
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
               handleSave();
