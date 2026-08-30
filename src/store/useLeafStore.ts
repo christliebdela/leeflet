@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { Workspace, Project, Item, ViewMode, FilterOptions, ChecklistItem, Attachment, ItemType, Priority, Status } from '../types';
 import { dbService } from '../services/db';
 import { broadcastSync, subscribeToSync } from '../utils/sync';
+import { toast } from './useToastStore';
 
 interface LeafState {
   workspace: Workspace | null;
@@ -170,11 +171,13 @@ export const useLeafStore = create<LeafState>((set, get) => ({
             if (state.items.some((i) => i.id === msg.item.id)) return state;
             return { items: [msg.item, ...state.items] };
           });
+          toast.success('Item added');
         } else if (msg.type === 'item_deleted') {
           set((state) => ({
             items: state.items.filter((i) => i.id !== msg.itemId),
             selectedItemId: state.selectedItemId === msg.itemId ? null : state.selectedItemId,
           }));
+          toast.success('Item deleted');
         } else if (msg.type === 'items_reload') {
           get().loadItems();
         } else if (msg.type === 'projects_reload') {
@@ -258,6 +261,7 @@ export const useLeafStore = create<LeafState>((set, get) => ({
     const newItem = await dbService.createItem(data);
     await get().loadItems();
     broadcastSync({ type: 'item_created', item: newItem });
+    toast.success('Item added');
     return newItem;
   },
 
@@ -278,6 +282,7 @@ export const useLeafStore = create<LeafState>((set, get) => ({
     broadcastSync({ type: 'item_deleted', itemId: id });
     await dbService.deleteItem(id);
     await get().loadItems();
+    toast.success('Item deleted');
   },
 
   reorderItems: async (sourceId: string, targetId: string, position: 'before' | 'after' = 'before') => {
