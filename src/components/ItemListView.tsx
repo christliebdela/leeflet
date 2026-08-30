@@ -19,8 +19,49 @@ import {
   Search,
 } from 'lucide-react';
 import { Item, ChecklistItem, Project } from '../types';
-import { formatDate, ITEM_TYPE_CONFIG, PRIORITY_CONFIG } from '../utils/format';
+import { formatDate, ITEM_TYPE_CONFIG } from '../utils/format';
 import { MiddleTruncate } from './ui/MiddleTruncate';
+
+const LinearPriorityIcon: React.FC<{ priority: string }> = ({ priority }) => {
+  switch (priority) {
+    case 'critical':
+      return (
+        <span title="Urgent / Critical" className="w-4 h-4 flex items-center justify-center text-rose-500 shrink-0">
+          <AlertCircle className="w-3.5 h-3.5" />
+        </span>
+      );
+    case 'high':
+      return (
+        <span title="High Priority" className="w-4 h-4 flex items-end justify-center gap-[1.5px] pb-0.5 shrink-0">
+          <span className="w-[2px] h-[4px] bg-amber-500 rounded-full" />
+          <span className="w-[2px] h-[7px] bg-amber-500 rounded-full" />
+          <span className="w-[2px] h-[10px] bg-amber-500 rounded-full" />
+        </span>
+      );
+    case 'medium':
+      return (
+        <span title="Medium Priority" className="w-4 h-4 flex items-end justify-center gap-[1.5px] pb-0.5 shrink-0">
+          <span className="w-[2px] h-[4px] bg-amber-500/80 rounded-full" />
+          <span className="w-[2px] h-[7px] bg-amber-500/80 rounded-full" />
+          <span className="w-[2px] h-[10px] bg-[#e5e7eb] dark:bg-[#3f3f46] rounded-full" />
+        </span>
+      );
+    case 'low':
+      return (
+        <span title="Low Priority" className="w-4 h-4 flex items-end justify-center gap-[1.5px] pb-0.5 shrink-0">
+          <span className="w-[2px] h-[4px] bg-blue-400 rounded-full" />
+          <span className="w-[2px] h-[7px] bg-[#e5e7eb] dark:bg-[#3f3f46] rounded-full" />
+          <span className="w-[2px] h-[10px] bg-[#e5e7eb] dark:bg-[#3f3f46] rounded-full" />
+        </span>
+      );
+    default:
+      return (
+        <span title="No Priority" className="w-4 h-4 flex items-center justify-center text-[#9ca3af] dark:text-[#52525b] text-[11px] shrink-0 font-mono select-none">
+          —
+        </span>
+      );
+  }
+};
 
 export const ItemListView: React.FC = () => {
   const {
@@ -318,7 +359,6 @@ export const ItemListView: React.FC = () => {
             const isDragOverBefore = dragOverInfo?.id === item.id && dragOverInfo.position === 'before';
             const isDragOverAfter = dragOverInfo?.id === item.id && dragOverInfo.position === 'after';
             const typeConfig = ITEM_TYPE_CONFIG[item.type] || ITEM_TYPE_CONFIG.task;
-            const priorityConfig = PRIORITY_CONFIG[item.priority] || PRIORITY_CONFIG.none;
             const project = projects.find((p: Project) => p.id === item.projectId);
 
             return (
@@ -382,42 +422,58 @@ export const ItemListView: React.FC = () => {
                     <div className="w-1.5 h-1.5 rounded-full bg-[#111827] dark:bg-white -ml-0.5 shadow-sm" />
                   </div>
                 )}
-                {/* Left Section: Drag handle, Title with MiddleTruncate, Checklist count */}
-                <div className="flex items-center gap-2 min-w-0 flex-1 mr-2 overflow-hidden">
+                {/* Left Section: Drag handle + Priority Icon + Optional Type Icon + Title & Checklist */}
+                <div className="flex items-center gap-2.5 min-w-0 flex-1 mr-3 overflow-hidden">
                   <div
                     className="cursor-grab active:cursor-grabbing text-[#d1d5db] dark:text-[#52525b] group-hover:text-[#9ca3af] dark:group-hover:text-[#a1a1aa] transition-colors shrink-0"
                   >
                     <GripVertical className="w-3.5 h-3.5" />
                   </div>
 
-                  <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden">
-                    <div className="min-w-0 flex-1 overflow-hidden">
-                      <MiddleTruncate
-                        value={item.title}
-                        className={`text-xs font-semibold ${
-                          item.status === 'done'
-                            ? 'line-through text-[#6b7280] dark:text-[#a1a1aa]'
-                            : 'text-[#111827] dark:text-[#f4f4f5]'
-                        }`}
-                      />
-                    </div>
-                    {item.checklist && item.checklist.length > 0 && (
-                      <span className="text-[10px] text-[#9ca3af] dark:text-[#71717a] font-mono shrink-0 bg-[#f3f4f6] dark:bg-[#27272a] px-1 py-0.5 rounded leading-none">
-                        {item.checklist.filter((c: ChecklistItem) => c.isCompleted).length}/
-                        {item.checklist.length}
-                      </span>
-                    )}
+                  {/* Priority Icon (Linear-style) */}
+                  <LinearPriorityIcon priority={item.priority} />
+
+                  {/* Non-task item type indicator (subtle icon only for bug/idea/improvement) */}
+                  {item.type !== 'task' && (
+                    <span title={`Type: ${typeConfig.label}`} className="shrink-0 flex items-center">
+                      {item.type === 'bug' && <Bug className="w-3.5 h-3.5 text-rose-500" />}
+                      {item.type === 'idea' && <Lightbulb className="w-3.5 h-3.5 text-amber-500" />}
+                      {item.type === 'improvement' && <Sparkles className="w-3.5 h-3.5 text-purple-500" />}
+                      {item.type === 'research' && <BookOpen className="w-3.5 h-3.5 text-teal-500" />}
+                      {item.type === 'question' && <HelpCircle className="w-3.5 h-3.5 text-sky-500" />}
+                      {item.type === 'note' && <FileText className="w-3.5 h-3.5 text-slate-400" />}
+                    </span>
+                  )}
+
+                  {/* Title with MiddleTruncate */}
+                  <div className="min-w-0 flex-1 overflow-hidden">
+                    <MiddleTruncate
+                      value={item.title}
+                      className={`text-xs font-semibold ${
+                        item.status === 'done'
+                          ? 'line-through text-[#6b7280] dark:text-[#a1a1aa]'
+                          : 'text-[#111827] dark:text-[#f4f4f5]'
+                      }`}
+                    />
                   </div>
+
+                  {/* Checklist count badge */}
+                  {item.checklist && item.checklist.length > 0 && (
+                    <span className="text-[10px] text-[#9ca3af] dark:text-[#71717a] font-mono shrink-0 bg-[#f3f4f6] dark:bg-[#27272a] px-1 py-0.5 rounded leading-none">
+                      {item.checklist.filter((c: ChecklistItem) => c.isCompleted).length}/
+                      {item.checklist.length}
+                    </span>
+                  )}
                 </div>
 
-                {/* Right Columns: Project, Type, Priority, Date */}
-                <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
-                  {/* Project Column (Shown in Backlog and multi-project views) */}
+                {/* Right Columns: Project & Date */}
+                <div className="flex items-center gap-3 shrink-0">
+                  {/* Project Column */}
                   {viewMode.type !== 'project' && (
-                    isPaneOpen ? (
+                    <div className={isPaneOpen ? 'max-w-[90px] shrink-0' : 'w-[110px] sm:w-[130px] flex items-center justify-start shrink-0'}>
                       <span
                         title={project?.name || 'No Project'}
-                        className="inline-flex items-center gap-1.5 text-[10px] text-[#6b7280] dark:text-[#a1a1aa] font-medium max-w-[80px] shrink-0 truncate"
+                        className="inline-flex items-center gap-1.5 text-[11px] text-[#6b7280] dark:text-[#a1a1aa] font-medium truncate"
                       >
                         <span
                           className="w-1.5 h-1.5 rounded-full shrink-0"
@@ -425,67 +481,13 @@ export const ItemListView: React.FC = () => {
                         />
                         <span className="truncate">{project?.name || 'No Project'}</span>
                       </span>
-                    ) : (
-                      <div className="min-w-[80px] max-w-[125px] flex items-center justify-start shrink-0">
-                        <span
-                          title={project?.name || 'No Project'}
-                          className="inline-flex items-center gap-1.5 text-[11px] text-[#6b7280] dark:text-[#a1a1aa] font-medium truncate"
-                        >
-                          <span
-                            className="w-1.5 h-1.5 rounded-full shrink-0"
-                            style={{ backgroundColor: project?.color || '#9ca3af' }}
-                          />
-                          <span className="truncate">{project?.name || 'No Project'}</span>
-                        </span>
-                      </div>
-                    )
-                  )}
-
-                  {/* Type Column (compact icon badge or label) */}
-                  {isPaneOpen ? (
-                    <span
-                      className={`inline-flex items-center px-1.5 py-0 text-[9px] font-medium leading-[13px] rounded-full border ${typeConfig.bg} ${typeConfig.color} ${typeConfig.border} shrink-0 whitespace-nowrap`}
-                    >
-                      {typeConfig.label}
-                    </span>
-                  ) : (
-                    <div className="min-w-[78px] flex items-center justify-start shrink-0">
-                      <span
-                        className={`inline-flex items-center px-1.5 py-0 text-[9.5px] font-medium leading-[14px] rounded-full border ${typeConfig.bg} ${typeConfig.color} ${typeConfig.border} shrink-0 whitespace-nowrap`}
-                      >
-                        {typeConfig.label}
-                      </span>
                     </div>
                   )}
 
-                  {/* Priority Column */}
-                  {item.priority !== 'none' ? (
-                    isPaneOpen ? (
-                      <span
-                        className="inline-flex items-center shrink-0"
-                      >
-                        <span className={`w-1.5 h-1.5 rounded-full ${priorityConfig.dotColor} shrink-0`} />
-                      </span>
-                    ) : (
-                      <div className="min-w-[64px] flex items-center justify-start shrink-0">
-                        <span className="inline-flex items-center gap-1.5 text-[11px] text-[#6b7280] dark:text-[#a1a1aa] whitespace-nowrap">
-                          <span className={`w-1.5 h-1.5 rounded-full ${priorityConfig.dotColor} shrink-0`} />
-                          <span>{priorityConfig.label}</span>
-                        </span>
-                      </div>
-                    )
-                  ) : !isPaneOpen ? (
-                    <div className="min-w-[64px] flex items-center justify-start shrink-0">
-                      <span className="text-[11px] text-[#9ca3af] dark:text-[#52525b]">—</span>
-                    </div>
-                  ) : null}
-
-                  {/* Date Column (Full view only) */}
-                  {!isPaneOpen && (
-                    <div className="text-[11px] text-[#9ca3af] dark:text-[#71717a] w-14 text-right shrink-0 hidden md:block">
-                      {formatDate(item.createdAt)}
-                    </div>
-                  )}
+                  {/* Date Column */}
+                  <div className="w-14 text-right text-[11px] text-[#9ca3af] dark:text-[#71717a] font-normal shrink-0">
+                    {formatDate(item.createdAt)}
+                  </div>
                 </div>
               </div>
             );
