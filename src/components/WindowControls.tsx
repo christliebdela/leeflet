@@ -80,7 +80,7 @@ export const WindowControls: React.FC = () => {
     >
       <button
         onClick={handleMinimize}
-        title="Minimize"
+        aria-label="Minimize"
         className="w-8 h-7 flex items-center justify-center hover:bg-[#e5e7eb] dark:hover:bg-[#27272a] hover:text-[#111827] dark:hover:text-white transition-colors rounded-[4px]"
       >
         <Minus className="w-3.5 h-3.5" />
@@ -88,7 +88,7 @@ export const WindowControls: React.FC = () => {
 
       <button
         onClick={handleToggleMaximize}
-        title={isMaximized ? 'Restore Down' : 'Maximize'}
+        aria-label={isMaximized ? 'Restore Down' : 'Maximize'}
         className="w-8 h-7 flex items-center justify-center hover:bg-[#e5e7eb] dark:hover:bg-[#27272a] hover:text-[#111827] dark:hover:text-white transition-colors rounded-[4px]"
       >
         {isMaximized ? (
@@ -119,7 +119,7 @@ export const WindowControls: React.FC = () => {
 
       <button
         onClick={handleClose}
-        title="Close"
+        aria-label="Close"
         className="w-8 h-7 flex items-center justify-center hover:bg-rose-500 hover:text-white transition-colors rounded-[4px]"
       >
         <X className="w-3.5 h-3.5" />
