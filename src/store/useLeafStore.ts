@@ -7,6 +7,7 @@ import { soundService } from '../utils/audio';
 
 interface LeafState {
   workspace: Workspace | null;
+  workspaces: Workspace[];
   projects: Project[];
   items: Item[];
   selectedItemId: string | null;
@@ -19,6 +20,7 @@ interface LeafState {
   isProjectModalOpen: boolean;
   editingProject: Project | null;
   stickyNoteItemId: string | null;
+  itemToDelete: Item | null;
   isLoading: boolean;
   loadingMessage: string;
   isStandby: boolean;
@@ -33,7 +35,11 @@ interface LeafState {
   setStandbyJokesEnabled: (enabled: boolean) => void;
   setTheme: (theme: 'light' | 'dark') => void;
   toggleTheme: () => void;
+  loadWorkspaces: () => Promise<void>;
+  switchWorkspace: (workspaceId: string) => Promise<void>;
   createWorkspace: (name: string, locationPath: string) => Promise<Workspace>;
+  renameWorkspace: (workspaceId: string, newName: string) => Promise<void>;
+  deleteWorkspace: (workspaceId: string) => Promise<void>;
   loadProjects: () => Promise<void>;
   createProject: (data: { name: string; description?: string; color?: string; localPath?: string }) => Promise<Project>;
   updateProject: (project: Project) => Promise<void>;
@@ -50,6 +56,8 @@ interface LeafState {
     tags?: string[];
     checklist?: ChecklistItem[];
     attachments?: Attachment[];
+    dueAt?: string | null;
+    assigneeId?: string | null;
   }) => Promise<Item>;
   updateItem: (item: Item) => Promise<void>;
   deleteItem: (id: string) => Promise<void>;
@@ -66,6 +74,7 @@ interface LeafState {
   setWorkspaceModalOpen: (open: boolean) => void;
   setProjectModalOpen: (open: boolean, project?: Project | null) => void;
   setStickyNoteItemId: (id: string | null) => void;
+  setItemToDelete: (item: Item | null) => void;
 }
 
 const getInitialTheme = (): 'light' | 'dark' => {
@@ -76,6 +85,7 @@ const getInitialTheme = (): 'light' | 'dark' => {
 
 export const useLeafStore = create<LeafState>((set, get) => ({
   workspace: null,
+  workspaces: [],
   projects: [],
   items: [],
   selectedItemId: null,
@@ -91,6 +101,7 @@ export const useLeafStore = create<LeafState>((set, get) => ({
   isProjectModalOpen: false,
   editingProject: null,
   stickyNoteItemId: null,
+  itemToDelete: null,
   isLoading: true,
   loadingMessage: 'loading workspace...',
   isStandby: false,
@@ -200,6 +211,7 @@ export const useLeafStore = create<LeafState>((set, get) => ({
       }
 
       set({ workspace: ws, isOnboardingOpen: false });
+      await get().loadWorkspaces();
       await get().loadProjects();
       await get().loadItems();
     } finally {
@@ -211,14 +223,59 @@ export const useLeafStore = create<LeafState>((set, get) => ({
     }
   },
 
-  createWorkspace: async (name: string, locationPath: string) => {
-    set({ isLoading: true });
+  loadWorkspaces: async () => {
+    const workspaces = await dbService.getAllWorkspaces();
+    set({ workspaces });
+  },
+
+  switchWorkspace: async (workspaceId: string) => {
+    set({ isLoading: true, loadingMessage: 'switching workspace...' });
     try {
-      const ws = await dbService.createWorkspace(name, locationPath);
-      set({ workspace: ws, isOnboardingOpen: false });
+      await dbService.setActiveWorkspace(workspaceId);
+      const ws = await dbService.getActiveWorkspace();
+      set({ workspace: ws, selectedItemId: null, selectedProjectId: null });
+      await get().loadWorkspaces();
       await get().loadProjects();
       await get().loadItems();
+      toast.success(`Switched to ${ws?.name || 'workspace'}`);
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  createWorkspace: async (name: string, locationPath: string) => {
+    set({ isLoading: true, loadingMessage: 'creating workspace...' });
+    try {
+      const ws = await dbService.createWorkspace(name, locationPath);
+      await get().loadWorkspaces();
+      set({ workspace: ws, isOnboardingOpen: false, selectedItemId: null, selectedProjectId: null });
+      await get().loadProjects();
+      await get().loadItems();
+      toast.success(`Created workspace "${name}"`);
       return ws;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  renameWorkspace: async (workspaceId: string, newName: string) => {
+    await dbService.renameWorkspace(workspaceId, newName);
+    await get().loadWorkspaces();
+    const ws = await dbService.getActiveWorkspace();
+    set({ workspace: ws });
+    toast.success(`Workspace renamed to "${newName}"`);
+  },
+
+  deleteWorkspace: async (workspaceId: string) => {
+    set({ isLoading: true, loadingMessage: 'deleting workspace...' });
+    try {
+      await dbService.deleteWorkspace(workspaceId);
+      await get().loadWorkspaces();
+      const ws = await dbService.getActiveWorkspace();
+      set({ workspace: ws, selectedItemId: null, selectedProjectId: null });
+      await get().loadProjects();
+      await get().loadItems();
+      toast.success('Workspace deleted');
     } finally {
       set({ isLoading: false });
     }
@@ -365,4 +422,5 @@ export const useLeafStore = create<LeafState>((set, get) => ({
     }),
   setProjectModalOpen: (open, project = null) => set({ isProjectModalOpen: open, editingProject: project }),
   setStickyNoteItemId: (id) => set({ stickyNoteItemId: id }),
+  setItemToDelete: (item) => set({ itemToDelete: item }),
 }));

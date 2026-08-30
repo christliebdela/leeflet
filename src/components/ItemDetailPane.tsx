@@ -28,15 +28,19 @@ import {
   Save,
   Undo2,
   Redo2,
+  Calendar,
+  User,
 } from 'lucide-react';
-import { Item, ItemType, Priority, Status, ChecklistItem, Attachment } from '../types';
+import { Item, ItemType, Priority, Status, ChecklistItem, Attachment, TeamMember } from '../types';
 import {
   formatFullDate,
   formatFileSize,
+  formatDueDateLabel,
   ITEM_TYPE_CONFIG,
   PRIORITY_CONFIG,
   STATUS_CONFIG,
 } from '../utils/format';
+import { getStoredTeamMembers, getMemberColor, getInitials } from '../utils/team';
 import { Checkbox } from './ui/Checkbox';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { markdownToHtml, htmlToMarkdown, autoLinkHtml } from '../utils/markdown';
@@ -60,6 +64,7 @@ export const ItemDetailPane: React.FC = () => {
     setSelectedItemId,
     updateItem,
     deleteItem,
+    setItemToDelete,
     createProject,
   } = useLeafStore();
 
@@ -81,15 +86,18 @@ export const ItemDetailPane: React.FC = () => {
   const [type, setType] = useState<ItemType>('task');
   const [priority, setPriority] = useState<Priority>('none');
   const [status, setStatus] = useState<Status>('inbox');
+  const [assigneeId, setAssigneeId] = useState<string | null>(null);
+  const [dueAt, setDueAt] = useState<string | null>(null);
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [newChecklistText, setNewChecklistText] = useState('');
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving'>('saved');
   const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(null);
 
-  const [openMenu, setOpenMenu] = useState<'project' | 'type' | 'priority' | 'status' | null>(null);
+  const [openMenu, setOpenMenu] = useState<'project' | 'type' | 'priority' | 'status' | 'assignee' | 'dueDate' | null>(null);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
 
   const paneRef = useRef<HTMLElement>(null);
   const titleInputRef = useRef<HTMLTextAreaElement>(null);
@@ -222,8 +230,11 @@ export const ItemDetailPane: React.FC = () => {
       setType(activeItem.type);
       setPriority(activeItem.priority);
       setStatus(activeItem.status);
+      setAssigneeId(activeItem.assigneeId || null);
+      setDueAt(activeItem.dueAt || null);
       setChecklist(activeItem.checklist || []);
       setAttachments(activeItem.attachments || []);
+      setTeamMembers(getStoredTeamMembers());
     } else {
       lastLoadedItemIdRef.current = null;
     }
@@ -333,6 +344,8 @@ export const ItemDetailPane: React.FC = () => {
         type: patch.type !== undefined ? patch.type : type,
         priority: patch.priority !== undefined ? patch.priority : priority,
         status: patch.status !== undefined ? patch.status : status,
+        assigneeId: patch.assigneeId !== undefined ? patch.assigneeId : assigneeId,
+        dueAt: patch.dueAt !== undefined ? patch.dueAt : dueAt,
         checklist: patch.checklist !== undefined ? patch.checklist : checklist,
         attachments: patch.attachments !== undefined ? patch.attachments : attachments,
         updatedAt: new Date().toISOString(),
@@ -781,7 +794,7 @@ export const ItemDetailPane: React.FC = () => {
                       }}
                       className={`w-full text-left px-2 py-1.5 rounded-[4px] text-xs flex items-center justify-between transition-colors ${
                         !projectId
-                          ? 'bg-[#111827] text-white dark:bg-white dark:text-[#111827] font-semibold'
+                          ? 'bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-[#f4f4f5] font-semibold'
                           : 'text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a]'
                       }`}
                     >
@@ -798,7 +811,7 @@ export const ItemDetailPane: React.FC = () => {
                         }}
                         className={`w-full text-left px-2 py-1.5 rounded-[4px] text-xs flex items-center justify-between truncate transition-colors ${
                           projectId === p.id
-                            ? 'bg-[#111827] text-white dark:bg-white dark:text-[#111827] font-semibold'
+                            ? 'bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-[#f4f4f5] font-semibold'
                             : 'text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a]'
                         }`}
                       >
@@ -894,7 +907,7 @@ export const ItemDetailPane: React.FC = () => {
                         }}
                         className={`w-full text-left px-2 py-1.5 rounded-[4px] text-xs capitalize flex items-center justify-between transition-colors ${
                           type === t
-                            ? 'bg-[#111827] text-white dark:bg-white dark:text-[#111827] font-semibold'
+                            ? 'bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-[#f4f4f5] font-semibold'
                             : 'text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a]'
                         }`}
                       >
@@ -938,7 +951,7 @@ export const ItemDetailPane: React.FC = () => {
                         }}
                         className={`w-full text-left px-2 py-1.5 rounded-[4px] text-xs capitalize flex items-center justify-between transition-colors ${
                           priority === p
-                            ? 'bg-[#111827] text-white dark:bg-white dark:text-[#111827] font-semibold'
+                            ? 'bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-[#f4f4f5] font-semibold'
                             : 'text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a]'
                         }`}
                       >
@@ -982,7 +995,7 @@ export const ItemDetailPane: React.FC = () => {
                         }}
                         className={`w-full text-left px-2 py-1.5 rounded-[4px] text-xs capitalize flex items-center justify-between transition-colors ${
                           status === s
-                            ? 'bg-[#111827] text-white dark:bg-white dark:text-[#111827] font-semibold'
+                            ? 'bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-[#f4f4f5] font-semibold'
                             : 'text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a]'
                         }`}
                       >
@@ -994,6 +1007,190 @@ export const ItemDetailPane: React.FC = () => {
                       </button>
                     );
                   })}
+                </div>
+              )}
+            </div>
+
+            {/* Assignee Selector */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setOpenMenu(openMenu === 'assignee' ? null : 'assignee')}
+                className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-[#f4f4f5] border border-transparent hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-colors"
+              >
+                <div className="flex items-center gap-1.5 truncate">
+                  {assigneeId ? (
+                    <span
+                      className={`w-3.5 h-3.5 rounded-full text-white text-[8.5px] font-bold flex items-center justify-center shrink-0 ${
+                        teamMembers.find((m) => m.id === assigneeId)?.avatarColor ||
+                        getMemberColor(assigneeId)
+                      }`}
+                    >
+                      {getInitials(teamMembers.find((m) => m.id === assigneeId)?.name || 'U')}
+                    </span>
+                  ) : (
+                    <User className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa] shrink-0 opacity-80" />
+                  )}
+                  <span className="truncate">
+                    {teamMembers.find((m) => m.id === assigneeId)?.name || 'Assignee'}
+                  </span>
+                </div>
+                <ChevronDown className="w-3 h-3 opacity-60 shrink-0" />
+              </button>
+
+              {openMenu === 'assignee' && (
+                <div className="absolute left-0 top-full mt-1 w-44 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] shadow-modal p-1 z-50 space-y-0.5 max-h-48 overflow-y-auto custom-scrollbar">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAssigneeId(null);
+                      handleFieldChange('assigneeId', null);
+                      setOpenMenu(null);
+                    }}
+                    className={`w-full text-left px-2 py-1.5 rounded-[4px] text-xs flex items-center justify-between transition-colors ${
+                      !assigneeId
+                        ? 'bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-[#f4f4f5] font-semibold'
+                        : 'text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <User className="w-3.5 h-3.5 opacity-60" />
+                      <span>Unassigned</span>
+                    </div>
+                    {!assigneeId && <Check className="w-3.5 h-3.5 shrink-0" />}
+                  </button>
+
+                  {teamMembers.map((member) => (
+                    <button
+                      key={member.id}
+                      type="button"
+                      onClick={() => {
+                        setAssigneeId(member.id);
+                        handleFieldChange('assigneeId', member.id);
+                        setOpenMenu(null);
+                      }}
+                      className={`w-full text-left px-2 py-1.5 rounded-[4px] text-xs flex items-center justify-between transition-colors ${
+                        assigneeId === member.id
+                          ? 'bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-[#f4f4f5] font-semibold'
+                          : 'text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <span
+                          className={`w-3.5 h-3.5 rounded-full text-white text-[8.5px] font-bold flex items-center justify-center shrink-0 ${
+                            member.avatarColor || getMemberColor(member.id)
+                          }`}
+                        >
+                          {getInitials(member.name)}
+                        </span>
+                        <span className="truncate">{member.name}</span>
+                      </div>
+                      {assigneeId === member.id && <Check className="w-3.5 h-3.5 shrink-0" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Due Date Selector */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setOpenMenu(openMenu === 'dueDate' ? null : 'dueDate')}
+                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] bg-[#f4f5f6] dark:bg-[#27272a] border border-transparent hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-colors ${
+                  dueAt
+                    ? 'text-indigo-600 dark:text-indigo-400 font-medium'
+                    : 'text-[#111827] dark:text-[#f4f4f5]'
+                }`}
+              >
+                <div className="flex items-center gap-1.5 truncate">
+                  <Calendar className="w-3.5 h-3.5 opacity-70 shrink-0" />
+                  <span className="truncate">{formatDueDateLabel(dueAt)}</span>
+                </div>
+                <ChevronDown className="w-3 h-3 opacity-60 shrink-0" />
+              </button>
+
+              {openMenu === 'dueDate' && (
+                <div className="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] shadow-modal p-1.5 z-50 space-y-1">
+                  <div className="space-y-0.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const d = new Date().toISOString().slice(0, 10);
+                        setDueAt(d);
+                        handleFieldChange('dueAt', d);
+                        setOpenMenu(null);
+                      }}
+                      className="w-full text-left px-2 py-1 rounded-[4px] text-xs text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] flex items-center justify-between"
+                    >
+                      <span>Today</span>
+                      <span className="text-[10px] text-[#9ca3af] dark:text-[#71717a]">
+                        {new Date().toLocaleDateString(undefined, { weekday: 'short' })}
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const d = new Date();
+                        d.setDate(d.getDate() + 1);
+                        const str = d.toISOString().slice(0, 10);
+                        setDueAt(str);
+                        handleFieldChange('dueAt', str);
+                        setOpenMenu(null);
+                      }}
+                      className="w-full text-left px-2 py-1 rounded-[4px] text-xs text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] flex items-center justify-between"
+                    >
+                      <span>Tomorrow</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const d = new Date();
+                        const diff = (1 - d.getDay() + 7) % 7 || 7;
+                        d.setDate(d.getDate() + diff);
+                        const str = d.toISOString().slice(0, 10);
+                        setDueAt(str);
+                        handleFieldChange('dueAt', str);
+                        setOpenMenu(null);
+                      }}
+                      className="w-full text-left px-2 py-1 rounded-[4px] text-xs text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] flex items-center justify-between"
+                    >
+                      <span>Next Monday</span>
+                    </button>
+                  </div>
+
+                  <div className="pt-1 border-t border-[#f3f4f6] dark:border-[#27272a]">
+                    <label className="block text-[10px] font-medium text-[#9ca3af] dark:text-[#71717a] mb-1 px-1">
+                      Pick Date
+                    </label>
+                    <input
+                      type="date"
+                      value={dueAt || ''}
+                      onChange={(e) => {
+                        const val = e.target.value || null;
+                        setDueAt(val);
+                        handleFieldChange('dueAt', val);
+                        setOpenMenu(null);
+                      }}
+                      className="w-full text-xs px-2 py-1 bg-[#f9fafb] dark:bg-[#141416] border border-[#e5e7eb] dark:border-[#27272a] rounded-[4px] text-[#111827] dark:text-white outline-none focus:border-[#9ca3af]"
+                    />
+                  </div>
+
+                  {dueAt && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDueAt(null);
+                        handleFieldChange('dueAt', null);
+                        setOpenMenu(null);
+                      }}
+                      className="w-full text-left px-2 py-1 rounded-[4px] text-xs text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors"
+                    >
+                      Clear Due Date
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -1360,7 +1557,14 @@ export const ItemDetailPane: React.FC = () => {
               Archive
             </button>
             <button
-              onClick={() => deleteItem(itemToRender.id)}
+              onClick={() => {
+                const confirmPref = localStorage.getItem('leaf_pref_confirm_delete') !== 'false';
+                if (!confirmPref) {
+                  deleteItem(itemToRender.id);
+                } else {
+                  setItemToDelete(itemToRender);
+                }
+              }}
               className="px-2.5 py-1 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-[4px] transition-colors"
             >
               Delete

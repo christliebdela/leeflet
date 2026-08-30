@@ -43,8 +43,19 @@ export interface Item {
   createdAt: string;
   updatedAt: string;
   dueAt?: string | null;
+  assigneeId?: string | null;
   completedAt?: string | null;
   isPinned?: boolean;
+}
+
+export interface TeamMember {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  status: 'active' | 'invited';
+  joinedAt?: string;
+  avatarColor?: string;
 }
 
 export interface Project {

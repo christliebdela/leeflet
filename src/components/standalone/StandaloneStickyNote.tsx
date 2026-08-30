@@ -370,7 +370,7 @@ export const StandaloneStickyNote: React.FC<StandaloneStickyNoteProps> = ({ item
                       }}
                       className={`w-full text-left px-2 py-1 rounded text-[11px] capitalize flex items-center justify-between transition-colors ${
                         item.type === t
-                          ? 'bg-[#111827] text-white dark:bg-white dark:text-[#111827] font-semibold'
+                          ? 'bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-[#f4f4f5] font-semibold'
                           : 'text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a]'
                       }`}
                     >

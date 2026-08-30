@@ -13,15 +13,19 @@ import { OnboardingModal } from './components/OnboardingModal';
 import { SettingsView } from './components/SettingsView';
 import { ProjectModal } from './components/ProjectModal';
 import { openQuickCaptureWindow, enterMiniMode } from './utils/window';
+import { Trash2, X } from 'lucide-react';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { ToastContainer } from './components/ui/ToastContainer';
 import { fetchRandomDevJoke, warmJokePool } from './utils/jokes';
 
 export const App: React.FC = () => {
   const {
+    items,
     projects,
     viewMode,
     selectedItemId,
+    itemToDelete,
+    setItemToDelete,
     setSelectedItemId,
     setViewMode,
     setSelectedProjectId,
@@ -39,6 +43,35 @@ export const App: React.FC = () => {
   const [jokeHistory, setJokeHistory] = React.useState<string[]>([]);
   const [jokeHistoryIndex, setJokeHistoryIndex] = React.useState(0);
   const standbyJoke = jokeHistory[jokeHistoryIndex] ?? null;
+
+  // Window maximized state tracking & DWM shadow suppression
+  const [isMaximized, setIsMaximized] = React.useState(false);
+
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    const initWindow = async () => {
+      try {
+        const { getCurrentWindow } = await import('@tauri-apps/api/window');
+        const win = getCurrentWindow();
+        try {
+          await win.setShadow(false);
+        } catch {}
+        const max = await win.isMaximized();
+        setIsMaximized(max);
+
+        unlisten = await win.onResized(async () => {
+          try {
+            const m = await win.isMaximized();
+            setIsMaximized(m);
+          } catch {}
+        });
+      } catch {}
+    };
+    initWindow();
+    return () => {
+      if (unlisten) unlisten();
+    };
+  }, []);
 
   // Load first joke when entering Standby
   useEffect(() => {
@@ -184,7 +217,15 @@ export const App: React.FC = () => {
       // 6. Delete selected item when card is focused and not editing text
       if (!isInput && selectedItemId && (e.key === 'Delete' || e.key === 'Backspace')) {
         e.preventDefault();
-        deleteItem(selectedItemId);
+        const target = items.find((i) => i.id === selectedItemId);
+        if (target) {
+          const confirmPref = localStorage.getItem('leaf_pref_confirm_delete') !== 'false';
+          if (!confirmPref) {
+            deleteItem(selectedItemId);
+          } else {
+            setItemToDelete(target);
+          }
+        }
         return;
       }
 
@@ -237,7 +278,13 @@ export const App: React.FC = () => {
 
   if (isStandby) {
     return (
-      <div className="h-screen w-screen bg-[#f8f9fa] dark:bg-[#0f0f11] flex flex-col items-center justify-center animate-in fade-in duration-200 select-none relative px-6">
+      <div
+        className={`h-screen w-screen bg-[#f8f9fa] dark:bg-[#0f0f11] flex flex-col items-center justify-center animate-in fade-in duration-200 select-none relative px-6 transition-[border-radius] duration-150 ${
+          isMaximized
+            ? 'rounded-none border-0'
+            : 'rounded-[18px] border border-[#e5e7eb] dark:border-[#27272a] shadow-modal'
+        }`}
+      >
         <div className="flex flex-col items-center gap-2.5">
           <img
             src="/logo_alpha.png"
@@ -266,7 +313,13 @@ export const App: React.FC = () => {
 
   return (
     <TooltipProvider delayDuration={150}>
-      <div className="h-screen w-screen flex bg-[#f8f9fa] dark:bg-[#0f0f11] text-[#111827] dark:text-[#f4f4f5] overflow-hidden select-none">
+      <div
+        className={`h-screen w-screen flex bg-[#f8f9fa] dark:bg-[#0f0f11] text-[#111827] dark:text-[#f4f4f5] overflow-hidden select-none transition-[border-radius] duration-150 ${
+          isMaximized
+            ? 'rounded-none border-0'
+            : 'rounded-[18px] border border-[#e5e7eb] dark:border-[#27272a] shadow-modal'
+        }`}
+      >
         {/* Left Sidebar */}
         <Sidebar />
 
@@ -301,6 +354,68 @@ export const App: React.FC = () => {
         <StickyNoteView />
         <OnboardingModal />
         <ProjectModal />
+
+        {/* Task Delete Confirmation Modal */}
+        {itemToDelete && (
+          <div
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setItemToDelete(null);
+            }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 select-none animate-in fade-in duration-150"
+          >
+            <div
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') setItemToDelete(null);
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  deleteItem(itemToDelete.id);
+                  setItemToDelete(null);
+                }
+              }}
+              className="w-full max-w-sm bg-white dark:bg-[#18181b] rounded-[8px] border border-[#e5e7eb] dark:border-[#27272a] shadow-modal p-5 space-y-4 animate-in fade-in zoom-in-95 duration-150"
+            >
+              <div className="flex items-center justify-between border-b border-[#f3f4f6] dark:border-[#27272a] pb-2.5">
+                <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400">
+                  <Trash2 className="w-4 h-4" />
+                  <h2 className="text-xs font-bold text-[#111827] dark:text-[#f4f4f5]">
+                    Delete Task
+                  </h2>
+                </div>
+                <button
+                  onClick={() => setItemToDelete(null)}
+                  className="p-1 rounded-[4px] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] text-[#6b7280] dark:text-[#a1a1aa]"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <p className="text-xs text-[#4b5563] dark:text-[#a1a1aa] leading-relaxed">
+                Are you sure you want to delete <span className="font-semibold text-[#111827] dark:text-white">"{itemToDelete.title}"</span>? This action cannot be undone.
+              </p>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#f3f4f6] dark:border-[#27272a]">
+                <button
+                  type="button"
+                  onClick={() => setItemToDelete(null)}
+                  className="px-3 py-1.5 border border-[#e5e7eb] dark:border-[#27272a] text-[#374151] dark:text-[#d4d4d8] rounded-[6px] text-xs font-medium hover:bg-[#f9fafb] dark:hover:bg-[#27272a]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  autoFocus
+                  onClick={() => {
+                    deleteItem(itemToDelete.id);
+                    setItemToDelete(null);
+                  }}
+                  className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-[6px] text-xs font-semibold shadow-subtle transition-all"
+                >
+                  Delete Task
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Global In-App Toast Notifications */}
         <ToastContainer />

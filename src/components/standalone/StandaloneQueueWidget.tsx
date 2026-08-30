@@ -343,6 +343,9 @@ export const StandaloneQueueWidget: React.FC = () => {
       try {
         const { getCurrentWindow } = await import('@tauri-apps/api/window');
         const win = getCurrentWindow();
+        try {
+          await win.setShadow(false);
+        } catch {}
         unlistenMove = await win.onMoved(({ payload: position }) => {
           localStorage.setItem('leaf_queue_widget_pos_x', String(position.x));
           localStorage.setItem('leaf_queue_widget_pos_y', String(position.y));
@@ -808,7 +811,7 @@ export const StandaloneQueueWidget: React.FC = () => {
   if (isStandby) {
     return (
       <div
-        className={`w-screen h-screen ${currentTheme.bg} border ${currentTheme.border} flex flex-col items-center justify-center p-4 relative select-none animate-in fade-in duration-200`}
+        className={`w-screen h-screen ${currentTheme.bg} border ${currentTheme.border} rounded-[18px] shadow-modal flex flex-col items-center justify-center p-4 relative select-none animate-in fade-in duration-200`}
         data-tauri-drag-region
       >
         <div className="flex flex-col items-center gap-1.5" data-tauri-drag-region>
@@ -840,7 +843,7 @@ export const StandaloneQueueWidget: React.FC = () => {
 
   return (
     <TooltipProvider delayDuration={150}>
-      <div className={`w-screen h-screen ${currentTheme.bg} border ${currentTheme.border} ${currentTheme.text} p-3 flex flex-col justify-between overflow-hidden font-sans relative`}>
+      <div className={`w-screen h-screen ${currentTheme.bg} border ${currentTheme.border} ${currentTheme.text} rounded-[18px] shadow-modal p-3 flex flex-col justify-between overflow-hidden font-sans relative`}>
         {/* Header with Drag Region */}
         <div
           data-tauri-drag-region

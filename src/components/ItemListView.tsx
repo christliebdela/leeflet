@@ -17,9 +17,11 @@ import {
   CheckCircle2,
   Archive,
   Search,
+  Calendar,
 } from 'lucide-react';
 import { Item, ChecklistItem, Project } from '../types';
-import { formatDate, ITEM_TYPE_CONFIG } from '../utils/format';
+import { formatDate, formatDueDateLabel, ITEM_TYPE_CONFIG } from '../utils/format';
+import { getStoredTeamMembers, getInitials } from '../utils/team';
 import { MiddleTruncate } from './ui/MiddleTruncate';
 
 const LinearPriorityIcon: React.FC<{ priority: string }> = ({ priority }) => {
@@ -465,11 +467,32 @@ export const ItemListView: React.FC = () => {
                   )}
                 </div>
 
-                {/* Right Columns: Project & Date */}
-                <div className="flex items-center gap-3 shrink-0">
+                {/* Right Columns: Due Date, Assignee, Project & Date */}
+                <div className="flex items-center gap-2.5 shrink-0">
+                  {/* Due Date Indicator */}
+                  {item.dueAt && (
+                    <span
+                      title={`Due: ${formatDueDateLabel(item.dueAt)}`}
+                      className="hidden sm:inline-flex items-center gap-1 text-[10.5px] text-[#6b7280] dark:text-[#a1a1aa] font-medium bg-[#f4f5f6] dark:bg-[#202024] px-1.5 py-0.5 rounded border border-[#e5e7eb] dark:border-[#27272a] shrink-0"
+                    >
+                      <Calendar className="w-3 h-3 text-indigo-500 shrink-0" />
+                      <span>{formatDueDateLabel(item.dueAt)}</span>
+                    </span>
+                  )}
+
+                  {/* Assignee Avatar Indicator */}
+                  {item.assigneeId && (
+                    <span
+                      title={getStoredTeamMembers().find(m => m.id === item.assigneeId)?.name || 'Assigned'}
+                      className="w-4 h-4 rounded-full text-white text-[9px] font-bold flex items-center justify-center shrink-0 bg-violet-600 dark:bg-violet-500 shadow-2xs"
+                    >
+                      {getInitials(getStoredTeamMembers().find(m => m.id === item.assigneeId)?.name || 'U')}
+                    </span>
+                  )}
+
                   {/* Project Column */}
                   {viewMode.type !== 'project' && (
-                    <div className={isPaneOpen ? 'max-w-[90px] shrink-0' : 'w-[110px] sm:w-[130px] flex items-center justify-start shrink-0'}>
+                    <div className={isPaneOpen ? 'max-w-[90px] shrink-0' : 'w-[100px] sm:w-[120px] flex items-center justify-start shrink-0'}>
                       <span
                         title={project?.name || 'No Project'}
                         className="inline-flex items-center gap-1.5 text-[11px] text-[#6b7280] dark:text-[#a1a1aa] font-medium truncate"

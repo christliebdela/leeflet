@@ -27,6 +27,24 @@ export function formatFullDate(dateString: string): string {
   }
 }
 
+export function formatDueDateLabel(dateString?: string | null): string {
+  if (!dateString) return 'Due Date';
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const date = new Date(dateString.length === 10 ? dateString + 'T00:00:00' : dateString);
+    if (isNaN(date.getTime())) return 'Due Date';
+    if (isToday(date)) return 'Today';
+    if (isYesterday(date)) return 'Yesterday';
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    if (date.toDateString() === tomorrow.toDateString()) return 'Tomorrow';
+    return format(date, 'MMM d');
+  } catch {
+    return 'Due Date';
+  }
+}
+
 export function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;

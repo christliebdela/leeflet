@@ -123,7 +123,7 @@ export const SettingsView: React.FC = () => {
   const [completionSound, setCompletionSound] = useState(() => localStorage.getItem('leaf_pref_completion_sound') !== 'false');
   const [preserveDrafts, setPreserveDrafts] = useState(() => localStorage.getItem('leaf_pref_preserve_drafts') !== 'false');
   const [autoCloseCapture, setAutoCloseCapture] = useState(() => localStorage.getItem('leaf_pref_auto_close_capture') !== 'false');
-  const [confirmDelete, setConfirmDelete] = useState(() => localStorage.getItem('leaf_pref_confirm_delete') === 'true');
+  const [confirmDelete, setConfirmDelete] = useState(() => localStorage.getItem('leaf_pref_confirm_delete') !== 'false');
 
   // Custom Dropdown Open States
   const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
@@ -457,7 +457,7 @@ export const SettingsView: React.FC = () => {
                           }}
                           className={`w-full text-left px-2.5 py-1.5 rounded-[5px] text-xs flex items-center justify-between transition-colors ${
                             !defaultProject
-                              ? 'bg-[#111827] text-white dark:bg-white dark:text-[#111827] font-semibold'
+                              ? 'bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-[#f4f4f5] font-semibold'
                               : 'text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a]'
                           }`}
                         >
@@ -478,7 +478,7 @@ export const SettingsView: React.FC = () => {
                             }}
                             className={`w-full text-left px-2.5 py-1.5 rounded-[5px] text-xs flex items-center justify-between transition-colors ${
                               defaultProject === p.id
-                                ? 'bg-[#111827] text-white dark:bg-white dark:text-[#111827] font-semibold'
+                                ? 'bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-[#f4f4f5] font-semibold'
                                 : 'text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a]'
                             }`}
                           >
@@ -534,7 +534,7 @@ export const SettingsView: React.FC = () => {
                               }}
                               className={`w-full text-left px-2.5 py-1.5 rounded-[5px] text-xs capitalize flex items-center justify-between transition-colors ${
                                 defaultPriority === p
-                                  ? 'bg-[#111827] text-white dark:bg-white dark:text-[#111827] font-semibold'
+                                  ? 'bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-[#f4f4f5] font-semibold'
                                   : 'text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a]'
                               }`}
                             >
@@ -592,7 +592,7 @@ export const SettingsView: React.FC = () => {
                               }}
                               className={`w-full text-left px-2.5 py-1.5 rounded-[5px] text-xs capitalize flex items-center justify-between transition-colors ${
                                 defaultType === t
-                                  ? 'bg-[#111827] text-white dark:bg-white dark:text-[#111827] font-semibold'
+                                  ? 'bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-[#f4f4f5] font-semibold'
                                   : 'text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a]'
                               }`}
                             >

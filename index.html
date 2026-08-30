@@ -13,11 +13,10 @@
           var isDark = saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
           if (isDark) {
             document.documentElement.classList.add('dark');
-            document.documentElement.style.backgroundColor = '#0f0f11';
           } else {
             document.documentElement.classList.remove('dark');
-            document.documentElement.style.backgroundColor = '#f8f9fa';
           }
+          document.documentElement.style.backgroundColor = 'transparent';
         } catch (e) {}
       })();
     </script>
@@ -26,7 +25,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,500;1,600;1,700&family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@1,6..72,400;1,6..72,500;1,6..72,600&family=Playfair+Display:ital,wght@1,500;1,600&display=swap" rel="stylesheet">
   </head>
-  <body class="bg-[#f8f9fa] dark:bg-[#0f0f11] text-[#1e2022] dark:text-[#f4f4f5] font-sans antialiased select-none overflow-hidden h-screen w-screen">
+  <body class="text-[#1e2022] dark:text-[#f4f4f5] font-sans antialiased select-none overflow-hidden h-screen w-screen bg-transparent">
     <div id="root" class="h-full w-full"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

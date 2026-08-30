@@ -11,6 +11,8 @@ import {
 } from 'lucide-react';
 import { useLeafStore } from '../store/useLeafStore';
 import { toast } from '../store/useToastStore';
+import { getStoredTeamMembers, saveStoredTeamMembers } from '../utils/team';
+import { TeamMember } from '../types';
 
 export type RoleId = 'Admin' | 'Developer' | 'Member' | 'Viewer';
 
@@ -48,15 +50,6 @@ const ROLES: RoleConfig[] = [
   },
 ];
 
-interface TeamMember {
-  id: string;
-  name: string;
-  email: string;
-  role: 'Owner' | RoleId;
-  status: 'active' | 'invited';
-  joinedAt: string;
-}
-
 export const TeamView: React.FC = () => {
   const { workspace } = useLeafStore();
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
@@ -68,16 +61,7 @@ export const TeamView: React.FC = () => {
 
   const roleMenuRef = useRef<HTMLDivElement>(null);
 
-  const [members, setMembers] = useState<TeamMember[]>([
-    {
-      id: '1',
-      name: 'You',
-      email: 'owner@workspace.local',
-      role: 'Owner',
-      status: 'active',
-      joinedAt: 'Workspace Creator',
-    },
-  ]);
+  const [members, setMembers] = useState<TeamMember[]>(() => getStoredTeamMembers());
 
   // Click outside to close role dropdown
   useEffect(() => {
@@ -111,7 +95,9 @@ export const TeamView: React.FC = () => {
         joinedAt: 'Invited just now',
       };
 
-      setMembers((prev) => [...prev, newMember]);
+      const updated = [...members, newMember];
+      setMembers(updated);
+      saveStoredTeamMembers(updated);
       setInviteEmail('');
       setIsSubmitting(false);
       setIsInviteModalOpen(false);

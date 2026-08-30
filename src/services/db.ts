@@ -64,6 +64,86 @@ export class DatabaseService {
     }
   }
 
+  public async getAllWorkspaces(): Promise<Workspace[]> {
+    const list: Workspace[] = [];
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith(STORAGE_KEY_PREFIX) && !k.endsWith('_projects') && !k.endsWith('_items')) {
+          const raw = localStorage.getItem(k);
+          if (raw) {
+            try {
+              const ws = JSON.parse(raw) as Workspace;
+              if (ws && ws.id && ws.name) {
+                list.push(ws);
+              }
+            } catch {
+              // ignore parse errors
+            }
+          }
+        }
+      }
+    } catch {
+      // storage error
+    }
+    return list.sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''));
+  }
+
+  public async setActiveWorkspace(id: string): Promise<void> {
+    localStorage.setItem(ACTIVE_WS_KEY, id);
+    this.activeWorkspaceId = id;
+  }
+
+  public async renameWorkspace(id: string, newName: string): Promise<void> {
+    const raw = localStorage.getItem(`${STORAGE_KEY_PREFIX}${id}`);
+    if (raw) {
+      try {
+        const ws = JSON.parse(raw) as Workspace;
+        ws.name = newName;
+        ws.updatedAt = new Date().toISOString();
+        localStorage.setItem(`${STORAGE_KEY_PREFIX}${id}`, JSON.stringify(ws));
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  public async deleteWorkspace(id: string): Promise<void> {
+    localStorage.removeItem(`${STORAGE_KEY_PREFIX}${id}`);
+    localStorage.removeItem(`${STORAGE_KEY_PREFIX}${id}_projects`);
+    localStorage.removeItem(`${STORAGE_KEY_PREFIX}${id}_items`);
+
+    // If the deleted workspace was active, find another one
+    if (this.activeWorkspaceId === id) {
+      const remaining = await this.getAllWorkspaces();
+      if (remaining.length > 0) {
+        await this.setActiveWorkspace(remaining[0].id);
+      } else {
+        await this.createWorkspace('Personal Workspace', 'C:\\leeflet\\workspaces\\personal');
+      }
+    }
+  }
+
+  public async getWorkspaceStats(id: string): Promise<{ projectCount: number; itemCount: number }> {
+    let projectCount = 0;
+    let itemCount = 0;
+    try {
+      const pRaw = localStorage.getItem(`${STORAGE_KEY_PREFIX}${id}_projects`);
+      if (pRaw) {
+        const pList = JSON.parse(pRaw);
+        if (Array.isArray(pList)) projectCount = pList.length;
+      }
+      const iRaw = localStorage.getItem(`${STORAGE_KEY_PREFIX}${id}_items`);
+      if (iRaw) {
+        const iList = JSON.parse(iRaw);
+        if (Array.isArray(iList)) itemCount = iList.length;
+      }
+    } catch {
+      // ignore
+    }
+    return { projectCount, itemCount };
+  }
+
   public async createWorkspace(name: string, locationPath: string): Promise<Workspace> {
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
@@ -259,6 +339,8 @@ export class DatabaseService {
     tags?: string[];
     checklist?: ChecklistItem[];
     attachments?: Attachment[];
+    dueAt?: string | null;
+    assigneeId?: string | null;
   }): Promise<Item> {
     const wsId = this.getActiveWorkspaceId();
     if (!wsId) throw new Error('No active workspace');
@@ -279,7 +361,8 @@ export class DatabaseService {
       attachments: data.attachments || [],
       createdAt: now,
       updatedAt: now,
-      dueAt: null,
+      dueAt: data.dueAt || null,
+      assigneeId: data.assigneeId || null,
       completedAt: data.status === 'done' ? now : null,
     };
 

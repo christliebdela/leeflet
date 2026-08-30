@@ -167,9 +167,9 @@ export async function openQueueWidgetWindow(): Promise<void> {
           const monitorX = monitor.position.x / scaleFactor;
           const monitorY = monitor.position.y / scaleFactor;
 
-          // Position in the bottom-right corner for first-time open
-          x = Math.round(monitorX + screenWidth - width - 24);
-          y = Math.round(monitorY + screenHeight - height - 48);
+          // Position in the bottom-right corner with ~12px gap from edges/taskbar
+          x = Math.round(monitorX + screenWidth - width - 12);
+          y = Math.round(monitorY + screenHeight - height - 58);
         }
       } catch {
         // Fallback
@@ -192,7 +192,7 @@ export async function openQueueWidgetWindow(): Promise<void> {
       decorations: false,
       transparent: true,
       alwaysOnTop: savedAlwaysOnTop,
-      shadow: true,
+      shadow: false,
       skipTaskbar: true,
     });
 
