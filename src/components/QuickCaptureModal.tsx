@@ -14,6 +14,7 @@ import {
   ChevronDown,
   X,
   Plus,
+  AlertTriangle,
 } from 'lucide-react';
 import { ITEM_TYPE_CONFIG, PRIORITY_CONFIG } from '../utils/format';
 
@@ -56,6 +57,7 @@ export const QuickCaptureModal: React.FC = () => {
   const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
+  const [showDiscardPrompt, setShowDiscardPrompt] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const checklistInputRef = useRef<HTMLTextAreaElement>(null);
@@ -112,11 +114,55 @@ export const QuickCaptureModal: React.FC = () => {
     }
   };
 
+  const hasUnsavedContent = Boolean(
+    title.trim() ||
+    checklist.length > 0 ||
+    newChecklistText.trim() ||
+    newProjectName.trim()
+  );
+
+  const forceClose = () => {
+    setShowDiscardPrompt(false);
+    setTitle('');
+    setChecklist([]);
+    setShowChecklist(false);
+    setNewChecklistText('');
+    setNewProjectName('');
+    setIsCreatingProject(false);
+    setIsProjectMenuOpen(false);
+    setIsTypeMenuOpen(false);
+    setIsPriorityMenuOpen(false);
+    setQuickCaptureOpen(false);
+  };
+
+  const handleRequestClose = () => {
+    if (showDiscardPrompt) {
+      setShowDiscardPrompt(false);
+      return;
+    }
+    if (hasUnsavedContent) {
+      setShowDiscardPrompt(true);
+    } else {
+      forceClose();
+    }
+  };
+
   // Global window Escape listener
   useEffect(() => {
     const handleWindowKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isQuickCaptureOpen) {
-        setQuickCaptureOpen(false);
+        if (showDiscardPrompt) {
+          setShowDiscardPrompt(false);
+          setTimeout(() => textareaRef.current?.focus(), 50);
+          return;
+        }
+        if (isProjectMenuOpen || isTypeMenuOpen || isPriorityMenuOpen) {
+          setIsProjectMenuOpen(false);
+          setIsTypeMenuOpen(false);
+          setIsPriorityMenuOpen(false);
+          return;
+        }
+        handleRequestClose();
       }
     };
 
@@ -211,10 +257,18 @@ export const QuickCaptureModal: React.FC = () => {
     setChecklist([]);
     setShowChecklist(false);
     setNewChecklistText('');
+    setShowDiscardPrompt(false);
     setQuickCaptureOpen(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (showDiscardPrompt) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleSave();
+      }
+      return;
+    }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSave();
@@ -229,7 +283,7 @@ export const QuickCaptureModal: React.FC = () => {
   return (
     <div
       onClick={(e) => {
-        if (e.target === e.currentTarget) setQuickCaptureOpen(false);
+        if (e.target === e.currentTarget) handleRequestClose();
       }}
       className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 select-none animate-in fade-in duration-150"
     >
@@ -237,6 +291,47 @@ export const QuickCaptureModal: React.FC = () => {
         className="w-full max-w-[430px] max-h-[350px] bg-white dark:bg-[#18181b] rounded-[12px] border border-[#e5e7eb] dark:border-[#27272a] shadow-modal relative animate-in fade-in zoom-in-95 duration-100 flex flex-col overflow-hidden"
         onKeyDown={handleKeyDown}
       >
+        {/* Unsaved Changes Confirmation Prompt Overlay */}
+        {showDiscardPrompt && (
+          <div className="absolute inset-0 bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-xs rounded-[12px] z-50 flex flex-col items-center justify-center p-6 text-center animate-in fade-in zoom-in-95 duration-150">
+            <div className="w-10 h-10 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-2.5">
+              <AlertTriangle className="w-5 h-5" />
+            </div>
+            <h3 className="text-sm font-bold text-[#111827] dark:text-white mb-1.5">
+              Save unsaved item?
+            </h3>
+            <p className="text-xs text-[#6b7280] dark:text-[#a1a1aa] mb-5 max-w-[280px] leading-relaxed">
+              You have typed content in this item. Would you like to save it or proceed without saving?
+            </p>
+            <div className="flex flex-col gap-2 w-full max-w-[280px]">
+              <button
+                type="button"
+                onClick={handleSave}
+                className="w-full py-2 px-3 bg-[#111827] hover:bg-[#1f2937] dark:bg-white dark:hover:bg-[#e4e4e7] text-white dark:text-[#111827] rounded-[7px] text-xs font-semibold shadow-subtle transition-all active:scale-[0.98]"
+              >
+                Save & Close
+              </button>
+              <button
+                type="button"
+                onClick={forceClose}
+                className="w-full py-2 px-3 bg-[#f3f4f6] dark:bg-[#27272a] text-[#dc2626] dark:text-[#f87171] hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-[7px] text-xs font-semibold border border-[#e5e7eb] dark:border-[#3f3f46] transition-all"
+              >
+                Proceed Without Saving
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDiscardPrompt(false);
+                  setTimeout(() => textareaRef.current?.focus(), 50);
+                }}
+                className="w-full py-1.5 px-3 text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white rounded-[7px] text-xs font-medium transition-all"
+              >
+                Keep Editing
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Top Header */}
         <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-[#f3f4f6] dark:border-[#27272a] rounded-t-[12px]">
           <div className="flex items-center gap-2">
@@ -254,7 +349,7 @@ export const QuickCaptureModal: React.FC = () => {
           </div>
 
           <button
-            onClick={() => setQuickCaptureOpen(false)}
+            onClick={handleRequestClose}
             className="text-[10px] font-semibold bg-[#f3f4f6] dark:bg-[#27272a] text-[#6b7280] dark:text-[#a1a1aa] px-1.5 py-0.5 rounded-[6px] border border-[#e5e7eb] dark:border-[#3f3f46] hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46]"
           >
             Esc

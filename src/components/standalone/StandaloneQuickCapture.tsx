@@ -14,6 +14,7 @@ import {
   ChevronDown,
   X,
   Plus,
+  AlertTriangle,
 } from 'lucide-react';
 import { broadcastSync } from '../../utils/sync';
 import { ITEM_TYPE_CONFIG, PRIORITY_CONFIG } from '../../utils/format';
@@ -43,9 +44,13 @@ export const StandaloneQuickCapture: React.FC = () => {
   const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
+  const [showDiscardPrompt, setShowDiscardPrompt] = useState(false);
 
   const titleRef = useRef('');
   const newProjectNameRef = useRef('');
+  const checklistRef = useRef(checklist);
+  const newChecklistTextRef = useRef(newChecklistText);
+  const showDiscardPromptRef = useRef(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const checklistInputRef = useRef<HTMLTextAreaElement>(null);
   const bodyScrollRef = useRef<HTMLDivElement>(null);
@@ -109,10 +114,34 @@ export const StandaloneQuickCapture: React.FC = () => {
     titleRef.current = title;
   }, [title]);
 
+  useEffect(() => {
+    newProjectNameRef.current = newProjectName;
+  }, [newProjectName]);
+
+  useEffect(() => {
+    checklistRef.current = checklist;
+  }, [checklist]);
+
+  useEffect(() => {
+    newChecklistTextRef.current = newChecklistText;
+  }, [newChecklistText]);
+
+  useEffect(() => {
+    showDiscardPromptRef.current = showDiscardPrompt;
+  }, [showDiscardPrompt]);
+
+  const hasUnsavedContent = () => Boolean(
+    titleRef.current.trim() ||
+    newProjectNameRef.current.trim() ||
+    checklistRef.current.length > 0 ||
+    newChecklistTextRef.current.trim()
+  );
+
   const closeWindow = async () => {
     try {
       const { getCurrentWindow } = await import('@tauri-apps/api/window');
       const win = getCurrentWindow();
+      setShowDiscardPrompt(false);
       setTitle('');
       setChecklist([]);
       setShowChecklist(false);
@@ -120,6 +149,18 @@ export const StandaloneQuickCapture: React.FC = () => {
       await win.hide();
     } catch {
       window.close();
+    }
+  };
+
+  const handleRequestClose = () => {
+    if (showDiscardPromptRef.current) {
+      setShowDiscardPrompt(false);
+      return;
+    }
+    if (hasUnsavedContent()) {
+      setShowDiscardPrompt(true);
+    } else {
+      closeWindow();
     }
   };
 
@@ -189,7 +230,18 @@ export const StandaloneQuickCapture: React.FC = () => {
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        closeWindow();
+        if (showDiscardPromptRef.current) {
+          setShowDiscardPrompt(false);
+          setTimeout(() => textareaRef.current?.focus(), 50);
+          return;
+        }
+        if (isProjectMenuOpen || isTypeMenuOpen || isPriorityMenuOpen) {
+          setIsProjectMenuOpen(false);
+          setIsTypeMenuOpen(false);
+          setIsPriorityMenuOpen(false);
+          return;
+        }
+        handleRequestClose();
       }
     };
 
@@ -276,6 +328,47 @@ export const StandaloneQuickCapture: React.FC = () => {
     <div
       className="w-screen h-screen bg-white dark:bg-[#18181b] border border-[#e5e7eb] dark:border-[#27272a] rounded-[12px] shadow-modal relative flex flex-col select-none font-sans overflow-hidden animate-capture-bounce"
     >
+      {/* Unsaved Changes Confirmation Prompt Overlay */}
+      {showDiscardPrompt && (
+        <div className="absolute inset-0 bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-xs rounded-[12px] z-50 flex flex-col items-center justify-center p-6 text-center animate-in fade-in zoom-in-95 duration-150">
+          <div className="w-10 h-10 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-2.5">
+            <AlertTriangle className="w-5 h-5" />
+          </div>
+          <h3 className="text-sm font-bold text-[#111827] dark:text-white mb-1.5">
+            Save unsaved item?
+          </h3>
+          <p className="text-xs text-[#6b7280] dark:text-[#a1a1aa] mb-5 max-w-[280px] leading-relaxed">
+            You have typed content in this item. Would you like to save it or proceed without saving?
+          </p>
+          <div className="flex flex-col gap-2 w-full max-w-[280px]">
+            <button
+              type="button"
+              onClick={handleSave}
+              className="w-full py-2 px-3 bg-[#111827] hover:bg-[#1f2937] dark:bg-white dark:hover:bg-[#e4e4e7] text-white dark:text-[#111827] rounded-[7px] text-xs font-semibold shadow-subtle transition-all active:scale-[0.98]"
+            >
+              Save & Close
+            </button>
+            <button
+              type="button"
+              onClick={closeWindow}
+              className="w-full py-2 px-3 bg-[#f3f4f6] dark:bg-[#27272a] text-[#dc2626] dark:text-[#f87171] hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-[7px] text-xs font-semibold border border-[#e5e7eb] dark:border-[#3f3f46] transition-all"
+            >
+              Proceed Without Saving
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowDiscardPrompt(false);
+                setTimeout(() => textareaRef.current?.focus(), 50);
+              }}
+              className="w-full py-1.5 px-3 text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white rounded-[7px] text-xs font-medium transition-all"
+            >
+              Keep Editing
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Top Header */}
       <div
         className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-[#f3f4f6] dark:border-[#27272a] rounded-t-[12px]"
@@ -295,7 +388,7 @@ export const StandaloneQuickCapture: React.FC = () => {
         </div>
 
         <button
-          onClick={closeWindow}
+          onClick={handleRequestClose}
           className="text-[10px] font-semibold bg-[#f3f4f6] dark:bg-[#27272a] text-[#6b7280] dark:text-[#a1a1aa] px-1.5 py-0.5 rounded-[6px] border border-[#e5e7eb] dark:border-[#3f3f46] hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] transition-colors"
         >
           Esc
@@ -327,6 +420,13 @@ export const StandaloneQuickCapture: React.FC = () => {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           onKeyDown={(e) => {
+            if (showDiscardPrompt) {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleSave();
+              }
+              return;
+            }
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
               handleSave();
