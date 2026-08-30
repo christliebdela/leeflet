@@ -134,40 +134,48 @@ export const TeamView: React.FC = () => {
   const selectedRoleConfig = ROLES.find((r) => r.id === inviteRole) || ROLES[1];
 
   return (
-    <div className="flex-1 h-full overflow-y-auto p-3 sm:p-4 custom-scrollbar flex flex-col gap-4">
-      {/* Centered Under Development Empty State Hero (Leeflet Standard Design System) */}
-      <div className="w-full flex flex-col items-center justify-center text-center p-8 sm:p-10 border border-dashed border-[#e5e7eb] dark:border-[#27272a] rounded-[10px] bg-gradient-to-b from-transparent to-[#fafafa]/60 dark:to-[#18181b]/30">
-        <div className="w-12 h-12 rounded-2xl bg-white dark:bg-[#27272a] border border-[#e5e7eb] dark:border-[#3f3f46] shadow-xs flex items-center justify-center mb-3">
-          <Users className="w-6 h-6 text-[#6b7280] dark:text-[#a1a1aa]" />
-        </div>
-        <div className="text-[10px] font-mono text-[#9ca3af] dark:text-[#71717a] uppercase tracking-wider mb-1">
-          Under Development
-        </div>
-        <h3 className="text-sm font-semibold text-[#111827] dark:text-[#f4f4f5] tracking-tight">
-          Team Collaboration
-        </h3>
-        <p className="text-xs text-[#6b7280] dark:text-[#a1a1aa] max-w-sm mt-1.5 leading-relaxed">
-          Shared workspaces, role permissions, and live task syncing across team members are coming soon to Leeflet.
-        </p>
-        <button
-          onClick={() => setIsInviteModalOpen(true)}
-          className="mt-4 flex items-center gap-1.5 px-3.5 py-1.5 bg-[#111827] dark:bg-white text-white dark:text-[#111827] rounded-[6px] text-xs font-semibold hover:bg-[#1f2937] dark:hover:bg-[#e4e4e7] transition-all shadow-subtle shrink-0 whitespace-nowrap active:scale-95"
-        >
-          <UserPlus className="w-3.5 h-3.5" />
-          <span>Invite Team Member</span>
-        </button>
-      </div>
+    <div className="flex-1 h-full overflow-y-auto p-4 sm:p-8 custom-scrollbar">
+      <div className="max-w-[760px] mx-auto space-y-4 pb-12">
+        {/* Compact Team Collaboration Banner */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 rounded-[8px] border border-[#e5e7eb] dark:border-[#27272a] bg-white dark:bg-[#18181b]">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-[#f4f5f6] dark:bg-[#27272a] border border-[#e5e7eb] dark:border-[#3f3f46] flex items-center justify-center shrink-0">
+              <Users className="w-4 h-4 text-[#6b7280] dark:text-[#a1a1aa]" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h3 className="text-xs font-semibold text-[#111827] dark:text-[#f4f4f5] tracking-tight">
+                  Team Collaboration
+                </h3>
+                <span className="text-[9.5px] font-mono uppercase tracking-wider text-[#9ca3af] dark:text-[#71717a] bg-[#f4f5f6] dark:bg-[#202024] px-1.5 py-0.5 rounded border border-[#e5e7eb] dark:border-[#27272a]">
+                  Preview
+                </span>
+              </div>
+              <p className="text-[11px] text-[#6b7280] dark:text-[#a1a1aa] mt-0.5 truncate">
+                Shared workspaces, role permissions, and live syncing are in active development.
+              </p>
+            </div>
+          </div>
 
-      {/* Workspace Members Section */}
-      <div className="border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] bg-white dark:bg-[#18181b] overflow-hidden">
-        <div className="px-3.5 py-2.5 border-b border-[#f3f4f6] dark:border-[#27272a] flex items-center justify-between">
-          <span className="text-xs font-semibold text-[#111827] dark:text-[#f4f4f5]">
-            Members ({members.length})
-          </span>
-          <span className="text-[11px] text-[#9ca3af] dark:text-[#71717a]">
-            {workspace?.name || 'Personal Workspace'}
-          </span>
+          <button
+            onClick={() => setIsInviteModalOpen(true)}
+            className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[#111827] dark:bg-white text-white dark:text-[#111827] rounded-[6px] text-xs font-semibold hover:bg-[#1f2937] dark:hover:bg-[#e4e4e7] transition-all shadow-subtle shrink-0 active:scale-95"
+          >
+            <UserPlus className="w-3.5 h-3.5" />
+            <span>Invite Member</span>
+          </button>
         </div>
+
+        {/* Workspace Members Section */}
+        <div className="border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] bg-white dark:bg-[#18181b] overflow-hidden">
+          <div className="px-4 py-3 border-b border-[#f3f4f6] dark:border-[#27272a] flex items-center justify-between">
+            <span className="text-xs font-semibold text-[#111827] dark:text-[#f4f4f5]">
+              Members ({members.length})
+            </span>
+            <span className="text-[11px] text-[#9ca3af] dark:text-[#71717a]">
+              {workspace?.name || 'Personal Workspace'}
+            </span>
+          </div>
 
         <div className="divide-y divide-[#f3f4f6] dark:divide-[#27272a]">
           {members.map((member) => (
@@ -207,6 +215,7 @@ export const TeamView: React.FC = () => {
             </div>
           ))}
         </div>
+      </div>
       </div>
 
       {/* Linear-Grade Invite Member Modal */}
