@@ -214,6 +214,16 @@ export class DatabaseService {
       filtered.sort((a: Item, b: Item) => (weight[b.priority] || 0) - (weight[a.priority] || 0));
     } else if (filters.sortBy === 'updated_desc') {
       filtered.sort((a: Item, b: Item) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+    } else if (filters.sortBy === 'project_asc') {
+      const projects = await this.getProjects();
+      const projMap = new Map<string, string>(projects.map((p: Project) => [p.id, p.name.toLowerCase()]));
+      filtered.sort((a: Item, b: Item) => {
+        const nameA = projMap.get(a.projectId) || '';
+        const nameB = projMap.get(b.projectId) || '';
+        const cmp = nameA.localeCompare(nameB);
+        if (cmp !== 0) return cmp;
+        return a.title.localeCompare(b.title);
+      });
     }
 
     return filtered;

@@ -93,5 +93,5 @@ export interface FilterOptions {
   priorities?: Priority[];
   statuses?: Status[];
   tags?: string[];
-  sortBy?: 'manual' | 'updated_desc' | 'created_desc' | 'priority_desc' | 'title_asc';
+  sortBy?: 'manual' | 'updated_desc' | 'created_desc' | 'priority_desc' | 'title_asc' | 'project_asc';
 }

@@ -44,7 +44,7 @@ export const HeaderBar: React.FC = () => {
 
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
-  const [activeFilterTab, setActiveFilterTab] = useState<'type' | 'priority'>('type');
+  const [activeFilterTab, setActiveFilterTab] = useState<'type' | 'priority' | 'project'>('type');
 
   const filterDropdownRef = useRef<HTMLDivElement>(null);
   const sortDropdownRef = useRef<HTMLDivElement>(null);
@@ -120,12 +120,13 @@ export const HeaderBar: React.FC = () => {
   const openCount = displayItems.filter((i: Item) => i.status !== 'done').length;
   const activeProj = viewMode.type === 'project' ? projects.find((p: Project) => p.id === viewMode.projectId) : null;
 
+  const activeProjectsCount = filterOptions.projectIds?.length || 0;
   const activeTypesCount = filterOptions.types?.length || 0;
   const activePrioritiesCount = filterOptions.priorities?.length || 0;
-  const activeFilterCount = activeTypesCount + activePrioritiesCount;
+  const activeFilterCount = activeTypesCount + activePrioritiesCount + activeProjectsCount;
 
   const resetFilters = () => {
-    setFilterOptions({ types: undefined, priorities: undefined, statuses: undefined });
+    setFilterOptions({ types: undefined, priorities: undefined, projectIds: undefined, statuses: undefined });
   };
 
   return (
@@ -251,6 +252,22 @@ export const HeaderBar: React.FC = () => {
                     </span>
                   )}
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveFilterTab('project')}
+                  className={`flex-1 py-1 px-1.5 rounded-[5px] text-[11px] font-semibold flex items-center justify-center gap-1 transition-colors ${
+                    activeFilterTab === 'project'
+                      ? 'bg-white dark:bg-[#27272a] text-[#111827] dark:text-white shadow-xs'
+                      : 'text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white'
+                  }`}
+                >
+                  <span>Project</span>
+                  {activeProjectsCount > 0 && (
+                    <span className="px-1 py-0 text-[9px] rounded-full bg-[#111827] text-white dark:bg-white dark:text-[#111827] font-bold leading-none">
+                      {activeProjectsCount}
+                    </span>
+                  )}
+                </button>
               </div>
 
               {/* Tab Content: Item Types */}
@@ -317,6 +334,46 @@ export const HeaderBar: React.FC = () => {
                   })}
                 </div>
               )}
+
+              {/* Tab Content: Project */}
+              {activeFilterTab === 'project' && (
+                <div className="p-1.5 space-y-0.5 max-h-56 overflow-y-auto custom-scrollbar">
+                  {projects.length === 0 ? (
+                    <div className="p-2 text-center text-[10.5px] text-[#9ca3af] dark:text-[#71717a] italic">
+                      No projects available
+                    </div>
+                  ) : (
+                    projects.map((p) => {
+                      const isSelected = filterOptions.projectIds?.includes(p.id);
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => {
+                            const cur = filterOptions.projectIds || [];
+                            const next = isSelected ? cur.filter((x) => x !== p.id) : [...cur, p.id];
+                            setFilterOptions({ projectIds: next.length > 0 ? next : undefined });
+                          }}
+                          className={`w-full flex items-center justify-between px-2 py-1.5 rounded-[5px] text-[11px] transition-colors ${
+                            isSelected
+                              ? 'bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-white font-semibold'
+                              : 'text-[#4b5563] dark:text-[#d4d4d8] hover:bg-[#f9fafb] dark:hover:bg-[#222226]'
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span
+                              className="w-1.5 h-1.5 rounded-full shrink-0"
+                              style={{ backgroundColor: p.color || '#9ca3af' }}
+                            />
+                            <span className="truncate">{p.name}</span>
+                          </div>
+                          {isSelected && <Check className="w-3 h-3 text-[#111827] dark:text-white shrink-0 ml-1" />}
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -376,6 +433,15 @@ export const HeaderBar: React.FC = () => {
               >
                 <span>Title (A-Z)</span>
                 {filterOptions.sortBy === 'title_asc' && (
+                  <Check className="w-3.5 h-3.5 text-[#111827] dark:text-white" />
+                )}
+              </button>
+              <button
+                onClick={() => { setFilterOptions({ sortBy: 'project_asc' }); setIsSortDropdownOpen(false); }}
+                className={`w-full text-left px-3 py-1.5 hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] flex items-center justify-between ${filterOptions.sortBy === 'project_asc' ? 'font-semibold text-[#111827] dark:text-white' : 'text-[#4b5563] dark:text-[#a1a1aa]'}`}
+              >
+                <span>Project (A-Z)</span>
+                {filterOptions.sortBy === 'project_asc' && (
                   <Check className="w-3.5 h-3.5 text-[#111827] dark:text-white" />
                 )}
               </button>

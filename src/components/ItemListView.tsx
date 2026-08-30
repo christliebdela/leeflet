@@ -132,6 +132,12 @@ export const ItemListView: React.FC = () => {
       return a.title.localeCompare(b.title);
     } else if (filterOptions.sortBy === 'updated_desc') {
       return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+    } else if (filterOptions.sortBy === 'project_asc') {
+      const projA = projects.find((p) => p.id === a.projectId)?.name || '';
+      const projB = projects.find((p) => p.id === b.projectId)?.name || '';
+      const cmp = projA.localeCompare(projB);
+      if (cmp !== 0) return cmp;
+      return a.title.localeCompare(b.title);
     }
     return 0;
   });
