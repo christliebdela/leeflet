@@ -50,10 +50,12 @@ export const QuickCaptureModal: React.FC = () => {
     }
   });
   const [projectId, setProjectId] = useState(
-    isInProjectView && activeProject ? activeProject.id : (selectedProjectId || (projects[0]?.id || ''))
+    isInProjectView && activeProject
+      ? activeProject.id
+      : (localStorage.getItem('leaf_pref_default_project') || selectedProjectId || (projects[0]?.id || ''))
   );
-  const [type, setType] = useState<ItemType>('task');
-  const [priority, setPriority] = useState<Priority>('none');
+  const [type, setType] = useState<ItemType>(() => (localStorage.getItem('leaf_pref_default_type') as ItemType) || 'task');
+  const [priority, setPriority] = useState<Priority>(() => (localStorage.getItem('leaf_pref_default_priority') as Priority) || 'none');
   const [checklist, setChecklist] = useState<{ id: string; title: string; isCompleted: boolean }[]>(() => {
     try {
       const saved = localStorage.getItem('leaf_capture_draft_checklist');

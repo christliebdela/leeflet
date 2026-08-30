@@ -1,9 +1,11 @@
 /**
- * Lightweight bidirectional Markdown <-> HTML converter for Leaf WYSIWYG note editing
+ * Lightweight bidirectional Markdown <-> HTML converter for Leeflet WYSIWYG note editing
+ * Preserves paragraph breaks, styled inline links, headers, bold, italics, checklists, and code blocks
  */
 
 /**
- * Auto-detect and linkify bare URLs (https://, http://, www., and common domains like google.com, leaf.dev)
+ * Auto-detect and linkify bare URLs (https://, http://, www., and common domains like google.com, leeflet.dev)
+ * in an HTML string without disrupting existing anchor tags or attributes.
  */
 export function autoLinkHtml(html: string): string {
   if (!html) return '';

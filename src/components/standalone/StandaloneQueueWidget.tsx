@@ -853,7 +853,7 @@ export const StandaloneQueueWidget: React.FC = () => {
           <div className="flex items-center gap-2" data-tauri-drag-region>
             <img
               src="/leaf_logo.png"
-              alt="leaf"
+              alt="leeflet"
               className="w-4 h-4 object-contain"
               data-tauri-drag-region
             />

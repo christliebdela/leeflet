@@ -8,10 +8,10 @@ use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 #[tauri::command]
 fn get_default_workspace_path() -> Result<String, String> {
     if let Some(user_dirs) = dirs::document_dir().or_else(dirs::home_dir) {
-        let leaf_dir = user_dirs.join("leaf");
+        let leaf_dir = user_dirs.join("leeflet");
         Ok(leaf_dir.to_string_lossy().to_string())
     } else {
-        Ok("C:\\leaf".to_string())
+        Ok("C:\\leeflet".to_string())
     }
 }
 
@@ -77,15 +77,15 @@ pub fn run() {
                 let _ = app.global_shortcut().register(shortcut);
             }
 
-            let open_item = MenuItem::with_id(app, "open", "Open leaf", true, None::<&str>)?;
+            let open_item = MenuItem::with_id(app, "open", "Open leeflet", true, None::<&str>)?;
             let capture_item = MenuItem::with_id(app, "capture", "Quick Capture (Alt+L)", true, None::<&str>)?;
-            let quit_item = MenuItem::with_id(app, "quit", "Quit leaf", true, None::<&str>)?;
+            let quit_item = MenuItem::with_id(app, "quit", "Quit leeflet", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&open_item, &capture_item, &quit_item])?;
 
             if let Some(icon) = app.default_window_icon() {
                 let _tray = TrayIconBuilder::new()
                     .icon(icon.clone())
-                    .tooltip("leaf")
+                    .tooltip("leeflet")
                     .menu(&menu)
                     .show_menu_on_left_click(false)
                     .on_menu_event(|app, event| match event.id.as_ref() {
@@ -147,5 +147,5 @@ pub fn run() {
             read_file_from_path
         ])
         .run(tauri::generate_context!())
-        .expect("error while running leaf application");
+        .expect("error while running leeflet application");
 }

@@ -81,6 +81,12 @@ export const HeaderBar: React.FC = () => {
     if (viewMode.type === 'team') {
       return { title: 'Team Collaboration' };
     }
+    if (viewMode.type === 'profile') {
+      return { title: 'Account & Profile' };
+    }
+    if (viewMode.type === 'settings') {
+      return { title: 'Settings' };
+    }
     if (viewMode.type === 'all') {
       return { title: 'All Items' };
     }
@@ -155,7 +161,7 @@ export const HeaderBar: React.FC = () => {
             </button>
           )}
         </div>
-        {viewMode.type !== 'my_queue' && viewMode.type !== 'team' && totalCount > 0 && (
+        {viewMode.type !== 'my_queue' && viewMode.type !== 'team' && viewMode.type !== 'profile' && viewMode.type !== 'settings' && totalCount > 0 && (
           <span
             className="text-xs text-[#6b7280] dark:text-[#a1a1aa] font-normal shrink-0"
             data-tauri-drag-region
@@ -168,8 +174,11 @@ export const HeaderBar: React.FC = () => {
 
       {/* Action Controls & Top Window Controls */}
       <div className="flex items-center gap-1.5 shrink-0" data-tauri-drag-region="false">
-        {/* Geist-style CmdK Search Input */}
-        <SearchInput
+        {/* Search, Filter, and Sort Controls (Only in list and item views) */}
+        {viewMode.type !== 'team' && viewMode.type !== 'profile' && viewMode.type !== 'settings' && (
+          <>
+            {/* Geist-style CmdK Search Input */}
+            <SearchInput
           aria-label="Search items"
           cmdk
           value={filterOptions.searchQuery || ''}
@@ -451,6 +460,8 @@ export const HeaderBar: React.FC = () => {
             </div>
           )}
         </div>
+      </>
+    )}
 
         {/* + New Button */}
         <button

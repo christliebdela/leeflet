@@ -121,7 +121,7 @@ export const OnboardingModal: React.FC = () => {
               <div className="w-10 h-10 rounded-[10px] bg-[#f4f5f6] dark:bg-[#1f1f23] border border-[#e5e7eb] dark:border-[#27272a] flex items-center justify-center shrink-0">
                 <img
                   src="/leaf_logo.png"
-                  alt="leaf"
+                  alt="leeflet"
                   className="w-6 h-6 object-contain"
                 />
               </div>

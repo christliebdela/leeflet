@@ -5,11 +5,12 @@ import { HeaderBar } from './components/HeaderBar';
 import { ItemListView } from './components/ItemListView';
 import { MyQueueView } from './components/MyQueueView';
 import { TeamView } from './components/TeamView';
+import { ProfileView } from './components/ProfileView';
 import { ItemDetailPane } from './components/ItemDetailPane';
 import { QuickCaptureModal } from './components/QuickCaptureModal';
 import { StickyNoteView } from './components/StickyNoteView';
 import { OnboardingModal } from './components/OnboardingModal';
-import { WorkspaceModal } from './components/WorkspaceModal';
+import { SettingsView } from './components/SettingsView';
 import { ProjectModal } from './components/ProjectModal';
 import { openQuickCaptureWindow, enterMiniMode } from './utils/window';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -32,7 +33,6 @@ export const App: React.FC = () => {
     standbyJokesEnabled,
     setStandby,
     setQuickCaptureOpen,
-    setWorkspaceModalOpen,
   } = useLeafStore();
 
   // Joke navigation state (history so ← goes back, → fetches next)
@@ -121,14 +121,12 @@ export const App: React.FC = () => {
       // 2. Open Settings: 's' / 'S' (when not typing in input) or Ctrl + ,
       if (!isInput && (e.key === 's' || e.key === 'S') && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
-        const cur = useLeafStore.getState().isWorkspaceModalOpen;
-        setWorkspaceModalOpen(!cur);
+        setViewMode({ type: 'settings' });
         return;
       }
       if ((e.ctrlKey || e.metaKey) && (e.key === ',' || e.key === '<')) {
         e.preventDefault();
-        const cur = useLeafStore.getState().isWorkspaceModalOpen;
-        setWorkspaceModalOpen(!cur);
+        setViewMode({ type: 'settings' });
         return;
       }
 
@@ -190,14 +188,10 @@ export const App: React.FC = () => {
         return;
       }
 
-      // 7. Escape: Clear selection or close settings
+      // 7. Escape: Clear selection
       if (e.key === 'Escape') {
         if (selectedItemId) {
           setSelectedItemId(null);
-          return;
-        }
-        if (useLeafStore.getState().isWorkspaceModalOpen) {
-          setWorkspaceModalOpen(false);
           return;
         }
       }
@@ -215,7 +209,6 @@ export const App: React.FC = () => {
     setSelectedProjectId,
     deleteItem,
     setQuickCaptureOpen,
-    setWorkspaceModalOpen,
     isStandby,
     setStandby,
   ]);
@@ -289,6 +282,10 @@ export const App: React.FC = () => {
                 <MyQueueView />
               ) : viewMode.type === 'team' ? (
                 <TeamView />
+              ) : viewMode.type === 'profile' ? (
+                <ProfileView />
+              ) : viewMode.type === 'settings' ? (
+                <SettingsView />
               ) : (
                 <ItemListView />
               )}
@@ -296,9 +293,6 @@ export const App: React.FC = () => {
 
             {/* Item Detail Split Slide-In Pane */}
             <ItemDetailPane />
-
-            {/* Settings Split Slide-In Pane */}
-            <WorkspaceModal />
           </main>
         </div>
 

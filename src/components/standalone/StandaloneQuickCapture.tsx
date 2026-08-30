@@ -369,7 +369,7 @@ export const StandaloneQuickCapture: React.FC = () => {
         <div className="flex items-center gap-2">
           <img
             src="/leaf_logo.png"
-            alt="leaf"
+            alt="leeflet"
             className="w-4 h-4 object-contain transition-all"
           />
           <span className="font-brand text-base tracking-tight text-[#111827] dark:text-[#f4f4f5]">

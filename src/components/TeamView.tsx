@@ -121,7 +121,7 @@ export const TeamView: React.FC = () => {
   };
 
   const handleCopyInviteLink = () => {
-    const mockLink = `https://leaf.app/join/${workspace?.id || 'ws'}_${Math.random().toString(36).substring(2, 7)}`;
+    const mockLink = `https://leeflet.app/join/${workspace?.id || 'ws'}_${Math.random().toString(36).substring(2, 7)}`;
     navigator.clipboard?.writeText(mockLink).then(() => {
       setHasCopiedLink(true);
       toast.info('Invite link copied to clipboard');
@@ -135,7 +135,7 @@ export const TeamView: React.FC = () => {
 
   return (
     <div className="flex-1 h-full overflow-y-auto p-3 sm:p-4 custom-scrollbar flex flex-col gap-4">
-      {/* Centered Under Development Empty State Hero (Leaf Standard Design System) */}
+      {/* Centered Under Development Empty State Hero (Leeflet Standard Design System) */}
       <div className="w-full flex flex-col items-center justify-center text-center p-8 sm:p-10 border border-dashed border-[#e5e7eb] dark:border-[#27272a] rounded-[10px] bg-gradient-to-b from-transparent to-[#fafafa]/60 dark:to-[#18181b]/30">
         <div className="w-12 h-12 rounded-2xl bg-white dark:bg-[#27272a] border border-[#e5e7eb] dark:border-[#3f3f46] shadow-xs flex items-center justify-center mb-3">
           <Users className="w-6 h-6 text-[#6b7280] dark:text-[#a1a1aa]" />
@@ -147,7 +147,7 @@ export const TeamView: React.FC = () => {
           Team Collaboration
         </h3>
         <p className="text-xs text-[#6b7280] dark:text-[#a1a1aa] max-w-sm mt-1.5 leading-relaxed">
-          Shared workspaces, role permissions, and live task syncing across team members are coming soon to Leaf.
+          Shared workspaces, role permissions, and live task syncing across team members are coming soon to Leeflet.
         </p>
         <button
           onClick={() => setIsInviteModalOpen(true)}

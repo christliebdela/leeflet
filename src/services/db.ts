@@ -53,7 +53,12 @@ export class DatabaseService {
     if (!wsJson) return null;
 
     try {
-      return JSON.parse(wsJson) as Workspace;
+      const ws = JSON.parse(wsJson) as Workspace;
+      if (ws && (ws.path === 'C:\\leaf' || ws.path.endsWith('\\leaf') || ws.path.endsWith('/leaf'))) {
+        ws.path = ws.path.replace(/[\\/]leaf$/, (match) => match.replace('leaf', 'leeflet'));
+        localStorage.setItem(`${STORAGE_KEY_PREFIX}${ws.id}`, JSON.stringify(ws));
+      }
+      return ws;
     } catch {
       return null;
     }
@@ -330,7 +335,7 @@ export class DatabaseService {
   public async importWorkspaceData(jsonStr: string): Promise<Workspace> {
     const bundle = JSON.parse(jsonStr);
     if (!bundle.workspace || !bundle.projects || !bundle.items) {
-      throw new Error('Invalid leaf workspace backup bundle');
+      throw new Error('Invalid leeflet workspace backup bundle');
     }
 
     const ws = bundle.workspace as Workspace;

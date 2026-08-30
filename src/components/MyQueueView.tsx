@@ -15,7 +15,7 @@ const SECTION_EMPTY_MESSAGES: Record<SectionKey, string> = {
 };
 
 export const MyQueueView: React.FC = () => {
-  const { items, projects, selectedItemId, setSelectedItemId, filterOptions, setQuickCaptureOpen, updateItem, createItem, isWorkspaceModalOpen } = useLeafStore();
+  const { items, projects, selectedItemId, setSelectedItemId, filterOptions, setQuickCaptureOpen, updateItem, createItem } = useLeafStore();
   const [addingSection, setAddingSection] = useState<SectionKey | null>(null);
   const [newTitle, setNewTitle] = useState('');
   const inlineInputRef = useRef<HTMLInputElement>(null);
@@ -202,7 +202,7 @@ export const MyQueueView: React.FC = () => {
     );
   };
 
-  const isPaneOpen = Boolean(selectedItemId) || isWorkspaceModalOpen;
+  const isPaneOpen = Boolean(selectedItemId);
 
   if (queueItems.length === 0 && !addingSection) {
     return (

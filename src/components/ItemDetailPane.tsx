@@ -39,8 +39,8 @@ import {
 } from '../utils/format';
 import { Checkbox } from './ui/Checkbox';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-// import { openStickyNoteWindow } from '../utils/window';
 import { markdownToHtml, htmlToMarkdown, autoLinkHtml } from '../utils/markdown';
+import { soundService } from '../utils/audio';
 
 const TYPE_ICONS: Record<ItemType, React.FC<{ className?: string }>> = {
   task: CheckSquare,
@@ -344,6 +344,9 @@ export const ItemDetailPane: React.FC = () => {
 
   const handleFieldChange = async (field: keyof Item, value: any) => {
     if (!itemToRender.id) return;
+    if (field === 'status' && value === 'done' && itemToRender.status !== 'done') {
+      soundService.playCompletionChime();
+    }
     const updated: Item = {
       ...itemToRender,
       [field]: value,
@@ -369,6 +372,10 @@ export const ItemDetailPane: React.FC = () => {
   };
 
   const toggleChecklist = (id: string) => {
+    const target = checklist.find((c) => c.id === id);
+    if (target && !target.isCompleted) {
+      soundService.playCompletionChime();
+    }
     const next = checklist.map((c) =>
       c.id === id ? { ...c, isCompleted: !c.isCompleted } : c
     );

@@ -3,6 +3,7 @@ import { Workspace, Project, Item, ViewMode, FilterOptions, ChecklistItem, Attac
 import { dbService } from '../services/db';
 import { broadcastSync, subscribeToSync } from '../utils/sync';
 import { toast } from './useToastStore';
+import { soundService } from '../utils/audio';
 
 interface LeafState {
   workspace: Workspace | null;
@@ -266,6 +267,19 @@ export const useLeafStore = create<LeafState>((set, get) => ({
   },
 
   updateItem: async (item) => {
+    const prevItem = get().items.find((i) => i.id === item.id);
+    if (prevItem) {
+      if (prevItem.status !== 'done' && item.status === 'done') {
+        soundService.playCompletionChime();
+      } else if (prevItem.checklist && item.checklist) {
+        const prevCompleted = prevItem.checklist.filter((c) => c.isCompleted).length;
+        const newCompleted = item.checklist.filter((c) => c.isCompleted).length;
+        if (newCompleted > prevCompleted) {
+          soundService.playCompletionChime();
+        }
+      }
+    }
+
     // Immediate in-memory state update
     set((state) => ({
       items: state.items.map((i) => (i.id === item.id ? item : i)),

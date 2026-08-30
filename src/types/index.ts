@@ -85,7 +85,9 @@ export type ViewMode =
   | { type: 'priority_filter'; priority: Priority }
   | { type: 'completed' }
   | { type: 'archived' }
-  | { type: 'team' };
+  | { type: 'team' }
+  | { type: 'profile' }
+  | { type: 'settings' };
 
 export interface FilterOptions {
   searchQuery: string;

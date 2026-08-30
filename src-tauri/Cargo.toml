@@ -1,5 +1,5 @@
 [package]
-name = "leaf"
+name = "leeflet"
 version = "0.1.0"
 description = "A local-first workspace for capturing, organizing, prioritizing, and acting on everything you discover while working."
 authors = ["Christlieb Dela"]
@@ -9,7 +9,7 @@ build = "build.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
-name = "leaf_lib"
+name = "leeflet_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

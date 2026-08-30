@@ -74,7 +74,6 @@ export const ItemListView: React.FC = () => {
     reorderItems,
     filterOptions,
     setFilterOptions,
-    isWorkspaceModalOpen,
   } = useLeafStore();
 
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
@@ -328,7 +327,7 @@ export const ItemListView: React.FC = () => {
   const emptyState = getEmptyState();
   const EmptyIcon = emptyState.Icon;
 
-  const isPaneOpen = Boolean(selectedItemId) || isWorkspaceModalOpen;
+  const isPaneOpen = Boolean(selectedItemId);
 
   return (
     <div className={`flex-1 h-full overflow-y-auto overflow-x-hidden ${isPaneOpen ? 'pl-3 pr-2 py-3' : 'p-3'} flex flex-col custom-scrollbar`}>
