@@ -298,10 +298,10 @@ export const QuickCaptureModal: React.FC = () => {
               <AlertTriangle className="w-4.5 h-4.5 shrink-0" />
             </div>
             <h3 className="text-[13px] font-bold text-[#111827] dark:text-white mb-1">
-              Save unsaved item?
+              Save changes before closing?
             </h3>
             <p className="text-[11.5px] text-[#6b7280] dark:text-[#a1a1aa] mb-4 max-w-[270px] leading-relaxed">
-              You have typed content in this item. Would you like to save it or proceed without saving?
+              If you close without saving, your changes will be lost.
             </p>
             <div className="flex items-center gap-2 w-full max-w-[270px]">
               <button
@@ -327,7 +327,7 @@ export const QuickCaptureModal: React.FC = () => {
               }}
               className="mt-2.5 text-[11px] text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white font-medium transition-colors"
             >
-              Keep editing
+              Cancel
             </button>
           </div>
         )}
