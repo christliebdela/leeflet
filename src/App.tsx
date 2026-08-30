@@ -44,41 +44,6 @@ export const App: React.FC = () => {
   const [jokeHistoryIndex, setJokeHistoryIndex] = React.useState(0);
   const standbyJoke = jokeHistory[jokeHistoryIndex] ?? null;
 
-  // Window maximized state tracking & DWM shadow suppression
-  const [isMaximized, setIsMaximized] = React.useState(false);
-
-  useEffect(() => {
-    let unlisten: (() => void) | undefined;
-    const initWindow = async () => {
-      try {
-        const { getCurrentWindow } = await import('@tauri-apps/api/window');
-        const win = getCurrentWindow();
-        try {
-          await win.setShadow(false);
-        } catch {}
-
-        const isMin = await win.isMinimized();
-        if (!isMin) {
-          const max = await win.isMaximized();
-          setIsMaximized(max);
-        }
-
-        unlisten = await win.onResized(async () => {
-          try {
-            const isMinNow = await win.isMinimized();
-            if (isMinNow) return;
-            const m = await win.isMaximized();
-            setIsMaximized(m);
-          } catch {}
-        });
-      } catch {}
-    };
-    initWindow();
-    return () => {
-      if (unlisten) unlisten();
-    };
-  }, []);
-
   // Load first joke when entering Standby
   useEffect(() => {
     if (isStandby && standbyJokesEnabled) {
@@ -284,13 +249,7 @@ export const App: React.FC = () => {
 
   if (isStandby) {
     return (
-      <div
-        className={`h-screen w-screen bg-[#f8f9fa] dark:bg-[#0f0f11] flex flex-col items-center justify-center animate-in fade-in duration-200 select-none relative px-6 ${
-          isMaximized
-            ? 'rounded-none border-0'
-            : 'rounded-[18px] border border-[#e5e7eb] dark:border-[#27272a] shadow-modal'
-        }`}
-      >
+      <div className="h-screen w-screen bg-[#f8f9fa] dark:bg-[#0f0f11] flex flex-col items-center justify-center animate-in fade-in duration-200 select-none relative px-6">
         <div className="flex flex-col items-center gap-2.5">
           <img
             src="/logo_alpha.png"
@@ -319,13 +278,7 @@ export const App: React.FC = () => {
 
   return (
     <TooltipProvider delayDuration={150}>
-      <div
-        className={`h-screen w-screen flex bg-[#f8f9fa] dark:bg-[#0f0f11] text-[#111827] dark:text-[#f4f4f5] overflow-hidden select-none ${
-          isMaximized
-            ? 'rounded-none border-0'
-            : 'rounded-[18px] border border-[#e5e7eb] dark:border-[#27272a] shadow-modal'
-        }`}
-      >
+      <div className="h-screen w-screen flex bg-[#f8f9fa] dark:bg-[#0f0f11] text-[#111827] dark:text-[#f4f4f5] overflow-hidden select-none">
         {/* Left Sidebar */}
         <Sidebar />
 

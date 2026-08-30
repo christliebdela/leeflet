@@ -67,6 +67,13 @@
   background: transparent !important;
 }
 
+::-webkit-resizer {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
 /* Custom ultra-minimal scrollbar */
 .custom-scrollbar {
   scrollbar-width: thin;
