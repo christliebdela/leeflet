@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { dbService } from '../../services/db';
-import { Item, Priority, ItemType, ChecklistItem } from '../../types';
+import { Item, Priority, ItemType, ChecklistItem, Project } from '../../types';
 import {
   X,
   Circle,
@@ -114,6 +114,8 @@ export const COLOR_STYLES: Record<
 
 export const StandaloneQueueWidget: React.FC = () => {
   const [items, setItems] = useState<Item[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [openProjectMenuId, setOpenProjectMenuId] = useState<string | null>(null);
   const [addingSection, setAddingSection] = useState<SectionKey | null>(null);
   const [newTitle, setNewTitle] = useState('');
   const [isAlwaysOnTop, setIsAlwaysOnTop] = useState(() => localStorage.getItem('leaf_queue_widget_always_on_top') === 'true');
@@ -185,8 +187,17 @@ export const StandaloneQueueWidget: React.FC = () => {
   };
 
   const loadData = async () => {
-    const it = await dbService.getItems();
+    const [it, pr] = await Promise.all([dbService.getItems(), dbService.getProjects()]);
     setItems(it);
+    setProjects(pr);
+  };
+
+  const handleUpdateItemProject = async (item: Item, newProjectId: string) => {
+    const updated: Item = { ...item, projectId: newProjectId };
+    setItems((prev) => prev.map((i) => (i.id === item.id ? updated : i)));
+    broadcastSync({ type: 'item_updated', item: updated });
+    await dbService.updateItem(updated);
+    setOpenProjectMenuId(null);
   };
 
   const handleToggleDone = async (item: Item, e?: React.MouseEvent) => {
@@ -375,6 +386,15 @@ export const StandaloneQueueWidget: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
+  // Close project selector menu when clicking outside
+  useEffect(() => {
+    const handleGlobalClick = () => {
+      setOpenProjectMenuId(null);
+    };
+    window.addEventListener('click', handleGlobalClick);
+    return () => window.removeEventListener('click', handleGlobalClick);
+  }, []);
+
   const handleStartAdding = (sectionKey: SectionKey) => {
     setAddingSection(sectionKey);
     setNewTitle('');
@@ -522,6 +542,7 @@ export const StandaloneQueueWidget: React.FC = () => {
               const isExpanded = expandedItemId === item.id;
               const hasChecklist = item.checklist && item.checklist.length > 0;
               const completedChecks = hasChecklist ? item.checklist.filter((c) => c.isCompleted).length : 0;
+              const project = projects.find((p) => p.id === item.projectId);
 
               return (
                 <div
@@ -551,27 +572,99 @@ export const StandaloneQueueWidget: React.FC = () => {
                         {isDone ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> : <Circle className="w-3.5 h-3.5" />}
                       </button>
 
-                      {isExpanded ? (
-                        <input
-                          type="text"
-                          value={item.title}
-                          onClick={(e) => e.stopPropagation()}
-                          onChange={(e) => handleUpdateItemTitle(item, e.target.value)}
-                          className={`flex-1 min-w-0 bg-transparent text-xs font-semibold ${currentTheme.text} outline-none border-b ${
-                            colorPreset === 'theme'
-                              ? 'border-[#e5e7eb] dark:border-[#3f3f46] focus:border-[#9ca3af]'
-                              : 'border-black/20 focus:border-black/40'
-                          } px-0.5 py-0.5 select-text`}
-                        />
-                      ) : (
-                        <span
-                          className={`truncate text-xs font-medium ${
-                            isDone ? `line-through ${currentTheme.mutedText}` : currentTheme.text
-                          } select-text`}
-                        >
-                          {item.title}
-                        </span>
-                      )}
+                      <div className="flex flex-col min-w-0 flex-1">
+                        {isExpanded ? (
+                          <input
+                            type="text"
+                            value={item.title}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={(e) => handleUpdateItemTitle(item, e.target.value)}
+                            className={`w-full bg-transparent text-xs font-semibold ${currentTheme.text} outline-none border-b ${
+                              colorPreset === 'theme'
+                                ? 'border-[#e5e7eb] dark:border-[#3f3f46] focus:border-[#9ca3af]'
+                                : 'border-black/20 focus:border-black/40'
+                            } px-0.5 py-0.5 select-text`}
+                          />
+                        ) : (
+                          <span
+                            className={`truncate text-xs font-medium ${
+                              isDone ? `line-through ${currentTheme.mutedText}` : currentTheme.text
+                            } select-text`}
+                          >
+                            {item.title}
+                          </span>
+                        )}
+
+                        {/* Project name right below title */}
+                        {project && (
+                          <div className="relative inline-flex items-center mt-0.5">
+                            {isExpanded ? (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOpenProjectMenuId(openProjectMenuId === item.id ? null : item.id);
+                                }}
+                                className={`flex items-center gap-1.5 px-1 py-0.5 rounded text-[10px] font-medium transition-colors ${
+                                  colorPreset === 'theme'
+                                    ? 'hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white'
+                                    : 'hover:bg-black/10 text-current opacity-80 hover:opacity-100'
+                                }`}
+                              >
+                                <span
+                                  className="w-1.5 h-1.5 rounded-full shrink-0"
+                                  style={{ backgroundColor: project.color || '#9ca3af' }}
+                                />
+                                <span className="truncate max-w-[140px]">{project.name}</span>
+                                <ChevronDown className="w-2.5 h-2.5 opacity-60" />
+                              </button>
+                            ) : (
+                              <div
+                                className={`flex items-center gap-1.5 px-0.5 text-[10px] truncate ${
+                                  colorPreset === 'theme' ? 'text-[#6b7280] dark:text-[#a1a1aa]' : 'text-current opacity-70'
+                                }`}
+                              >
+                                <span
+                                  className="w-1.5 h-1.5 rounded-full shrink-0"
+                                  style={{ backgroundColor: project.color || '#9ca3af' }}
+                                />
+                                <span className="truncate max-w-[160px] font-medium">{project.name}</span>
+                              </div>
+                            )}
+
+                            {isExpanded && openProjectMenuId === item.id && (
+                              <div
+                                onClick={(e) => e.stopPropagation()}
+                                className="absolute left-0 top-full mt-1 w-44 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] shadow-modal py-1 z-50 text-xs animate-in fade-in zoom-in-95 duration-100 max-h-48 overflow-y-auto custom-scrollbar"
+                              >
+                                {projects.map((p) => (
+                                  <button
+                                    key={p.id}
+                                    type="button"
+                                    onClick={() => handleUpdateItemProject(item, p.id)}
+                                    className={`w-full flex items-center justify-between px-2.5 py-1 text-left hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] transition-colors ${
+                                      p.id === item.projectId
+                                        ? 'font-semibold text-[#111827] dark:text-white'
+                                        : 'text-[#4b5563] dark:text-[#a1a1aa]'
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                      <span
+                                        className="w-1.5 h-1.5 rounded-full shrink-0"
+                                        style={{ backgroundColor: p.color || '#9ca3af' }}
+                                      />
+                                      <span className="truncate">{p.name}</span>
+                                    </div>
+                                    {p.id === item.projectId && (
+                                      <Check className="w-3 h-3 text-[#111827] dark:text-white shrink-0" />
+                                    )}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     <div className="flex items-center gap-1.5 shrink-0 select-none">
