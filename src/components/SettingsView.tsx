@@ -1350,7 +1350,7 @@ export const SettingsView: React.FC = () => {
                 {/* Status Indicator Pill */}
                 <div className="self-start sm:self-auto shrink-0">
                   {syncMode === 'cloud' && supabaseUrl ? (
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-[#f4f5f6] dark:bg-[#202024] text-[#111827] dark:text-[#f4f4f5] border border-[#e5e7eb] dark:border-[#2e2e33] shadow-2xs">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                       <span>Cloud Sync Active</span>
                     </div>
@@ -1496,7 +1496,7 @@ export const SettingsView: React.FC = () => {
                 </div>
                 <div className="border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] bg-white dark:bg-[#18181b] p-4 space-y-3 text-xs">
                   <div className="flex items-start gap-2.5">
-                    <Share2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                    <Share2 className="w-4 h-4 text-[#6b7280] dark:text-[#a1a1aa] shrink-0 mt-0.5" />
                     <div>
                       <div className="font-semibold text-xs text-[#111827] dark:text-white">
                         Invite Link for Teammates
