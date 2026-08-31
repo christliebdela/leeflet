@@ -225,8 +225,18 @@ export class DatabaseService {
 
     const projects = await this.getProjects();
     const now = new Date().toISOString();
+    
+    // Auto-assign next available unique color if not explicitly provided
+    let projectColor = data.color;
+    if (!projectColor) {
+      const assigned = new Set(projects.map((p) => p.color?.toLowerCase()));
+      const DEFAULT_PRESETS = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#f43f5e', '#06b6d4', '#ec4899', '#84cc16', '#6366f1', '#f97316', '#14b8a6', '#0284c7'];
+      projectColor = DEFAULT_PRESETS.find((c) => !assigned.has(c.toLowerCase())) || '#10b981';
+    }
+
     const newProject: Project = {
       ...data,
+      color: projectColor,
       id: crypto.randomUUID(),
       createdAt: now,
       updatedAt: now,

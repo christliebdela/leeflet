@@ -778,7 +778,10 @@ export const ItemDetailPane: React.FC = () => {
                 className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-[#f4f4f5] border border-transparent hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-colors"
               >
                 <div className="flex items-center gap-1.5 truncate">
-                  <Folder className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa] shrink-0" />
+                  <Folder
+                    className="w-3.5 h-3.5 shrink-0"
+                    style={{ color: selectedProject?.color || '#6b7280' }}
+                  />
                   <span className="truncate">{selectedProject?.name || 'No Project'}</span>
                 </div>
                 <ChevronDown className="w-3 h-3 opacity-60 shrink-0" />
@@ -817,7 +820,10 @@ export const ItemDetailPane: React.FC = () => {
                         }`}
                       >
                         <div className="flex items-center gap-2 truncate">
-                          <Folder className="w-3.5 h-3.5 shrink-0 opacity-70" />
+                          <Folder
+                            className="w-3.5 h-3.5 shrink-0"
+                            style={{ color: p.color || '#10b981' }}
+                          />
                           <span className="truncate">{p.name}</span>
                         </div>
                         {projectId === p.id && <Check className="w-3.5 h-3.5 shrink-0" />}

@@ -752,7 +752,10 @@ export const Sidebar: React.FC = () => {
                           onClick={() => setViewMode({ type: 'project', projectId: project.id })}
                           className="flex items-center gap-2 truncate flex-1 text-left"
                         >
-                          <Folder className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa] shrink-0" />
+                          <Folder
+                            className="w-3.5 h-3.5 shrink-0"
+                            style={{ color: project.color || '#10b981' }}
+                          />
                           <span className="truncate">{project.name}</span>
                         </button>
 
