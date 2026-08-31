@@ -1365,7 +1365,7 @@ export const SettingsView: React.FC = () => {
                         </div>
                       )}
                     </TooltipTrigger>
-                    <TooltipContent side="bottom" align="end" className="p-2.5 max-w-[280px] space-y-1 text-left">
+                    <TooltipContent side="bottom" align="center" sideOffset={6} className="p-2.5 max-w-[280px] space-y-1 text-left">
                       {syncMode === 'cloud' && supabaseUrl ? (
                         <>
                           <div className="font-semibold text-xs text-white dark:text-[#f4f4f5] flex items-center gap-1.5">
