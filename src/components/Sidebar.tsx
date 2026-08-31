@@ -255,6 +255,13 @@ export const Sidebar: React.FC = () => {
   const completedCount = items.filter((i: Item) => i.status === 'done').length;
   const archivedCount = items.filter((i: Item) => i.status === 'archived').length;
 
+  const railProjects = projects.filter((p: Project) => {
+    if (p.isArchived) return false;
+    const hasTasks = items.some((i: Item) => i.projectId === p.id && i.status !== 'archived');
+    const isCurrent = viewMode.type === 'project' && viewMode.projectId === p.id;
+    return hasTasks || isCurrent;
+  });
+
   const isViewActive = (mode: ViewMode) => {
     if (mode.type !== viewMode.type) return false;
     if (mode.type === 'project' && viewMode.type === 'project') {
@@ -367,11 +374,14 @@ export const Sidebar: React.FC = () => {
             </Tooltip>
           </div>
 
-          {/* Projects Divider & Dots */}
-          {projects.length > 0 && (
-            <div className="w-full flex flex-col items-center gap-1.5 px-2 pt-2 border-t border-[#e5e7eb] dark:border-[#27272a]">
-              {projects.slice(0, 5).map((project) => {
+          {/* Projects Divider & Items with active content */}
+          {railProjects.length > 0 && (
+            <div className="w-full flex flex-col items-center gap-1.5 px-2 pt-2 border-t border-[#e5e7eb] dark:border-[#27272a] overflow-y-auto max-h-56 custom-scrollbar">
+              {railProjects.map((project) => {
                 const isActive = viewMode.type === 'project' && viewMode.projectId === project.id;
+                const count = items.filter(
+                  (i: Item) => i.projectId === project.id && i.status !== 'archived'
+                ).length;
                 return (
                   <Tooltip key={project.id}>
                     <TooltipTrigger asChild>
@@ -384,14 +394,26 @@ export const Sidebar: React.FC = () => {
                             : 'text-[#6b7280] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white'
                         }`}
                       >
-                        <Folder className="w-4 h-4" />
-                        <span
-                          className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full"
-                          style={{ backgroundColor: project.color || '#10b981' }}
+                        <Folder
+                          className="w-4 h-4 transition-transform hover:scale-110"
+                          style={{ color: project.color || '#10b981' }}
                         />
                       </button>
                     </TooltipTrigger>
-                    <TooltipContent side="right">{project.name}</TooltipContent>
+                    <TooltipContent side="right">
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className="w-2 h-2 rounded-full shrink-0"
+                          style={{ backgroundColor: project.color || '#10b981' }}
+                        />
+                        <span className="font-medium">{project.name}</span>
+                        {count > 0 && (
+                          <span className="text-[#9ca3af] dark:text-[#71717a] font-normal">
+                            ({count})
+                          </span>
+                        )}
+                      </div>
+                    </TooltipContent>
                   </Tooltip>
                 );
               })}
