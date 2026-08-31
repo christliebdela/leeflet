@@ -49,13 +49,14 @@ export interface Item {
 }
 
 export type RoleId = 'Admin' | 'Developer' | 'Member' | 'Viewer' | 'Owner';
+export type MemberStatus = 'active' | 'invited' | 'suspended';
 
 export interface TeamMember {
   id: string;
   name: string;
   email: string;
   role: RoleId | string;
-  status: 'active' | 'invited';
+  status: MemberStatus;
   joinedAt?: string;
   avatarColor?: string;
   avatarUrl?: string;

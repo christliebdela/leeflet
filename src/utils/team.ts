@@ -21,7 +21,7 @@ export const getMemberColor = (id: string): string => {
   return AVATAR_COLORS[index];
 };
 
-export const getStoredTeamMembers = (): TeamMember[] => {
+export const getStoredTeamMembers = (workspaceId?: string): TeamMember[] => {
   if (typeof window === 'undefined') return [];
 
   // Read current profile data
@@ -42,8 +42,14 @@ export const getStoredTeamMembers = (): TeamMember[] => {
     }
   } catch {}
 
+  const key = workspaceId ? `${STORAGE_KEY}_${workspaceId}` : STORAGE_KEY;
+
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    let raw = localStorage.getItem(key);
+    // Fallback to legacy global key if workspace key is empty
+    if (!raw && workspaceId) {
+      raw = localStorage.getItem(STORAGE_KEY);
+    }
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
@@ -84,10 +90,11 @@ export const getStoredTeamMembers = (): TeamMember[] => {
   return initial;
 };
 
-export const saveStoredTeamMembers = (members: TeamMember[]) => {
+export const saveStoredTeamMembers = (members: TeamMember[], workspaceId?: string) => {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(members));
+    const key = workspaceId ? `${STORAGE_KEY}_${workspaceId}` : STORAGE_KEY;
+    localStorage.setItem(key, JSON.stringify(members));
   } catch {}
 };
 
