@@ -1,13 +1,13 @@
 export interface MascotPreset {
   id: string;
   name: string;
-  style: 'bottts' | 'bottts-neutral' | 'thumbs' | 'fun-emoji' | 'shapes';
+  style: 'bottts' | 'shapes' | 'thumbs' | 'croodles';
   seed: string;
-  category: 'Robots' | 'Characters' | 'Emoji' | 'Shapes';
+  category: 'Robots' | 'Shapes' | 'Clay' | 'Critters';
 }
 
 export const MASCOT_PRESETS: MascotPreset[] = [
-  // Robots (Bottts)
+  // 1. Robots (Bottts)
   { id: 'bot-spark', name: 'Spark', style: 'bottts', seed: 'Spark', category: 'Robots' },
   { id: 'bot-gizmo', name: 'Gizmo', style: 'bottts', seed: 'Gizmo', category: 'Robots' },
   { id: 'bot-byte', name: 'Byte', style: 'bottts', seed: 'Byte', category: 'Robots' },
@@ -19,27 +19,35 @@ export const MASCOT_PRESETS: MascotPreset[] = [
   { id: 'bot-cosmo', name: 'Cosmo', style: 'bottts', seed: 'Cosmo', category: 'Robots' },
   { id: 'bot-titan', name: 'Titan', style: 'bottts', seed: 'Titan', category: 'Robots' },
 
-  // Characters (Thumbs)
-  { id: 'char-felix', name: 'Felix', style: 'thumbs', seed: 'Felix', category: 'Characters' },
-  { id: 'char-buddy', name: 'Buddy', style: 'thumbs', seed: 'Buddy', category: 'Characters' },
-  { id: 'char-casper', name: 'Casper', style: 'thumbs', seed: 'Casper', category: 'Characters' },
-  { id: 'char-mochi', name: 'Mochi', style: 'thumbs', seed: 'Mochi', category: 'Characters' },
-  { id: 'char-pepper', name: 'Pepper', style: 'thumbs', seed: 'Pepper', category: 'Characters' },
-  { id: 'char-pip', name: 'Pip', style: 'thumbs', seed: 'Pip', category: 'Characters' },
-
-  // Emoji (Fun Emoji)
-  { id: 'emo-joy', name: 'Joy', style: 'fun-emoji', seed: 'Joy', category: 'Emoji' },
-  { id: 'emo-bliss', name: 'Bliss', style: 'fun-emoji', seed: 'Bliss', category: 'Emoji' },
-  { id: 'emo-cool', name: 'Cool', style: 'fun-emoji', seed: 'Cool', category: 'Emoji' },
-  { id: 'emo-star', name: 'Star', style: 'fun-emoji', seed: 'Star', category: 'Emoji' },
-  { id: 'emo-vibe', name: 'Vibe', style: 'fun-emoji', seed: 'Vibe', category: 'Emoji' },
-  { id: 'emo-cyber', name: 'Cyber', style: 'fun-emoji', seed: 'Cyber', category: 'Emoji' },
-
-  // Shapes (Geometric/Abstract)
+  // 2. Shapes (Geometric & Abstract)
   { id: 'shp-prism', name: 'Prism', style: 'shapes', seed: 'Prism', category: 'Shapes' },
   { id: 'shp-orbit', name: 'Orbit', style: 'shapes', seed: 'Orbit', category: 'Shapes' },
   { id: 'shp-nexus', name: 'Nexus', style: 'shapes', seed: 'Nexus', category: 'Shapes' },
   { id: 'shp-vortex', name: 'Vortex', style: 'shapes', seed: 'Vortex', category: 'Shapes' },
+  { id: 'shp-eclipse', name: 'Eclipse', style: 'shapes', seed: 'Eclipse', category: 'Shapes' },
+  { id: 'shp-helix', name: 'Helix', style: 'shapes', seed: 'Helix', category: 'Shapes' },
+  { id: 'shp-pulse', name: 'Pulse', style: 'shapes', seed: 'Pulse', category: 'Shapes' },
+  { id: 'shp-matrix', name: 'Matrix', style: 'shapes', seed: 'Matrix', category: 'Shapes' },
+
+  // 3. Clay (Playful 3D Thumbs)
+  { id: 'clay-clayton', name: 'Clayton', style: 'thumbs', seed: 'Clayton', category: 'Clay' },
+  { id: 'clay-mochi', name: 'Mochi', style: 'thumbs', seed: 'Mochi', category: 'Clay' },
+  { id: 'clay-blob', name: 'Blob', style: 'thumbs', seed: 'Blob', category: 'Clay' },
+  { id: 'clay-gummy', name: 'Gummy', style: 'thumbs', seed: 'Gummy', category: 'Clay' },
+  { id: 'clay-pebble', name: 'Pebble', style: 'thumbs', seed: 'Pebble', category: 'Clay' },
+  { id: 'clay-dough', name: 'Dough', style: 'thumbs', seed: 'Dough', category: 'Clay' },
+  { id: 'clay-boba', name: 'Boba', style: 'thumbs', seed: 'Boba', category: 'Clay' },
+  { id: 'clay-jelly', name: 'Jelly', style: 'thumbs', seed: 'Jelly', category: 'Clay' },
+
+  // 4. Critters (Illustrated Animals & Creatures)
+  { id: 'crit-fox', name: 'Fox', style: 'croodles', seed: 'Fox', category: 'Critters' },
+  { id: 'crit-otter', name: 'Otter', style: 'croodles', seed: 'Otter', category: 'Critters' },
+  { id: 'crit-panda', name: 'Panda', style: 'croodles', seed: 'Panda', category: 'Critters' },
+  { id: 'crit-bunny', name: 'Bunny', style: 'croodles', seed: 'Bunny', category: 'Critters' },
+  { id: 'crit-bear', name: 'Bear', style: 'croodles', seed: 'Bear', category: 'Critters' },
+  { id: 'crit-koala', name: 'Koala', style: 'croodles', seed: 'Koala', category: 'Critters' },
+  { id: 'crit-raccoon', name: 'Raccoon', style: 'croodles', seed: 'Raccoon', category: 'Critters' },
+  { id: 'crit-tiger', name: 'Tiger', style: 'croodles', seed: 'Tiger', category: 'Critters' },
 ];
 
 export const getDiceBearSvgUrl = (style: string, seed: string): string => {

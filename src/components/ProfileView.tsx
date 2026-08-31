@@ -161,7 +161,7 @@ export const ProfileView: React.FC = () => {
   // 2FA Mock State
   const [is2FAEnabled, setIs2FAEnabled] = useState(false);
 
-  const [selectedMascotCategory, setSelectedMascotCategory] = useState<'All' | 'Robots' | 'Characters' | 'Emoji' | 'Shapes'>('All');
+  const [selectedMascotCategory, setSelectedMascotCategory] = useState<'All' | 'Robots' | 'Shapes' | 'Clay' | 'Critters'>('All');
   const [customSeedInput, setCustomSeedInput] = useState('');
 
   const handleRandomizeMascot = () => {
@@ -461,7 +461,7 @@ export const ProfileView: React.FC = () => {
 
               {/* Category Segmented Tabs */}
               <div className="flex items-center gap-1 overflow-x-auto pb-1 custom-scrollbar">
-                {(['All', 'Robots', 'Characters', 'Emoji', 'Shapes'] as const).map((cat) => (
+                {(['All', 'Robots', 'Shapes', 'Clay', 'Critters'] as const).map((cat) => (
                   <button
                     key={cat}
                     type="button"
