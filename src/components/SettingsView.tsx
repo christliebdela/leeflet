@@ -1347,15 +1347,15 @@ export const SettingsView: React.FC = () => {
                   </p>
                 </div>
 
-                {/* Status Indicator Pill */}
+                {/* Status Indicator Badge */}
                 <div className="self-start sm:self-auto shrink-0">
                   {syncMode === 'cloud' && supabaseUrl ? (
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-[#f4f5f6] dark:bg-[#202024] text-[#111827] dark:text-[#f4f4f5] border border-[#e5e7eb] dark:border-[#2e2e33] shadow-2xs">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-[11px] font-medium bg-emerald-500/8 dark:bg-emerald-950/35 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 dark:border-emerald-500/25 shadow-2xs">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 ring-2 ring-emerald-500/20 animate-pulse" />
                       <span>Cloud Sync Active</span>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-[#f3f4f6] dark:bg-[#202024] text-[#6b7280] dark:text-[#a1a1aa] border border-[#e5e7eb] dark:border-[#27272a]">
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-[11px] font-medium bg-[#f4f5f6] dark:bg-[#202024] text-[#6b7280] dark:text-[#a1a1aa] border border-[#e5e7eb] dark:border-[#27272a]">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#9ca3af]" />
                       <span>Local Only (Offline)</span>
                     </div>
