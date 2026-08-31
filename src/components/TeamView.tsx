@@ -19,6 +19,7 @@ import {
   AlertTriangle,
   Send,
   Loader2,
+  LogOut,
 } from 'lucide-react';
 import { useLeafStore } from '../store/useLeafStore';
 import { toast } from '../store/useToastStore';
@@ -77,6 +78,8 @@ export const TeamView: React.FC = () => {
   const [activeRoleMemberId, setActiveRoleMemberId] = useState<string | null>(null);
   const [activeActionsMemberId, setActiveActionsMemberId] = useState<string | null>(null);
   const [memberToDelete, setMemberToDelete] = useState<TeamMember | null>(null);
+  const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
+  const [isLeaving, setIsLeaving] = useState(false);
 
   const roleMenuRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLDivElement>(null);
@@ -329,10 +332,50 @@ export const TeamView: React.FC = () => {
     }
   };
 
+  // Confirm Leave Workspace (For non-admin members)
+  const handleConfirmLeave = async () => {
+    if (!workspace || isLeaving) return;
+    try {
+      setIsLeaving(true);
+      const wsId = workspace.id;
+
+      let myEmail = '';
+      try {
+        const pRaw = localStorage.getItem('leeflet_user_profile_data');
+        if (pRaw) {
+          const p = JSON.parse(pRaw);
+          if (p.email) myEmail = p.email.toLowerCase();
+        }
+      } catch {}
+
+      const selfMember = members.find((m) => m.email && m.email.toLowerCase() === myEmail);
+      if (selfMember) {
+        const { deleteTeamMemberFromCloud } = await import('../services/cloudSync');
+        await deleteTeamMemberFromCloud(wsId, selfMember.id);
+      }
+
+      localStorage.removeItem(`leeflet_is_joined_workspace_${wsId}`);
+      localStorage.removeItem(`leeflet_workspace_role_${wsId}`);
+      localStorage.removeItem(`leeflet_supabase_url_${wsId}`);
+      localStorage.removeItem(`leeflet_supabase_anon_key_${wsId}`);
+      localStorage.removeItem(`leeflet_sync_mode_${wsId}`);
+      localStorage.removeItem(`leeflet_team_members_${wsId}`);
+
+      await useLeafStore.getState().deleteWorkspace(wsId);
+      setIsLeaveModalOpen(false);
+      toast.success(`You have left ${workspace.name}`);
+    } catch (err) {
+      console.error('Error leaving workspace:', err);
+      toast.error('Could not leave workspace');
+    } finally {
+      setIsLeaving(false);
+    }
+  };
+
   const selectedRoleConfig = ROLES.find((r) => r.id === inviteRole) || ROLES[1];
   const isJoined = workspace ? localStorage.getItem(`leeflet_is_joined_workspace_${workspace.id}`) === 'true' : false;
   const storedRole = workspace ? localStorage.getItem(`leeflet_workspace_role_${workspace.id}`) : null;
-  const isCurrentUserAdmin = !isJoined || storedRole === 'Admin' || storedRole === 'Owner';
+  const isCurrentUserAdmin = !isJoined || storedRole === 'Admin' || storedRole === 'Owner' || storedRole === 'admin' || storedRole === 'owner';
 
   return (
     <div className="flex-1 h-full overflow-y-auto p-3 sm:p-4 custom-scrollbar flex flex-col gap-4">
@@ -352,13 +395,22 @@ export const TeamView: React.FC = () => {
           </div>
         </div>
 
-        {isCurrentUserAdmin && (
+        {isCurrentUserAdmin ? (
           <button
             onClick={() => setIsInviteModalOpen(true)}
             className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[#f4f5f6] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#323238] text-[#374151] dark:text-[#f4f4f5] hover:bg-[#ebecee] dark:hover:bg-[#27272a] hover:border-[#d1d5db] dark:hover:border-[#3f3f46] rounded-[6px] text-xs font-medium transition-colors shrink-0 shadow-2xs active:scale-95 cursor-pointer"
           >
             <UserPlus className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
             <span>Invite Member</span>
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setIsLeaveModalOpen(true)}
+            className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/40 rounded-[6px] text-xs font-semibold transition-colors shrink-0 shadow-2xs active:scale-95 cursor-pointer"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Leave Team</span>
           </button>
         )}
       </div>
@@ -645,6 +697,58 @@ export const TeamView: React.FC = () => {
                 className="px-3.5 py-1.5 text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white rounded-[6px] transition-all shadow-subtle cursor-pointer active:scale-98"
               >
                 {memberToDelete.status === 'invited' ? 'Revoke Invite' : 'Remove Member'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Leave Team Confirmation Modal */}
+      {isLeaveModalOpen && (
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isLeaving) setIsLeaveModalOpen(false);
+          }}
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 select-none animate-in fade-in duration-150"
+        >
+          <div className="bg-white dark:bg-[#18181b] border border-[#e5e7eb] dark:border-[#27272a] rounded-[10px] shadow-modal w-full max-w-sm p-5 space-y-4 animate-in zoom-in-95 duration-150">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-full bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 flex items-center justify-center text-rose-600 dark:text-rose-400 shrink-0">
+                <AlertTriangle className="w-4 h-4" />
+              </div>
+              <div className="space-y-1 min-w-0 flex-1">
+                <h3 className="text-sm font-semibold text-[#111827] dark:text-[#f4f4f5]">
+                  Leave {workspace?.name || 'Workspace'}?
+                </h3>
+                <p className="text-xs text-[#6b7280] dark:text-[#a1a1aa] leading-relaxed">
+                  Are you sure you want to leave this workspace? You will be removed from the team roster and lose access to all its shared projects and tasks.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#f3f4f6] dark:border-[#27272a]">
+              <button
+                type="button"
+                disabled={isLeaving}
+                onClick={() => setIsLeaveModalOpen(false)}
+                className="px-3 py-1.5 text-xs font-medium text-[#6b7280] dark:text-[#a1a1aa] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] rounded-[6px] transition-colors cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isLeaving}
+                onClick={handleConfirmLeave}
+                className="px-3.5 py-1.5 text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white rounded-[6px] transition-all shadow-subtle flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-98"
+              >
+                {isLeaving ? (
+                  <>
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    <span>Leaving...</span>
+                  </>
+                ) : (
+                  <span>Leave Workspace</span>
+                )}
               </button>
             </div>
           </div>

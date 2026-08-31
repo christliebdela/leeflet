@@ -627,6 +627,10 @@ export const Sidebar: React.FC = () => {
               <div className="space-y-0.5 max-h-48 overflow-y-auto custom-scrollbar">
                 {(workspaces.length > 0 ? workspaces : (workspace ? [workspace] : [])).map((ws) => {
                   const isActive = workspace?.id === ws.id;
+                  const isWsJoined = localStorage.getItem(`leeflet_is_joined_workspace_${ws.id}`) === 'true';
+                  const wsRole = localStorage.getItem(`leeflet_workspace_role_${ws.id}`);
+                  const isWsAdmin = !isWsJoined || wsRole === 'Admin' || wsRole === 'Owner' || wsRole === 'admin' || wsRole === 'owner';
+
                   return (
                     <div
                       key={ws.id}
@@ -652,28 +656,32 @@ export const Sidebar: React.FC = () => {
 
                       <div className="flex items-center gap-0.5 shrink-0 ml-1">
                         {isActive && <Check className="w-3.5 h-3.5 text-[#111827] dark:text-[#f4f4f5] shrink-0" />}
-                        <button
-                          type="button"
-                          title="Rename workspace"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleStartRename(ws);
-                          }}
-                          className="opacity-0 group-hover/ws:opacity-100 p-1 hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] rounded text-[#6b7280] dark:text-[#a1a1aa] transition-opacity"
-                        >
-                          <SquarePen className="w-3 h-3" />
-                        </button>
-                        <button
-                          type="button"
-                          title="Delete workspace"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleStartDelete(ws);
-                          }}
-                          className="opacity-0 group-hover/ws:opacity-100 p-1 hover:bg-rose-100 dark:hover:bg-rose-950/50 rounded text-rose-600 dark:text-rose-400 transition-opacity"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
+                        {isWsAdmin && (
+                          <>
+                            <button
+                              type="button"
+                              title="Rename workspace"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleStartRename(ws);
+                              }}
+                              className="opacity-0 group-hover/ws:opacity-100 p-1 hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] rounded text-[#6b7280] dark:text-[#a1a1aa] transition-opacity"
+                            >
+                              <SquarePen className="w-3 h-3" />
+                            </button>
+                            <button
+                              type="button"
+                              title="Delete workspace"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleStartDelete(ws);
+                              }}
+                              className="opacity-0 group-hover/ws:opacity-100 p-1 hover:bg-rose-100 dark:hover:bg-rose-950/50 rounded text-rose-600 dark:text-rose-400 transition-opacity"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   );
