@@ -6,20 +6,9 @@ import {
   CheckCircle2,
   ListTodo,
   Layers,
-  Zap,
-  MessageSquare,
-  Coffee,
-  Rocket,
-  Compass,
-  KeyRound,
-  Smartphone,
   Bell,
   Volume2,
   Download,
-  Laptop,
-  X,
-  RefreshCw,
-  Lock,
   Database,
   ArrowRight,
   Sparkles,
@@ -152,15 +141,13 @@ export const ProfileView: React.FC = () => {
     return DEFAULT_NOTIFS;
   });
 
-  // Password Modal
-  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
-
-  // 2FA Mock State
-  const [is2FAEnabled, setIs2FAEnabled] = useState(false);
+  // Password Modal & 2FA State (Commented out — not needed for local-first desktop app)
+  // const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  // const [currentPassword, setCurrentPassword] = useState('');
+  // const [newPassword, setNewPassword] = useState('');
+  // const [confirmPassword, setConfirmPassword] = useState('');
+  // const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  // const [is2FAEnabled, setIs2FAEnabled] = useState(false);
 
   const [selectedMascotCategory, setSelectedMascotCategory] = useState<'All' | 'Robots' | 'Clay' | 'Critters' | 'Fun Emoji'>('All');
   const [customSeedInput, setCustomSeedInput] = useState('');
@@ -266,36 +253,36 @@ export const ProfileView: React.FC = () => {
     toast.success('Preference updated');
   };
 
-  const handlePasswordSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentPassword) {
-      toast.error('Please enter your current password');
-      return;
-    }
-    if (newPassword.length < 8) {
-      toast.error('New password must be at least 8 characters');
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      toast.error('New passwords do not match');
-      return;
-    }
-
-    setIsUpdatingPassword(true);
-    setTimeout(() => {
-      setIsUpdatingPassword(false);
-      setIsPasswordModalOpen(false);
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-      toast.success('Password updated successfully');
-    }, 800);
-  };
-
-  const handleSendResetEmail = () => {
-    toast.info(`Password reset instructions sent to ${profile.email}`);
-    setIsPasswordModalOpen(false);
-  };
+  // Password submit & reset handlers (Commented out)
+  // const handlePasswordSubmit = (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   if (!currentPassword) {
+  //     toast.error('Please enter your current password');
+  //     return;
+  //   }
+  //   if (newPassword.length < 8) {
+  //     toast.error('New password must be at least 8 characters');
+  //     return;
+  //   }
+  //   if (newPassword !== confirmPassword) {
+  //     toast.error('New passwords do not match');
+  //     return;
+  //   }
+  //   setIsUpdatingPassword(true);
+  //   setTimeout(() => {
+  //     setIsUpdatingPassword(false);
+  //     setIsPasswordModalOpen(false);
+  //     setCurrentPassword('');
+  //     setNewPassword('');
+  //     setConfirmPassword('');
+  //     toast.success('Password updated successfully');
+  //   }, 800);
+  // };
+  //
+  // const handleSendResetEmail = () => {
+  //   toast.info(`Password reset instructions sent to ${profile.email}`);
+  //   setIsPasswordModalOpen(false);
+  // };
 
   const handleExportData = async () => {
     try {
@@ -313,21 +300,7 @@ export const ProfileView: React.FC = () => {
     }
   };
 
-  const renderStatusIcon = (icon: StatusIconType, className = "w-3.5 h-3.5") => {
-    switch (icon) {
-      case 'message':
-        return <MessageSquare className={className} />;
-      case 'coffee':
-        return <Coffee className={className} />;
-      case 'rocket':
-        return <Rocket className={className} />;
-      case 'compass':
-        return <Compass className={className} />;
-      case 'zap':
-      default:
-        return <Zap className={className} />;
-    }
-  };
+
 
   return (
     <div className="flex-1 h-full overflow-y-auto p-4 sm:p-8 custom-scrollbar">
@@ -364,12 +337,6 @@ export const ProfileView: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Current status pill */}
-            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] border border-[#e5e7eb] dark:border-[#27272a] bg-[#f9fafb] dark:bg-[#202024] text-xs text-[#6b7280] dark:text-[#a1a1aa]">
-              {renderStatusIcon(profile.statusIcon, "w-3 h-3 text-[#6b7280] dark:text-[#a1a1aa]")}
-              <span className="font-medium text-[#374151] dark:text-[#d4d4d8]">{profile.statusText}</span>
-            </div>
-
             {/* Save Button: Disabled when pristine */}
             <button
               onClick={() => handleSave()}
@@ -654,13 +621,12 @@ export const ProfileView: React.FC = () => {
           </div>
         </div> */}
 
-        {/* Security & Authentication Section */}
-        <div className="space-y-1.5">
+        {/* Security & Authentication Section — commented out for local-first desktop app */}
+        {/* <div className="space-y-1.5">
           <div className="text-[11px] font-semibold uppercase tracking-wider text-[#9ca3af] dark:text-[#71717a] px-1">
             Security & Authentication
           </div>
           <div className="border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] bg-white dark:bg-[#18181b] divide-y divide-[#f3f4f6] dark:divide-[#27272a] overflow-hidden text-xs">
-            {/* Password Row */}
             <div className="flex items-center justify-between px-4 py-3 gap-4">
               <div className="flex items-center gap-2.5 min-w-0">
                 <KeyRound className="w-3.5 h-3.5 text-[#9ca3af] shrink-0" />
@@ -681,8 +647,6 @@ export const ProfileView: React.FC = () => {
                 Change Password
               </button>
             </div>
-
-            {/* Two-Factor Authentication Row */}
             <div className="flex items-center justify-between px-4 py-3 gap-4">
               <div className="flex items-center gap-2.5 min-w-0">
                 <Smartphone className="w-3.5 h-3.5 text-[#9ca3af] shrink-0" />
@@ -711,8 +675,6 @@ export const ProfileView: React.FC = () => {
                 {is2FAEnabled ? 'Enabled' : 'Enable 2FA'}
               </button>
             </div>
-
-            {/* Active Sessions */}
             <div className="flex items-center justify-between px-4 py-3 gap-4">
               <div className="flex items-center gap-2.5 min-w-0">
                 <Laptop className="w-3.5 h-3.5 text-[#9ca3af] shrink-0" />
@@ -731,7 +693,7 @@ export const ProfileView: React.FC = () => {
               </span>
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Notifications & Preferences */}
         <div className="space-y-1.5">
@@ -862,8 +824,8 @@ export const ProfileView: React.FC = () => {
         </div>
       </div>
 
-      {/* Password Reset Modal (Strict Monochrome with Frosted Blur Backdrop) */}
-      {isPasswordModalOpen && (
+      {/* Password Reset Modal (Commented out) */}
+      {/* {isPasswordModalOpen && (
         <div
           onClick={(e) => {
             if (e.target === e.currentTarget) setIsPasswordModalOpen(false);
@@ -967,7 +929,7 @@ export const ProfileView: React.FC = () => {
             </form>
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 };
