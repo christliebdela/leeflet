@@ -200,6 +200,11 @@ export const StandaloneQuickCapture: React.FC = () => {
     } else {
       document.documentElement.classList.remove('dark');
     }
+    // Apply color theme from Settings
+    const savedColorTheme = localStorage.getItem('leaf_color_theme');
+    if (savedColorTheme) {
+      document.documentElement.setAttribute('data-color-theme', savedColorTheme);
+    }
   };
 
   // Adjust dimensions immediately on content or pill changes

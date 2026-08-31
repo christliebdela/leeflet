@@ -9,8 +9,6 @@ import {
   Sliders,
   Database,
   Coffee,
-  Sun,
-  Moon,
   Copy,
   Check,
   Search,
@@ -173,12 +171,10 @@ export const SettingsView: React.FC = () => {
   const [confirmDelete, setConfirmDelete] = useState(() => localStorage.getItem('leaf_pref_confirm_delete') !== 'false');
 
   // Custom Dropdown Open States
-  const [isThemeDropdownOpen, setIsThemeDropdownOpen] = useState(false);
   const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
   const [isPriorityDropdownOpen, setIsPriorityDropdownOpen] = useState(false);
   const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
 
-  const themeDropdownRef = useRef<HTMLDivElement>(null);
   const projectDropdownRef = useRef<HTMLDivElement>(null);
   const priorityDropdownRef = useRef<HTMLDivElement>(null);
   const typeDropdownRef = useRef<HTMLDivElement>(null);
@@ -187,9 +183,6 @@ export const SettingsView: React.FC = () => {
   // Click outside to close dropdowns
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (themeDropdownRef.current && !themeDropdownRef.current.contains(e.target as Node)) {
-        setIsThemeDropdownOpen(false);
-      }
       if (projectDropdownRef.current && !projectDropdownRef.current.contains(e.target as Node)) {
         setIsProjectDropdownOpen(false);
       }
@@ -781,202 +774,122 @@ export const SettingsView: React.FC = () => {
 
           {/* Segmented Tab Switcher - Full Width */}
           <div className="grid grid-cols-2 sm:grid-cols-5 p-1 rounded-[8px] bg-[#f4f5f6] dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] w-full gap-1">
-            <button
-              onClick={() => setActiveTab('preferences')}
-              className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-[6px] transition-all whitespace-nowrap ${
-                activeTab === 'preferences'
-                  ? 'bg-white dark:bg-[#27272a] text-[#111827] dark:text-white shadow-xs font-semibold'
-                  : 'text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white'
-              }`}
-            >
-              <Sliders className="w-3.5 h-3.5" />
-              <span>Preferences</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('sync')}
-              className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-[6px] transition-all whitespace-nowrap ${
-                activeTab === 'sync'
-                  ? 'bg-white dark:bg-[#27272a] text-[#111827] dark:text-white shadow-xs font-semibold'
-                  : 'text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white'
-              }`}
-            >
-              <Cloud className="w-3.5 h-3.5" />
-              <span>Team Sync</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('data')}
-              className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-[6px] transition-all whitespace-nowrap ${
-                activeTab === 'data'
-                  ? 'bg-white dark:bg-[#27272a] text-[#111827] dark:text-white shadow-xs font-semibold'
-                  : 'text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white'
-              }`}
-            >
-              <Database className="w-3.5 h-3.5" />
-              <span>Data &amp; Backup</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('shortcuts')}
-              className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-[6px] transition-all whitespace-nowrap ${
-                activeTab === 'shortcuts'
-                  ? 'bg-white dark:bg-[#27272a] text-[#111827] dark:text-white shadow-xs font-semibold'
-                  : 'text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white'
-              }`}
-            >
-              <Keyboard className="w-3.5 h-3.5" />
-              <span>Shortcuts</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('about')}
-              className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-[6px] transition-all whitespace-nowrap col-span-2 sm:col-span-1 ${
-                activeTab === 'about'
-                  ? 'bg-white dark:bg-[#27272a] text-[#111827] dark:text-white shadow-xs font-semibold'
-                  : 'text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white'
-              }`}
-            >
-              <Info className="w-3.5 h-3.5" />
-              <span>About</span>
-            </button>
+            {(
+              [['preferences', <Sliders className="w-3.5 h-3.5" />, 'Preferences', ''],
+               ['sync', <Cloud className="w-3.5 h-3.5" />, 'Team Sync', ''],
+               ['data', <Database className="w-3.5 h-3.5" />, 'Data & Backup', ''],
+               ['shortcuts', <Keyboard className="w-3.5 h-3.5" />, 'Shortcuts', ''],
+               ['about', <Info className="w-3.5 h-3.5" />, 'About', 'col-span-2 sm:col-span-1'],
+              ] as [string, React.ReactNode, string, string][]
+            ).map(([id, icon, label, extra]) => {
+              const isActive = activeTab === id;
+              const activePreset = THEME_PRESETS.find((p) => p.id === colorTheme);
+              const isNonDefaultTheme = colorTheme !== 'default' && theme === 'dark';
+              return (
+                <button
+                  key={id}
+                  onClick={() => setActiveTab(id as typeof activeTab)}
+                  style={isActive && isNonDefaultTheme && activePreset ? { color: activePreset.accentColor } : undefined}
+                  className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-[6px] transition-all whitespace-nowrap ${extra} ${
+                    isActive
+                      ? 'bg-white dark:bg-[#27272a] shadow-xs font-semibold' + (isNonDefaultTheme ? '' : ' text-[#111827] dark:text-white')
+                      : 'text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white'
+                  }`}
+                >
+                  {icon}
+                  <span>{label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
         {/* TAB 1: PREFERENCES */}
         {activeTab === 'preferences' && (
           <div className="space-y-6">
-            {/* 1. Appearance Section */}
+
+            {/* 2. Color Themes Gallery (Terax/Linear style 2-col visual cards) */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between px-1">
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-[#9ca3af] dark:text-[#71717a]">
+                  Themes
+                </div>
+                <span className="text-[11px] text-[#6b7280] dark:text-[#a1a1aa] font-mono">
+                  {THEME_PRESETS.length} presets
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {THEME_PRESETS.map((preset) => {
+                  const isSelected = colorTheme === preset.id;
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => {
+                        setColorTheme(preset.id);
+                        if (theme !== 'dark') setTheme('dark');
+                        toast.success(`Applied ${preset.name} theme`);
+                      }}
+                      className={`flex items-center gap-3 p-3 rounded-[8px] border transition-all text-left cursor-pointer group relative ${
+                        isSelected
+                          ? 'border-[#d1d5db] dark:border-[#3f3f46] bg-[#f4f5f6] dark:bg-[#202024] shadow-xs'
+                          : 'border-[#e5e7eb] dark:border-[#27272a] bg-white dark:bg-[#18181b] hover:border-[#d1d5db] dark:hover:border-[#3f3f46] hover:bg-[#fafafa] dark:hover:bg-[#1f1f23]'
+                      }`}
+                    >
+                      {/* 3-Pill Palette Swatch */}
+                      <div
+                        className="w-10 h-10 rounded-[8px] flex items-center justify-center gap-1 shrink-0 p-1.5 border border-black/10 dark:border-white/10 shadow-xs"
+                        style={{ backgroundColor: preset.sidebarHex || '#121214' }}
+                      >
+                        <span
+                          className="w-1.5 h-5 rounded-full shadow-xs"
+                          style={{ backgroundColor: preset.previewPills[0] }}
+                        />
+                        <span
+                          className="w-1.5 h-5 rounded-full shadow-xs"
+                          style={{ backgroundColor: preset.previewPills[1] }}
+                        />
+                        <span
+                          className="w-1.5 h-5 rounded-full shadow-xs"
+                          style={{ backgroundColor: preset.previewPills[2] }}
+                        />
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-1.5">
+                          <span
+                            className={`text-xs font-semibold truncate ${
+                              isSelected
+                                ? 'text-[#111827] dark:text-white'
+                                : 'text-[#1f2937] dark:text-[#e4e4e7]'
+                            }`}
+                          >
+                            {preset.name}
+                          </span>
+                          {isSelected && (
+                            <span
+                              className="w-1.5 h-1.5 rounded-full shrink-0"
+                              style={{ backgroundColor: preset.dotColor }}
+                            />
+                          )}
+                        </div>
+                        <p className="text-[11px] text-[#6b7280] dark:text-[#a1a1aa] truncate mt-0.5 leading-normal">
+                          {preset.description}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 3. Layout & Sidebar Preferences */}
             <div className="space-y-1.5">
               <div className="text-[11px] font-semibold uppercase tracking-wider text-[#9ca3af] dark:text-[#71717a] px-1">
-                Appearance
+                Layout
               </div>
-              <div className="border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] bg-white dark:bg-[#18181b] divide-y divide-[#f3f4f6] dark:divide-[#27272a] overflow-visible text-xs">
-                {/* Mode Switcher */}
-                <div className="flex items-center justify-between px-4 py-3 gap-4">
-                  <div>
-                    <div className="text-xs font-medium text-[#111827] dark:text-[#f4f4f5]">
-                      Mode
-                    </div>
-                    <div className="text-[11px] text-[#9ca3af] dark:text-[#71717a]">
-                      Switch between clean light and sleek dark mode
-                    </div>
-                  </div>
-
-                  <div className="flex items-center p-0.5 rounded-[6px] border border-[#e5e7eb] dark:border-[#323238] bg-[#f9fafb] dark:bg-[#202024]">
-                    <button
-                      type="button"
-                      onClick={() => setTheme('light')}
-                      className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-[5px] transition-colors cursor-pointer ${
-                        theme === 'light'
-                          ? 'bg-white text-[#111827] shadow-2xs font-semibold'
-                          : 'text-[#6b7280] hover:text-[#111827]'
-                      }`}
-                    >
-                      <Sun className="w-3.5 h-3.5" />
-                      <span>Light</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setTheme('dark')}
-                      className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-[5px] transition-colors cursor-pointer ${
-                        theme === 'dark'
-                          ? 'bg-[#27272a] text-white shadow-2xs font-semibold'
-                          : 'text-[#a1a1aa] hover:text-white'
-                      }`}
-                    >
-                      <Moon className="w-3.5 h-3.5" />
-                      <span>Dark</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Interface Theme (Linear-style Dropdown) */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 py-3 gap-3">
-                  <div>
-                    <div className="text-xs font-medium text-[#111827] dark:text-[#f4f4f5]">
-                      Interface theme
-                    </div>
-                    <div className="text-[11px] text-[#9ca3af] dark:text-[#71717a]">
-                      Select or customize your interface color scheme
-                    </div>
-                  </div>
-
-                  <div className="relative" ref={themeDropdownRef}>
-                    <button
-                      type="button"
-                      onClick={() => setIsThemeDropdownOpen(!isThemeDropdownOpen)}
-                      className="flex items-center justify-between gap-2.5 px-3 py-1.5 rounded-[6px] border border-[#e5e7eb] dark:border-[#323238] bg-[#f9fafb] dark:bg-[#202024] text-xs text-[#111827] dark:text-[#f4f4f5] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] transition-all cursor-pointer min-w-[168px] shadow-2xs"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="w-2.5 h-2.5 rounded-full shrink-0 shadow-xs"
-                          style={{
-                            backgroundColor:
-                              (THEME_PRESETS.find((p) => p.id === colorTheme) || THEME_PRESETS[0]).dotColor,
-                          }}
-                        />
-                        <span className="text-[11px] font-mono text-[#6b7280] dark:text-[#a1a1aa] font-semibold">
-                          Aa
-                        </span>
-                        <span className="font-medium truncate">
-                          {(THEME_PRESETS.find((p) => p.id === colorTheme) || THEME_PRESETS[0]).name}
-                        </span>
-                      </div>
-                      <ChevronDown
-                        className={`w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa] transition-transform shrink-0 ${
-                          isThemeDropdownOpen ? 'rotate-180' : ''
-                        }`}
-                      />
-                    </button>
-
-                    {isThemeDropdownOpen && (
-                      <div className="absolute right-0 top-full mt-1.5 w-64 rounded-[8px] border border-[#e5e7eb] dark:border-[#27272a] bg-white dark:bg-[#18181b] shadow-2xl p-1.5 z-50 space-y-1 animate-in fade-in zoom-in-95 duration-100">
-                        <div className="px-2 py-1 text-[10px] font-semibold tracking-wider uppercase text-[#9ca3af] dark:text-[#71717a]">
-                          Color Schemes
-                        </div>
-                        <div className="space-y-0.5 max-h-64 overflow-y-auto custom-scrollbar">
-                          {THEME_PRESETS.map((preset) => {
-                            const isSelected = colorTheme === preset.id;
-                            return (
-                              <button
-                                key={preset.id}
-                                type="button"
-                                onClick={() => {
-                                  setColorTheme(preset.id);
-                                  setIsThemeDropdownOpen(false);
-                                  if (theme !== 'dark') setTheme('dark');
-                                  toast.success(`Theme set to ${preset.name}`);
-                                }}
-                                className={`w-full flex items-center justify-between px-2.5 py-2 rounded-[5px] text-xs transition-colors cursor-pointer text-left ${
-                                  isSelected
-                                    ? 'bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-white font-semibold'
-                                    : 'text-[#4b5563] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#202024]'
-                                }`}
-                              >
-                                <div className="flex items-center gap-2.5 min-w-0">
-                                  <span
-                                    className="w-3 h-3 rounded-full shrink-0 shadow-xs border border-black/10 dark:border-white/10"
-                                    style={{ backgroundColor: preset.dotColor }}
-                                  />
-                                  <div className="truncate">
-                                    <div className="truncate font-medium">{preset.name}</div>
-                                    <div className="text-[10px] text-[#9ca3af] dark:text-[#71717a] truncate font-normal">
-                                      {preset.description}
-                                    </div>
-                                  </div>
-                                </div>
-                                {isSelected && (
-                                  <Check className="w-3.5 h-3.5 text-[#111827] dark:text-white shrink-0 ml-2" />
-                                )}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
+              <div className="border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] bg-white dark:bg-[#18181b] divide-y divide-[#f3f4f6] dark:divide-[#27272a] overflow-hidden text-xs">
 
                 {/* Sidebar Collapsed Style */}
                 <div className="flex items-center justify-between px-4 py-3 gap-4">

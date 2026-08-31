@@ -8,7 +8,6 @@ import {
   Plus,
   Maximize2,
   Pin,
-  Palette,
   Check,
   ChevronDown,
   CheckSquare,
@@ -119,8 +118,8 @@ export const StandaloneQueueWidget: React.FC = () => {
   const [addingSection, setAddingSection] = useState<SectionKey | null>(null);
   const [newTitle, setNewTitle] = useState('');
   const [isAlwaysOnTop, setIsAlwaysOnTop] = useState(() => localStorage.getItem('leaf_queue_widget_always_on_top') === 'true');
-  const [colorPreset, setColorPreset] = useState<ColorPreset>(() => (localStorage.getItem('leaf_queue_widget_color') as ColorPreset) || 'theme');
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  // colorPreset is fixed to 'theme' — colour is controlled globally via Settings
+  const colorPreset: ColorPreset = 'theme';
   const [isStandby, setIsStandby] = useState(false);
   const [jokeHistory, setJokeHistory] = useState<string[]>([]);
   const [jokeHistoryIndex, setJokeHistoryIndex] = useState(0);
@@ -367,6 +366,11 @@ export const StandaloneQueueWidget: React.FC = () => {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
+    }
+    // Apply color theme from Settings
+    const savedColorTheme = localStorage.getItem('leaf_color_theme');
+    if (savedColorTheme) {
+      document.documentElement.setAttribute('data-color-theme', savedColorTheme);
     }
 
     loadData();
@@ -881,48 +885,12 @@ export const StandaloneQueueWidget: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-1">
-            {/* Color Palette Menu */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={() => setIsMenuOpen(!isMenuOpen)}
-                  className={`p-1 rounded transition-colors ${currentTheme.subtleBg} ${currentTheme.mutedText}`}
-                >
-                  <Palette className="w-3.5 h-3.5" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Color</p>
-              </TooltipContent>
-            </Tooltip>
-
-            {/* Options Dropdown Menu with color swatches */}
-            {isMenuOpen && (
-              <div
-                onClick={(e) => e.stopPropagation()}
-                className="absolute right-3 top-10 w-auto bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] shadow-modal p-2 z-50 animate-in fade-in zoom-in-95 duration-100"
-              >
-                <div className="flex items-center gap-1.5">
-                  {(Object.keys(COLOR_STYLES) as ColorPreset[]).map((preset) => (
-                    <button
-                      key={preset}
-                      onClick={() => {
-                        setColorPreset(preset);
-                        localStorage.setItem('leaf_queue_widget_color', preset);
-                        setIsMenuOpen(false);
-                      }}
-                      className={`w-4 h-4 rounded-[3px] border ${COLOR_STYLES[preset].swatch} flex items-center justify-center transition-transform hover:scale-110 active:scale-95 ${
-                        colorPreset === preset ? 'ring-1.5 ring-[#111827] dark:ring-white' : ''
-                      }`}
-                    >
-                      {colorPreset === preset && (
-                        <Check className="w-2.5 h-2.5 text-[#111827] dark:text-white stroke-[3]" />
-                      )}
-                    </button>
-                  ))}
-                </div>
+          {/* Color Palette button removed — color theme is now set in Settings */}
+          {/* {isMenuOpen && (
+              <div onClick={(e) => e.stopPropagation()} className="absolute right-3 top-10 ...">
+                color swatches
               </div>
-            )}
+          )} */}
 
             {/* Standby toggle */}
             <Tooltip>

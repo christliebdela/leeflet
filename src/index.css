@@ -153,126 +153,188 @@
 }
 
 /* ========================================================
-   INTERFACE COLOR THEMES (Linear-inspired Unique Palettes)
+   INTERFACE COLOR THEMES
    ======================================================== */
 
-/* 1. Midnight Sage (Leeflet Botanical Dark) */
-html.dark[data-color-theme="midnight-sage"] {
-  --theme-bg-app: #0b120f;
-  --theme-bg-sidebar: #080d0b;
-  --theme-bg-card: #111a15;
-  --theme-bg-card-elevated: #16221c;
-  --theme-border: #1a2921;
-  --theme-accent: #10b981;
+/* 1. Deep Black (OLED Pitch Black) */
+html.dark[data-color-theme="deep-black"] {
+  --theme-bg-app: #000000;
+  --theme-bg-sidebar: #000000;
+  --theme-bg-card: #09090b;
+  --theme-bg-card-elevated: #121215;
+  --theme-border: #18181b;
+  --theme-accent: #ffffff;
 }
 
-/* 2. Abyssal Azure (Deep Oceanic Navy with Electric Cyan) */
-html.dark[data-color-theme="abyssal-azure"] {
-  --theme-bg-app: #0a0e17;
-  --theme-bg-sidebar: #070a11;
-  --theme-bg-card: #0f1523;
-  --theme-bg-card-elevated: #151d30;
-  --theme-border: #1a253b;
+/* 2. Claude (Warm Clay & Paper) */
+html.dark[data-color-theme="claude"] {
+  --theme-bg-app: #181614;
+  --theme-bg-sidebar: #13110f;
+  --theme-bg-card: #201d19;
+  --theme-bg-card-elevated: #292520;
+  --theme-border: #363028;
+  --theme-accent: #d97706;
+}
+
+/* 3. Kanagawa (Inky Dark & Warm Lotus) */
+html.dark[data-color-theme="kanagawa"] {
+  --theme-bg-app: #1f1f28;
+  --theme-bg-sidebar: #16161d;
+  --theme-bg-card: #2a2a37;
+  --theme-bg-card-elevated: #363646;
+  --theme-border: #3b3b4f;
+  --theme-accent: #7e9cd8;
+}
+
+/* 4. Kanagawa Dragon (Near-Black Dragon) */
+html.dark[data-color-theme="kanagawa-dragon"] {
+  --theme-bg-app: #12120f;
+  --theme-bg-sidebar: #0d0d0c;
+  --theme-bg-card: #1d1c19;
+  --theme-bg-card-elevated: #282723;
+  --theme-border: #34322d;
+  --theme-accent: #8ba4b0;
+}
+
+/* 5. Tokyo Night (Calm Blue Dark) */
+html.dark[data-color-theme="tokyo-night"] {
+  --theme-bg-app: #1a1b26;
+  --theme-bg-sidebar: #16161e;
+  --theme-bg-card: #24283b;
+  --theme-bg-card-elevated: #2f354f;
+  --theme-border: #384061;
+  --theme-accent: #7aa2f7;
+}
+
+/* 6. Catppuccin (Mocha Pastel) */
+html.dark[data-color-theme="catppuccin"] {
+  --theme-bg-app: #1e1e2e;
+  --theme-bg-sidebar: #181825;
+  --theme-bg-card: #28283d;
+  --theme-bg-card-elevated: #313244;
+  --theme-border: #45475a;
+  --theme-accent: #cba6f7;
+}
+
+/* 7. Rosé Pine (Soho Pine & Rose) */
+html.dark[data-color-theme="rose-pine"] {
+  --theme-bg-app: #191724;
+  --theme-bg-sidebar: #14121f;
+  --theme-bg-card: #232136;
+  --theme-bg-card-elevated: #2a283e;
+  --theme-border: #393552;
+  --theme-accent: #ebbcba;
+}
+
+/* 8. Everforest (Soft Forest Green) */
+html.dark[data-color-theme="everforest"] {
+  --theme-bg-app: #232a2e;
+  --theme-bg-sidebar: #1e2326;
+  --theme-bg-card: #2d353b;
+  --theme-bg-card-elevated: #343f44;
+  --theme-border: #425047;
+  --theme-accent: #a7c080;
+}
+
+/* 9. Nord (Arctic North-Bluish) */
+html.dark[data-color-theme="nord"] {
+  --theme-bg-app: #242933;
+  --theme-bg-sidebar: #1f232a;
+  --theme-bg-card: #2e3440;
+  --theme-bg-card-elevated: #3b4252;
+  --theme-border: #4c566a;
+  --theme-accent: #88c0d0;
+}
+
+/* 10. Gruvbox (Earthy Retro) */
+html.dark[data-color-theme="gruvbox"] {
+  --theme-bg-app: #1d2021;
+  --theme-bg-sidebar: #181a1b;
+  --theme-bg-card: #282828;
+  --theme-bg-card-elevated: #32302f;
+  --theme-border: #3c3836;
+  --theme-accent: #fabd2f;
+}
+
+/* 11. Dracula (High-Contrast Purple) */
+html.dark[data-color-theme="dracula"] {
+  --theme-bg-app: #21222c;
+  --theme-bg-sidebar: #191a21;
+  --theme-bg-card: #282a36;
+  --theme-bg-card-elevated: #343746;
+  --theme-border: #44475a;
+  --theme-accent: #bd93f9;
+}
+
+/* 12. Solarized (Precision Low-Glare) */
+html.dark[data-color-theme="solarized"] {
+  --theme-bg-app: #00212b;
+  --theme-bg-sidebar: #001b24;
+  --theme-bg-card: #002b36;
+  --theme-bg-card-elevated: #073642;
+  --theme-border: #0e4a59;
+  --theme-accent: #268bd2;
+}
+
+/* 13. Tide (Deep Slate & Teal) */
+html.dark[data-color-theme="tide"] {
+  --theme-bg-app: #0d151c;
+  --theme-bg-sidebar: #090e13;
+  --theme-bg-card: #15202b;
+  --theme-bg-card-elevated: #1d2b3a;
+  --theme-border: #273a4e;
   --theme-accent: #38bdf8;
 }
 
-/* 3. Warm Espresso (Cozy Roasted Cocoa & Amber) */
-html.dark[data-color-theme="warm-espresso"] {
-  --theme-bg-app: #120f0d;
-  --theme-bg-sidebar: #0e0b09;
-  --theme-bg-card: #191411;
-  --theme-bg-card-elevated: #221c17;
-  --theme-border: #2c231c;
+/* 14. Sage (Calm Forest Green) */
+html.dark[data-color-theme="sage"] {
+  --theme-bg-app: #141b18;
+  --theme-bg-sidebar: #0f1412;
+  --theme-bg-card: #1c2420;
+  --theme-bg-card-elevated: #242f2a;
+  --theme-border: #2e3d36;
+  --theme-accent: #86efac;
+}
+
+/* 15. Caffeine (Roasted Espresso & Latte) */
+html.dark[data-color-theme="caffeine"] {
+  --theme-bg-app: #140f0c;
+  --theme-bg-sidebar: #0f0b09;
+  --theme-bg-card: #1e1713;
+  --theme-bg-card-elevated: #29201a;
+  --theme-border: #3d2f26;
   --theme-accent: #f59e0b;
 }
 
-/* 4. Cyber Violet (Synthwave Twilight Noir) */
-html.dark[data-color-theme="cyber-violet"] {
-  --theme-bg-app: #0e0b17;
-  --theme-bg-sidebar: #0a0711;
-  --theme-bg-card: #151022;
-  --theme-bg-card-elevated: #1e1630;
-  --theme-border: #281d40;
-  --theme-accent: #a855f7;
-}
-
-/* 5. Nordic Slate (Scandinavian Steel & Icy Blue) */
-html.dark[data-color-theme="nordic-frost"] {
-  --theme-bg-app: #0c1118;
-  --theme-bg-sidebar: #090c12;
-  --theme-bg-card: #121822;
-  --theme-bg-card-elevated: #18202d;
-  --theme-border: #1f2a3a;
-  --theme-accent: #60a5fa;
-}
-
-/* Apply theme overrides to custom tinted themes only (not default) */
-html.dark[data-color-theme="midnight-sage"] .dark\:bg-\[\#0f0f11\],
-html.dark[data-color-theme="abyssal-azure"] .dark\:bg-\[\#0f0f11\],
-html.dark[data-color-theme="warm-espresso"] .dark\:bg-\[\#0f0f11\],
-html.dark[data-color-theme="cyber-violet"] .dark\:bg-\[\#0f0f11\],
-html.dark[data-color-theme="nordic-frost"] .dark\:bg-\[\#0f0f11\],
-html.dark[data-color-theme="midnight-sage"] div.h-screen.w-screen,
-html.dark[data-color-theme="abyssal-azure"] div.h-screen.w-screen,
-html.dark[data-color-theme="warm-espresso"] div.h-screen.w-screen,
-html.dark[data-color-theme="cyber-violet"] div.h-screen.w-screen,
-html.dark[data-color-theme="nordic-frost"] div.h-screen.w-screen {
+/* Universal Theme Overrides for custom themes */
+html.dark[data-color-theme]:not([data-color-theme="default"]) div.h-screen.w-screen,
+html.dark[data-color-theme]:not([data-color-theme="default"]) .dark\:bg-\[\#0f0f11\] {
   background-color: var(--theme-bg-app) !important;
 }
 
-html.dark[data-color-theme="midnight-sage"] aside,
-html.dark[data-color-theme="abyssal-azure"] aside,
-html.dark[data-color-theme="warm-espresso"] aside,
-html.dark[data-color-theme="cyber-violet"] aside,
-html.dark[data-color-theme="nordic-frost"] aside,
-html.dark[data-color-theme="midnight-sage"] .dark\:bg-\[\#121214\],
-html.dark[data-color-theme="abyssal-azure"] .dark\:bg-\[\#121214\],
-html.dark[data-color-theme="warm-espresso"] .dark\:bg-\[\#121214\],
-html.dark[data-color-theme="cyber-violet"] .dark\:bg-\[\#121214\],
-html.dark[data-color-theme="nordic-frost"] .dark\:bg-\[\#121214\] {
+html.dark[data-color-theme]:not([data-color-theme="default"]) aside,
+html.dark[data-color-theme]:not([data-color-theme="default"]) .dark\:bg-\[\#121214\] {
   background-color: var(--theme-bg-sidebar) !important;
   border-color: var(--theme-border) !important;
 }
 
-html.dark[data-color-theme="midnight-sage"] .dark\:bg-\[\#18181b\],
-html.dark[data-color-theme="abyssal-azure"] .dark\:bg-\[\#18181b\],
-html.dark[data-color-theme="warm-espresso"] .dark\:bg-\[\#18181b\],
-html.dark[data-color-theme="cyber-violet"] .dark\:bg-\[\#18181b\],
-html.dark[data-color-theme="nordic-frost"] .dark\:bg-\[\#18181b\] {
+html.dark[data-color-theme]:not([data-color-theme="default"]) .dark\:bg-\[\#18181b\] {
   background-color: var(--theme-bg-card) !important;
 }
 
-html.dark[data-color-theme="midnight-sage"] .dark\:bg-\[\#202024\],
-html.dark[data-color-theme="abyssal-azure"] .dark\:bg-\[\#202024\],
-html.dark[data-color-theme="warm-espresso"] .dark\:bg-\[\#202024\],
-html.dark[data-color-theme="cyber-violet"] .dark\:bg-\[\#202024\],
-html.dark[data-color-theme="nordic-frost"] .dark\:bg-\[\#202024\],
-html.dark[data-color-theme="midnight-sage"] .dark\:bg-\[\#1c1c1f\],
-html.dark[data-color-theme="abyssal-azure"] .dark\:bg-\[\#1c1c1f\],
-html.dark[data-color-theme="warm-espresso"] .dark\:bg-\[\#1c1c1f\],
-html.dark[data-color-theme="cyber-violet"] .dark\:bg-\[\#1c1c1f\],
-html.dark[data-color-theme="nordic-frost"] .dark\:bg-\[\#1c1c1f\] {
+html.dark[data-color-theme]:not([data-color-theme="default"]) .dark\:bg-\[\#202024\],
+html.dark[data-color-theme]:not([data-color-theme="default"]) .dark\:bg-\[\#1c1c1f\],
+html.dark[data-color-theme]:not([data-color-theme="default"]) .dark\:bg-\[\#27272a\] {
   background-color: var(--theme-bg-card-elevated) !important;
 }
 
-html.dark[data-color-theme="midnight-sage"] .dark\:border-\[\#27272a\],
-html.dark[data-color-theme="abyssal-azure"] .dark\:border-\[\#27272a\],
-html.dark[data-color-theme="warm-espresso"] .dark\:border-\[\#27272a\],
-html.dark[data-color-theme="cyber-violet"] .dark\:border-\[\#27272a\],
-html.dark[data-color-theme="nordic-frost"] .dark\:border-\[\#27272a\],
-html.dark[data-color-theme="midnight-sage"] .dark\:border-\[\#323238\],
-html.dark[data-color-theme="abyssal-azure"] .dark\:border-\[\#323238\],
-html.dark[data-color-theme="warm-espresso"] .dark\:border-\[\#323238\],
-html.dark[data-color-theme="cyber-violet"] .dark\:border-\[\#323238\],
-html.dark[data-color-theme="nordic-frost"] .dark\:border-\[\#323238\] {
+html.dark[data-color-theme]:not([data-color-theme="default"]) .dark\:border-\[\#27272a\],
+html.dark[data-color-theme]:not([data-color-theme="default"]) .dark\:border-\[\#323238\],
+html.dark[data-color-theme]:not([data-color-theme="default"]) .dark\:border-\[\#3f3f46\] {
   border-color: var(--theme-border) !important;
 }
 
-html.dark[data-color-theme="midnight-sage"] .dark\:divide-\[\#27272a\] > :not([hidden]) ~ :not([hidden]),
-html.dark[data-color-theme="abyssal-azure"] .dark\:divide-\[\#27272a\] > :not([hidden]) ~ :not([hidden]),
-html.dark[data-color-theme="warm-espresso"] .dark\:divide-\[\#27272a\] > :not([hidden]) ~ :not([hidden]),
-html.dark[data-color-theme="cyber-violet"] .dark\:divide-\[\#27272a\] > :not([hidden]) ~ :not([hidden]),
-html.dark[data-color-theme="nordic-frost"] .dark\:divide-\[\#27272a\] > :not([hidden]) ~ :not([hidden]) {
+html.dark[data-color-theme]:not([data-color-theme="default"]) .dark\:divide-\[\#27272a\] > :not([hidden]) ~ :not([hidden]) {
   border-color: var(--theme-border) !important;
 }
 
