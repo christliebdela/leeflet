@@ -38,6 +38,8 @@ import {
   X,
   Send,
   Lock,
+  Heart,
+  Info,
 } from 'lucide-react';
 import { Item, Attachment, ItemType, Priority, Project, THEME_PRESETS } from '../types';
 import { formatFileSize, ITEM_TYPE_CONFIG, PRIORITY_CONFIG } from '../utils/format';
@@ -45,7 +47,7 @@ import { toast } from '../store/useToastStore';
 import { INITIAL_SCHEMA_SQL } from '../utils/schemaSql';
 import { getStoredSmtpConfig, saveStoredSmtpConfig, isSmtpConfigured, sendTestEmail } from '../utils/smtp';
 
-type SettingsTab = 'preferences' | 'shortcuts' | 'sync' | 'data';
+type SettingsTab = 'preferences' | 'shortcuts' | 'sync' | 'data' | 'about';
 
 interface ShortcutItem {
   id: string;
@@ -700,6 +702,18 @@ export const SettingsView: React.FC = () => {
             >
               <Keyboard className="w-3.5 h-3.5" />
               <span>Shortcuts</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('about')}
+              className={`flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-[5px] transition-all whitespace-nowrap shrink-0 ${
+                activeTab === 'about'
+                  ? 'bg-white dark:bg-[#27272a] text-[#111827] dark:text-white shadow-xs font-semibold'
+                  : 'text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white'
+              }`}
+            >
+              <Info className="w-3.5 h-3.5" />
+              <span>About</span>
             </button>
           </div>
         </div>
@@ -2299,6 +2313,87 @@ export const SettingsView: React.FC = () => {
                   </>
                 )}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 5: ABOUT */}
+      {activeTab === 'about' && (
+        <div className="space-y-6">
+          {/* Hero Card */}
+          <div className="border border-[#e5e7eb] dark:border-[#27272a] rounded-[10px] bg-white dark:bg-[#18181b] overflow-hidden">
+            <div className="px-6 py-8 flex flex-col items-center text-center gap-3 border-b border-[#f3f4f6] dark:border-[#27272a]">
+              <div className="w-14 h-14 rounded-[14px] bg-gradient-to-br from-[#111827] to-[#374151] dark:from-white dark:to-[#d1d5db] flex items-center justify-center shadow-lg">
+                <Sparkles className="w-7 h-7 text-white dark:text-[#111827]" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-[#111827] dark:text-white tracking-tight">
+                  Leeflet
+                </h2>
+                <p className="text-xs text-[#6b7280] dark:text-[#a1a1aa] mt-0.5">
+                  Local-first task &amp; workspace management
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded-full bg-[#f3f4f6] dark:bg-[#27272a] border border-[#e5e7eb] dark:border-[#3f3f46] text-[11px] font-semibold text-[#374151] dark:text-[#d4d4d8]">
+                  v0.1.0
+                </span>
+                <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
+                  Early Access
+                </span>
+              </div>
+            </div>
+
+            {/* Credits row */}
+            <div className="px-6 py-4 flex items-center justify-center gap-1.5 text-xs text-[#6b7280] dark:text-[#a1a1aa]">
+              <span>Built with</span>
+              <Heart className="w-3 h-3 text-rose-500 fill-rose-500" />
+              <span>by</span>
+              <span className="font-semibold text-[#111827] dark:text-white">Christlieb Dela</span>
+            </div>
+          </div>
+
+          {/* Tech stack */}
+          <div className="space-y-1.5">
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-[#9ca3af] dark:text-[#71717a] px-1">
+              Built With
+            </div>
+            <div className="border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] bg-white dark:bg-[#18181b] divide-y divide-[#f3f4f6] dark:divide-[#27272a] text-xs">
+              {([
+                { label: 'Framework', value: 'React 18 + TypeScript' },
+                { label: 'Desktop Shell', value: 'Tauri v2 (Rust)' },
+                { label: 'Styling', value: 'Tailwind CSS v4' },
+                { label: 'Database', value: 'SQLite (local) / Supabase (cloud)' },
+                { label: 'State', value: 'Zustand' },
+                { label: 'Avatars', value: 'DiceBear 10.x' },
+                { label: 'Icons', value: 'Lucide React' },
+              ] as { label: string; value: string }[]).map(({ label, value }) => (
+                <div key={label} className="flex items-center justify-between px-4 py-2.5 gap-4">
+                  <span className="text-[#6b7280] dark:text-[#a1a1aa]">{label}</span>
+                  <span className="font-medium text-[#111827] dark:text-[#f4f4f5] text-right">{value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Legal */}
+          <div className="space-y-1.5">
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-[#9ca3af] dark:text-[#71717a] px-1">
+              Legal &amp; Licenses
+            </div>
+            <div className="border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] bg-white dark:bg-[#18181b] p-4 text-xs text-[#6b7280] dark:text-[#a1a1aa] leading-relaxed space-y-2">
+              <p>
+                Leeflet is a personal productivity tool. All data is stored locally on your device
+                unless you configure a cloud database. No telemetry or analytics are collected.
+              </p>
+              <p>
+                Third-party licenses: DiceBear avatar styles are used under their respective
+                open-source licenses (CC0 1.0 &amp; CC BY 4.0). Lucide icons are MIT licensed.
+              </p>
+              <p className="text-[10px] text-[#9ca3af] dark:text-[#71717a]">
+                © {new Date().getFullYear()} Christlieb Dela. All rights reserved.
+              </p>
             </div>
           </div>
         </div>

@@ -19,7 +19,7 @@ export const OnboardingModal: React.FC = () => {
   const [fullName, setFullName] = useState('');
   const [jobTitle, setJobTitle] = useState('Workspace Owner');
   const [selectedMascotId, setSelectedMascotId] = useState('bot-spark');
-  const [selectedCategory, setSelectedCategory] = useState<'All' | 'Robots' | 'Shapes' | 'Clay' | 'Critters'>('All');
+  const [selectedCategory, setSelectedCategory] = useState<'All' | 'Robots' | 'Clay' | 'Critters' | 'Fun Emoji'>('All');
   const [customAvatarUrl, setCustomAvatarUrl] = useState('');
 
   const [workspaceName, setWorkspaceName] = useState('My Workspace');
@@ -92,6 +92,8 @@ export const OnboardingModal: React.FC = () => {
         members[0].avatarUrl = activeUrl;
         saveStoredTeamMembers(members);
       }
+
+      window.dispatchEvent(new CustomEvent('leeflet-profile-updated', { detail: profileData }));
     } catch {}
   };
 
@@ -248,11 +250,11 @@ export const OnboardingModal: React.FC = () => {
 
             <div className="space-y-3 text-xs">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-[#f4f5f6] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#323238] flex items-center justify-center p-1 shrink-0 overflow-hidden shadow-2xs">
+                <div className="w-12 h-12 rounded-xl border border-[#e5e7eb] dark:border-[#323238] flex items-center justify-center shrink-0 overflow-hidden shadow-2xs">
                   <img
                     src={customAvatarUrl || resolveAvatarUrl(selectedMascotId, fullName || 'owner')}
                     alt="Mascot Avatar"
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-cover"
                   />
                 </div>
                 <div className="flex-1 space-y-1.5">
@@ -292,7 +294,7 @@ export const OnboardingModal: React.FC = () => {
 
                 {/* Category Tabs */}
                 <div className="flex items-center gap-1 overflow-x-auto pb-0.5 custom-scrollbar">
-                  {(['All', 'Robots', 'Shapes', 'Clay', 'Critters'] as const).map((cat) => (
+                  {(['All', 'Robots', 'Clay', 'Critters', 'Fun Emoji'] as const).map((cat) => (
                     <button
                       key={cat}
                       type="button"
@@ -328,7 +330,9 @@ export const OnboardingModal: React.FC = () => {
                             : 'border-[#e5e7eb] dark:border-[#27272a] hover:border-[#d1d5db] dark:hover:border-[#3f3f46] bg-[#f9fafb] dark:bg-[#202024]'
                         }`}
                       >
-                        <img src={url} alt={m.name} className="w-6 h-6 object-contain" />
+                        <div className="w-7 h-7 rounded-[4px] overflow-hidden shrink-0">
+                          <img src={url} alt={m.name} className="w-full h-full object-cover" />
+                        </div>
                         <span className="text-[9px] text-[#6b7280] dark:text-[#a1a1aa] mt-0.5 truncate max-w-full font-medium">
                           {m.name}
                         </span>

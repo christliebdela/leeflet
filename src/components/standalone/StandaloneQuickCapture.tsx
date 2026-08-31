@@ -617,7 +617,7 @@ export const StandaloneQuickCapture: React.FC = () => {
             </button>
 
             {isProjectMenuOpen && (
-              <div className="absolute left-0 top-full mt-1.5 w-52 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-2xl p-1 z-50 space-y-0.5 max-h-48 overflow-y-auto custom-scrollbar animate-in fade-in zoom-in-95 duration-100">
+              <div className="absolute left-0 bottom-full mb-1.5 w-52 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-2xl p-1 z-50 space-y-0.5 max-h-48 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-bottom-2 duration-100">
                 <div className="max-h-36 overflow-y-auto custom-scrollbar space-y-0.5">
                   {projects.map((p) => (
                     <button
@@ -715,7 +715,7 @@ export const StandaloneQuickCapture: React.FC = () => {
             </button>
 
             {isPriorityMenuOpen && (
-              <div className="absolute left-0 top-full mt-1.5 w-32 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-2xl p-1 z-50 space-y-0.5 max-h-44 overflow-y-auto custom-scrollbar animate-in fade-in zoom-in-95 duration-100">
+              <div className="absolute left-0 bottom-full mb-1.5 w-32 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-2xl p-1 z-50 space-y-0.5 max-h-44 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-bottom-2 duration-100">
                 {(['none', 'low', 'medium', 'high', 'critical'] as Priority[]).map((p) => {
                   const pCfg = PRIORITY_CONFIG[p];
                   return (
@@ -758,11 +758,11 @@ export const StandaloneQuickCapture: React.FC = () => {
               className="flex items-center gap-1.5 bg-[#f9fafb] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] px-2 py-1 hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-colors shrink-0 text-xs font-medium text-[#374151] dark:text-[#f4f4f5]"
             >
               {selectedMember ? (
-                <span className="w-4 h-4 rounded-full bg-[#f4f5f6] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#323238] flex items-center justify-center p-0.5 shrink-0 overflow-hidden">
+                <span className="w-4 h-4 rounded-full border border-[#e5e7eb] dark:border-[#323238] shrink-0 overflow-hidden">
                   <img
                     src={resolveAvatarUrl(selectedMember.avatarMascot || selectedMember.avatarUrl || selectedMember.avatarColor, selectedMember.name || selectedMember.id)}
                     alt={selectedMember.name}
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-cover"
                   />
                 </span>
               ) : (
@@ -773,7 +773,7 @@ export const StandaloneQuickCapture: React.FC = () => {
             </button>
 
             {isAssigneeMenuOpen && (
-              <div className="absolute left-0 top-full mt-1.5 w-44 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-2xl p-1 z-50 space-y-0.5 max-h-48 overflow-y-auto custom-scrollbar animate-in fade-in zoom-in-95 duration-100">
+              <div className="absolute left-0 bottom-full mb-1.5 w-44 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-2xl p-1 z-50 space-y-0.5 max-h-48 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-bottom-2 duration-100">
                 <button
                   type="button"
                   onClick={() => {
@@ -808,11 +808,11 @@ export const StandaloneQuickCapture: React.FC = () => {
                       }`}
                   >
                     <div className="flex items-center gap-2 truncate">
-                      <span className="w-4 h-4 rounded-full bg-[#f4f5f6] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#323238] flex items-center justify-center p-0.5 shrink-0 overflow-hidden">
+                      <span className="w-4 h-4 rounded-full border border-[#e5e7eb] dark:border-[#323238] shrink-0 overflow-hidden">
                         <img
                           src={resolveAvatarUrl(member.avatarMascot || member.avatarUrl || member.avatarColor, member.name || member.id)}
                           alt={member.name}
-                          className="w-full h-full object-contain"
+                          className="w-full h-full object-cover"
                         />
                       </span>
                       <span className="truncate">{member.name}</span>
@@ -843,7 +843,7 @@ export const StandaloneQuickCapture: React.FC = () => {
             </button>
 
             {isDueDateMenuOpen && (
-              <div className="absolute left-0 top-full mt-1.5 w-44 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-2xl p-1.5 z-50 space-y-1 animate-in fade-in zoom-in-95 duration-100">
+              <div className="absolute left-0 bottom-full mb-1.5 w-44 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-2xl p-1.5 z-50 space-y-1 animate-in fade-in slide-in-from-bottom-2 duration-100">
                 <div className="space-y-0.5">
                   <button
                     type="button"
@@ -932,7 +932,7 @@ export const StandaloneQuickCapture: React.FC = () => {
             </button>
 
             {isTypeMenuOpen && (
-              <div className="absolute right-0 top-full mt-1.5 w-36 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-2xl p-1 z-50 space-y-0.5 max-h-44 overflow-y-auto custom-scrollbar animate-in fade-in zoom-in-95 duration-100">
+              <div className="absolute right-0 bottom-full mb-1.5 w-36 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-2xl p-1 z-50 space-y-0.5 max-h-44 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-bottom-2 duration-100">
                 {(['task', 'bug', 'idea', 'improvement', 'research', 'question', 'note'] as ItemType[]).map((t) => {
                   const ItemIcon = TYPE_ICONS[t];
                   const cfg = ITEM_TYPE_CONFIG[t];

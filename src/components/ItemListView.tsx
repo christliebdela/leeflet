@@ -487,12 +487,12 @@ export const ItemListView: React.FC = () => {
                     return (
                       <span
                         title={assignedMember?.name || 'Assigned'}
-                        className="w-4 h-4 rounded-full bg-[#f4f5f6] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#323238] flex items-center justify-center p-0.5 shrink-0 overflow-hidden shadow-2xs"
+                        className="w-4 h-4 rounded-full border border-[#e5e7eb] dark:border-[#323238] shrink-0 overflow-hidden shadow-2xs"
                       >
                         <img
                           src={resolveAvatarUrl(assignedMember?.avatarMascot || assignedMember?.avatarUrl || assignedMember?.avatarColor, assignedMember?.name || item.assigneeId)}
                           alt={assignedMember?.name || 'Assigned'}
-                          className="w-full h-full object-contain"
+                          className="w-full h-full object-cover"
                         />
                       </span>
                     );

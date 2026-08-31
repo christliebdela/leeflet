@@ -23,19 +23,12 @@ export const getMemberColor = (id: string): string => {
 
 export const getStoredTeamMembers = (): TeamMember[] => {
   if (typeof window === 'undefined') return [];
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
-      }
-    }
-  } catch {}
 
-  // Fallback / Initial: current profile or workspace creator
+  // Read current profile data
   let profileName = 'Workspace Owner';
   let profileEmail = '';
+  let profileMascot = '';
+  let profileAvatarUrl = '';
   try {
     const pRaw =
       localStorage.getItem('leeflet_user_profile_data') ||
@@ -44,9 +37,37 @@ export const getStoredTeamMembers = (): TeamMember[] => {
       const p = JSON.parse(pRaw);
       if (p.fullName) profileName = p.fullName;
       if (p.email) profileEmail = p.email;
+      if (p.avatarMascot) profileMascot = p.avatarMascot;
+      if (p.avatarUrl) profileAvatarUrl = p.avatarUrl;
     }
   } catch {}
 
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // Deduplicate by id, keep unique entries only
+        const seen = new Set<string>();
+        const unique = parsed.filter((m: TeamMember) => {
+          if (seen.has(m.id)) return false;
+          seen.add(m.id);
+          return true;
+        });
+        // Sync owner entry with latest profile data
+        const ownerEntry = unique.find((m: TeamMember) => m.role === 'Owner' || m.id === 'owner_1');
+        if (ownerEntry) {
+          if (profileName) ownerEntry.name = profileName;
+          if (profileEmail) ownerEntry.email = profileEmail;
+          if (profileMascot) ownerEntry.avatarMascot = profileMascot;
+          if (profileAvatarUrl) ownerEntry.avatarUrl = profileAvatarUrl;
+        }
+        return unique;
+      }
+    }
+  } catch {}
+
+  // Fallback / Initial: current profile or workspace creator
   const initial: TeamMember[] = [
     {
       id: 'owner_1',
@@ -56,6 +77,8 @@ export const getStoredTeamMembers = (): TeamMember[] => {
       status: 'active',
       joinedAt: 'Workspace Creator',
       avatarColor: 'bg-violet-600 dark:bg-violet-500',
+      avatarMascot: profileMascot || undefined,
+      avatarUrl: profileAvatarUrl || undefined,
     },
   ];
   return initial;

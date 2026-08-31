@@ -75,19 +75,20 @@ const DEFAULT_NOTIFS: NotificationPreferences = {
   weeklyDigest: false,
 };
 
-interface StatusPreset {
-  icon: StatusIconType;
-  label: string;
-  text: string;
-}
-
-const STATUS_PRESETS: StatusPreset[] = [
-  { icon: 'zap', label: 'In the zone', text: 'In the zone' },
-  { icon: 'message', label: 'In a meeting', text: 'In a meeting' },
-  { icon: 'coffee', label: 'Coffee break', text: 'Coffee break' },
-  { icon: 'rocket', label: 'Shipping', text: 'Shipping features' },
-  { icon: 'compass', label: 'Away', text: 'Away from keyboard' },
-];
+// interface StatusPreset {
+//   icon: StatusIconType;
+//   label: string;
+//   text: string;
+// }
+//
+// STATUS_PRESETS — kept for when Work Status section is re-enabled
+// const STATUS_PRESETS: StatusPreset[] = [
+//   { icon: 'zap', label: 'In the zone', text: 'In the zone' },
+//   { icon: 'message', label: 'In a meeting', text: 'In a meeting' },
+//   { icon: 'coffee', label: 'Coffee break', text: 'Coffee break' },
+//   { icon: 'rocket', label: 'Shipping', text: 'Shipping features' },
+//   { icon: 'compass', label: 'Away', text: 'Away from keyboard' },
+// ];
 
 interface ToggleSwitchProps {
   checked: boolean;
@@ -161,30 +162,55 @@ export const ProfileView: React.FC = () => {
   // 2FA Mock State
   const [is2FAEnabled, setIs2FAEnabled] = useState(false);
 
-  const [selectedMascotCategory, setSelectedMascotCategory] = useState<'All' | 'Robots' | 'Shapes' | 'Clay' | 'Critters'>('All');
+  const [selectedMascotCategory, setSelectedMascotCategory] = useState<'All' | 'Robots' | 'Clay' | 'Critters' | 'Fun Emoji'>('All');
   const [customSeedInput, setCustomSeedInput] = useState('');
+
+  const handleSelectAvatar = (mascotId: string, customUrl?: string, feedbackName?: string) => {
+    const activeUrl = customUrl || resolveAvatarUrl(mascotId, profile.fullName || 'owner');
+    const updated: ProfileData = {
+      ...profile,
+      avatarMascot: mascotId,
+      avatarUrl: activeUrl,
+    };
+    setProfile(updated);
+    setInitialProfile((prev) => ({
+      ...prev,
+      avatarMascot: mascotId,
+      avatarUrl: activeUrl,
+    }));
+
+    try {
+      localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(updated));
+
+      // Sync with team members store
+      const members = getStoredTeamMembers();
+      if (members.length > 0) {
+        members[0].avatarMascot = mascotId;
+        members[0].avatarUrl = activeUrl;
+        saveStoredTeamMembers(members);
+      }
+
+      // Notify Sidebar and all components instantly
+      window.dispatchEvent(new CustomEvent('leeflet-profile-updated', { detail: updated }));
+      if (feedbackName) {
+        toast.success(`Avatar updated: ${feedbackName}`);
+      }
+    } catch {
+      toast.error('Failed to autosave avatar');
+    }
+  };
 
   const handleRandomizeMascot = () => {
     const randomPreset = MASCOT_PRESETS[Math.floor(Math.random() * MASCOT_PRESETS.length)];
     const randomSeed = `${randomPreset.seed}-${Math.floor(Math.random() * 1000)}`;
     const url = getDiceBearSvgUrl(randomPreset.style, randomSeed);
-    setProfile({
-      ...profile,
-      avatarMascot: randomPreset.id,
-      avatarUrl: url,
-    });
-    toast.success(`Selected mascot: ${randomPreset.name}`);
+    handleSelectAvatar(randomPreset.id, url, randomPreset.name);
   };
 
   const handleApplyCustomSeed = (seed: string) => {
     if (!seed.trim()) return;
     const url = getDiceBearSvgUrl('bottts', seed.trim());
-    setProfile({
-      ...profile,
-      avatarMascot: `custom:${seed.trim()}`,
-      avatarUrl: url,
-    });
-    toast.success(`Generated mascot for: ${seed.trim()}`);
+    handleSelectAvatar(`custom:${seed.trim()}`, url, seed.trim());
   };
 
   // Has changes check (disables save button when pristine)
@@ -223,6 +249,7 @@ export const ProfileView: React.FC = () => {
         saveStoredTeamMembers(members);
       }
 
+      window.dispatchEvent(new CustomEvent('leeflet-profile-updated', { detail: profile }));
       setInitialProfile(profile);
       setSavedSuccess(true);
       toast.success('Profile updated');
@@ -308,11 +335,11 @@ export const ProfileView: React.FC = () => {
         {/* Profile Header (Linear Style) */}
         <div className="flex items-center justify-between gap-4 pb-5 border-b border-[#e5e7eb] dark:border-[#27272a]">
           <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-xl bg-[#f4f5f6] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#323238] flex items-center justify-center p-1 shrink-0 shadow-2xs overflow-hidden">
+            <div className="w-12 h-12 rounded-xl border border-[#e5e7eb] dark:border-[#323238] flex items-center justify-center shrink-0 shadow-2xs overflow-hidden">
               <img
                 src={resolveAvatarUrl(profile.avatarMascot || profile.avatarUrl || profile.avatarColor, profile.fullName || profile.username || 'owner')}
                 alt={profile.fullName || 'User'}
-                className="w-full h-full object-contain"
+                className="w-full h-full object-cover"
               />
             </div>
             <div>
@@ -461,7 +488,7 @@ export const ProfileView: React.FC = () => {
 
               {/* Category Segmented Tabs */}
               <div className="flex items-center gap-1 overflow-x-auto pb-1 custom-scrollbar">
-                {(['All', 'Robots', 'Shapes', 'Clay', 'Critters'] as const).map((cat) => (
+                {(['All', 'Robots', 'Clay', 'Critters', 'Fun Emoji'] as const).map((cat) => (
                   <button
                     key={cat}
                     type="button"
@@ -486,19 +513,21 @@ export const ProfileView: React.FC = () => {
                     <button
                       key={m.id}
                       type="button"
-                      onClick={() => setProfile({ ...profile, avatarMascot: m.id, avatarUrl: url })}
+                      onClick={() => handleSelectAvatar(m.id, url, m.name)}
                       title={m.name}
-                      className={`group relative flex flex-col items-center p-2 rounded-[8px] border transition-all cursor-pointer ${
+                      className={`group relative flex flex-col items-center p-1.5 rounded-[8px] border transition-all cursor-pointer ${
                         isSelected
                           ? 'border-[#9ca3af] dark:border-[#52525b] bg-[#f4f5f6] dark:bg-[#27272a] shadow-2xs'
                           : 'border-[#e5e7eb] dark:border-[#27272a] hover:border-[#d1d5db] dark:hover:border-[#3f3f46] bg-[#f9fafb] dark:bg-[#202024]'
                       }`}
                     >
-                      <img
-                        src={url}
-                        alt={m.name}
-                        className="w-8 h-8 object-contain transition-transform group-hover:scale-105"
-                      />
+                      <div className="w-10 h-10 rounded-[6px] overflow-hidden shrink-0">
+                        <img
+                          src={url}
+                          alt={m.name}
+                          className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                        />
+                      </div>
                       <span className="text-[10px] text-[#6b7280] dark:text-[#a1a1aa] mt-1 truncate max-w-full font-medium">
                         {m.name}
                       </span>
@@ -538,16 +567,14 @@ export const ProfileView: React.FC = () => {
         {/* Team & Cloud Database Identity */}
         <div className="space-y-1.5">
           <div className="text-[11px] font-semibold uppercase tracking-wider text-[#9ca3af] dark:text-[#71717a] px-1">
-            Team & Database Identity
+            Team &amp; Database Identity
           </div>
           <div className="border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] bg-white dark:bg-[#18181b] p-4 text-xs space-y-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-[6px] bg-[#f4f5f6] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#323238] flex items-center justify-center text-[#111827] dark:text-white shrink-0">
-                  <Database className="w-4 h-4" />
-                </div>
+              <div className="flex items-center gap-2.5 min-w-0">
+                <Database className="w-3.5 h-3.5 text-[#9ca3af] shrink-0" />
                 <div>
-                  <div className="font-semibold text-xs text-[#111827] dark:text-white">
+                  <div className="font-semibold text-xs text-[#111827] dark:text-[#f4f4f5]">
                     {workspace?.name || 'Workspace'}
                   </div>
                   <div className="text-[11px] text-[#6b7280] dark:text-[#a1a1aa] font-mono">
@@ -556,7 +583,7 @@ export const ProfileView: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0">
                 {isCloudSync ? (
                   <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -586,8 +613,8 @@ export const ProfileView: React.FC = () => {
           </div>
         </div>
 
-        {/* Work Status Section */}
-        <div className="space-y-1.5">
+        {/* Work Status Section — hidden for now */}
+        {/* <div className="space-y-1.5">
           <div className="text-[11px] font-semibold uppercase tracking-wider text-[#9ca3af] dark:text-[#71717a] px-1">
             Work Status
           </div>
@@ -604,8 +631,6 @@ export const ProfileView: React.FC = () => {
                 placeholder="What are you currently focusing on?"
               />
             </div>
-
-            {/* Status presets */}
             <div className="flex flex-wrap gap-1.5">
               {STATUS_PRESETS.map((preset, idx) => {
                 const isSelected = profile.statusIcon === preset.icon && profile.statusText === preset.text;
@@ -613,13 +638,7 @@ export const ProfileView: React.FC = () => {
                   <button
                     key={idx}
                     type="button"
-                    onClick={() =>
-                      setProfile({
-                        ...profile,
-                        statusIcon: preset.icon,
-                        statusText: preset.text,
-                      })
-                    }
+                    onClick={() => setProfile({ ...profile, statusIcon: preset.icon, statusText: preset.text })}
                     className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[5px] border text-[11px] transition-colors ${
                       isSelected
                         ? 'border-[#9ca3af] dark:border-[#52525b] bg-[#e5e7eb]/70 dark:bg-[#27272a] text-[#111827] dark:text-[#f4f4f5] font-medium'
@@ -633,7 +652,7 @@ export const ProfileView: React.FC = () => {
               })}
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Security & Authentication Section */}
         <div className="space-y-1.5">

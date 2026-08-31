@@ -1021,7 +1021,7 @@ export const ItemDetailPane: React.FC = () => {
               >
                 <div className="flex items-center gap-1.5 truncate">
                   {assigneeId ? (
-                    <span className="w-3.5 h-3.5 rounded-full bg-[#f4f5f6] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#323238] flex items-center justify-center p-0.5 shrink-0 overflow-hidden">
+                    <span className="w-3.5 h-3.5 rounded-full border border-[#e5e7eb] dark:border-[#323238] shrink-0 overflow-hidden">
                       <img
                         src={resolveAvatarUrl(
                           teamMembers.find((m) => m.id === assigneeId)?.avatarMascot ||
@@ -1030,7 +1030,7 @@ export const ItemDetailPane: React.FC = () => {
                           teamMembers.find((m) => m.id === assigneeId)?.name || assigneeId
                         )}
                         alt={teamMembers.find((m) => m.id === assigneeId)?.name || 'User'}
-                        className="w-full h-full object-contain"
+                        className="w-full h-full object-cover"
                       />
                     </span>
                   ) : (
@@ -1081,11 +1081,11 @@ export const ItemDetailPane: React.FC = () => {
                       }`}
                     >
                       <div className="flex items-center gap-2 truncate">
-                        <span className="w-3.5 h-3.5 rounded-full bg-[#f4f5f6] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#323238] flex items-center justify-center p-0.5 shrink-0 overflow-hidden">
+                        <span className="w-3.5 h-3.5 rounded-full border border-[#e5e7eb] dark:border-[#323238] shrink-0 overflow-hidden">
                           <img
                             src={resolveAvatarUrl(member.avatarMascot || member.avatarUrl || member.avatarColor, member.name || member.id)}
                             alt={member.name}
-                            className="w-full h-full object-contain"
+                            className="w-full h-full object-cover"
                           />
                         </span>
                         <span className="truncate">{member.name}</span>

@@ -58,20 +58,46 @@ export const Sidebar: React.FC = () => {
     initialize,
   } = useLeafStore();
 
-  // User profile & mascot avatar
-  let userProfileName = 'Profile';
-  let userAvatarUrl = '';
-  try {
-    const pRaw = localStorage.getItem('leeflet_user_profile_data') || localStorage.getItem('leaf_user_profile_data');
-    if (pRaw) {
-      const p = JSON.parse(pRaw);
-      if (p.fullName) userProfileName = p.fullName;
-      userAvatarUrl = resolveAvatarUrl(p.avatarMascot || p.avatarUrl || p.avatarColor, p.fullName || 'user');
-    }
-  } catch {}
-  if (!userAvatarUrl) {
-    userAvatarUrl = resolveAvatarUrl(undefined, 'owner');
-  }
+  // User profile & mascot avatar state with real-time instant sync
+  const [profileState, setProfileState] = useState(() => {
+    let name = 'Profile';
+    let avatar = '';
+    try {
+      const pRaw = localStorage.getItem('leeflet_user_profile_data') || localStorage.getItem('leaf_user_profile_data');
+      if (pRaw) {
+        const p = JSON.parse(pRaw);
+        if (p.fullName) name = p.fullName;
+        avatar = resolveAvatarUrl(p.avatarMascot || p.avatarUrl || p.avatarColor, p.fullName || 'user');
+      }
+    } catch {}
+    if (!avatar) avatar = resolveAvatarUrl(undefined, 'owner');
+    return { name, avatar };
+  });
+
+  useEffect(() => {
+    const handleProfileUpdate = (e?: Event) => {
+      let name = 'Profile';
+      let avatar = '';
+      try {
+        const customEvent = e as CustomEvent;
+        const p = customEvent?.detail || JSON.parse(localStorage.getItem('leeflet_user_profile_data') || localStorage.getItem('leaf_user_profile_data') || '{}');
+        if (p?.fullName) name = p.fullName;
+        avatar = resolveAvatarUrl(p?.avatarMascot || p?.avatarUrl || p?.avatarColor, p?.fullName || 'user');
+      } catch {}
+      if (!avatar) avatar = resolveAvatarUrl(undefined, 'owner');
+      setProfileState({ name, avatar });
+    };
+
+    window.addEventListener('leeflet-profile-updated', handleProfileUpdate);
+    window.addEventListener('storage', handleProfileUpdate);
+    return () => {
+      window.removeEventListener('leeflet-profile-updated', handleProfileUpdate);
+      window.removeEventListener('storage', handleProfileUpdate);
+    };
+  }, []);
+
+  const userProfileName = profileState.name;
+  const userAvatarUrl = profileState.avatar;
 
   const [isProjectsCollapsed, setIsProjectsCollapsed] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
@@ -424,11 +450,11 @@ export const Sidebar: React.FC = () => {
                     : 'hover:bg-[#ebecee] dark:hover:bg-[#1f1f23]'
                 }`}
               >
-                <div className="w-6 h-6 rounded-full bg-[#f4f5f6] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#323238] flex items-center justify-center p-0.5 overflow-hidden">
+                <div className="w-6 h-6 rounded-full border border-[#e5e7eb] dark:border-[#323238] overflow-hidden shrink-0">
                   <img
                     src={userAvatarUrl}
                     alt="Profile"
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-cover"
                   />
                 </div>
               </button>
@@ -914,11 +940,11 @@ export const Sidebar: React.FC = () => {
             }`}
           >
             <div className="flex items-center gap-2 min-w-0">
-              <div className="w-5 h-5 rounded-full bg-[#f4f5f6] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#323238] flex items-center justify-center p-0.5 shrink-0 overflow-hidden">
+              <div className="w-5 h-5 rounded-full border border-[#e5e7eb] dark:border-[#323238] overflow-hidden shrink-0">
                 <img
                   src={userAvatarUrl}
                   alt="Profile"
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-cover"
                 />
               </div>
               <span className="truncate">{userProfileName}</span>
