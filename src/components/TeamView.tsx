@@ -122,8 +122,15 @@ export const TeamView: React.FC = () => {
     }
 
     // Check if email already exists in workspace
-    if (members.some((m) => m.email.toLowerCase() === email.toLowerCase())) {
-      toast.error('A member or invitation with this email already exists in this workspace');
+    const existingMember = members.find(
+      (m) => m.email && m.email.trim().toLowerCase() === email.toLowerCase()
+    );
+    if (existingMember) {
+      if (existingMember.status === 'invited') {
+        toast.error(`An invitation is already pending for ${email}`);
+      } else {
+        toast.error(`${email} is already an active member of this workspace (${existingMember.role})`);
+      }
       return;
     }
 
