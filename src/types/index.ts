@@ -119,7 +119,7 @@ export type SidebarCollapseMode = 'icons' | 'hidden';
 
 export type ColorThemeId =
   | 'default'
-  | 'deep-black'
+  | 'charcoal'
   | 'claude'
   | 'kanagawa'
   | 'kanagawa-dragon'
@@ -162,6 +162,19 @@ export const THEME_PRESETS: ThemePreset[] = [
     cardElevatedHex: '#121215',
     borderHex: '#18181b',
     previewPills: ['#ffffff', '#a1a1aa', '#18181b'],
+  },
+  {
+    id: 'charcoal',
+    name: 'Charcoal',
+    dotColor: '#a1a1aa',
+    accentColor: '#10b981',
+    description: 'Balanced dark charcoal and zinc with soft contrast.',
+    bgHex: '#0f0f11',
+    sidebarHex: '#121214',
+    cardHex: '#18181b',
+    cardElevatedHex: '#202024',
+    borderHex: '#27272a',
+    previewPills: ['#71717a', '#a1a1aa', '#27272a'],
   },
   {
     id: 'claude',

@@ -96,10 +96,11 @@ const getInitialTheme = (): 'light' | 'dark' => {
 
 const getInitialColorTheme = (): ColorThemeId => {
   try {
-    const saved = localStorage.getItem('leaf_color_theme') as ColorThemeId | null;
-    if (saved === 'deep-black') return 'default';
+    const rawSaved = localStorage.getItem('leaf_color_theme');
+    if (rawSaved === 'deep-black') return 'default';
+    const saved = rawSaved as ColorThemeId | null;
     const validIds: ColorThemeId[] = [
-      'default', 'claude', 'kanagawa', 'kanagawa-dragon', 'tokyo-night',
+      'default', 'charcoal', 'claude', 'kanagawa', 'kanagawa-dragon', 'tokyo-night',
       'catppuccin', 'rose-pine', 'everforest', 'nord', 'gruvbox', 'dracula',
       'solarized', 'tide', 'sage', 'caffeine',
     ];

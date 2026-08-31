@@ -168,7 +168,17 @@ html.dark[data-color-theme="deep-black"] {
   --theme-accent: #ffffff;
 }
 
-/* 2. Claude (Warm Clay & Paper) */
+/* 2. Charcoal (Zinc & Charcoal) */
+html.dark[data-color-theme="charcoal"] {
+  --theme-bg-app: #0f0f11;
+  --theme-bg-sidebar: #121214;
+  --theme-bg-card: #18181b;
+  --theme-bg-card-elevated: #202024;
+  --theme-border: #27272a;
+  --theme-accent: #10b981;
+}
+
+/* 3. Claude (Warm Clay & Paper) */
 html.dark[data-color-theme="claude"] {
   --theme-bg-app: #181614;
   --theme-bg-sidebar: #13110f;

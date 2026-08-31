@@ -123,8 +123,6 @@ export const SettingsView: React.FC = () => {
     setTheme,
     colorTheme,
     setColorTheme,
-    sidebarCollapseMode,
-    setSidebarCollapseMode,
     standbyJokesEnabled,
     setStandbyJokesEnabled,
     viewMode,
@@ -884,14 +882,12 @@ export const SettingsView: React.FC = () => {
               </div>
             </div>
 
-            {/* 3. Layout & Sidebar Preferences */}
-            <div className="space-y-1.5">
+            {/* 3. Layout & Sidebar Preferences (Commented out for now - Icons Only is default) */}
+            {/* <div className="space-y-1.5">
               <div className="text-[11px] font-semibold uppercase tracking-wider text-[#9ca3af] dark:text-[#71717a] px-1">
                 Layout
               </div>
               <div className="border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] bg-white dark:bg-[#18181b] divide-y divide-[#f3f4f6] dark:divide-[#27272a] overflow-hidden text-xs">
-
-                {/* Sidebar Collapsed Style */}
                 <div className="flex items-center justify-between px-4 py-3 gap-4">
                   <div>
                     <div className="text-xs font-medium text-[#111827] dark:text-[#f4f4f5]">
@@ -901,34 +897,17 @@ export const SettingsView: React.FC = () => {
                       Show quick navigation icon rail or collapse completely into full-width mode
                     </div>
                   </div>
-
                   <div className="flex items-center p-0.5 rounded-[6px] border border-[#e5e7eb] dark:border-[#323238] bg-[#f9fafb] dark:bg-[#202024]">
-                    <button
-                      type="button"
-                      onClick={() => setSidebarCollapseMode('icons')}
-                      className={`px-2.5 py-1 text-xs font-medium rounded-[5px] transition-colors cursor-pointer ${
-                        sidebarCollapseMode === 'icons'
-                          ? 'bg-white dark:bg-[#27272a] text-[#111827] dark:text-white shadow-2xs font-semibold'
-                          : 'text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white'
-                      }`}
-                    >
+                    <button type="button" className="px-2.5 py-1 text-xs font-medium rounded-[5px] bg-white dark:bg-[#27272a] text-[#111827] dark:text-white shadow-2xs font-semibold">
                       Icons Only (Default)
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => setSidebarCollapseMode('hidden')}
-                      className={`px-2.5 py-1 text-xs font-medium rounded-[5px] transition-colors cursor-pointer ${
-                        sidebarCollapseMode === 'hidden'
-                          ? 'bg-white dark:bg-[#27272a] text-[#111827] dark:text-white shadow-2xs font-semibold'
-                          : 'text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white'
-                      }`}
-                    >
+                    <button type="button" className="px-2.5 py-1 text-xs font-medium rounded-[5px] text-[#6b7280] dark:text-[#a1a1aa]">
                       Hidden
                     </button>
                   </div>
                 </div>
               </div>
-            </div>
+            </div> */}
 
             {/* 2. Task & Workflow Defaults (Linear-Grade Dropdowns) */}
             <div className="space-y-1.5">
