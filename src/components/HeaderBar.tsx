@@ -7,6 +7,7 @@ import {
   SquarePen,
   Check,
   RotateCcw,
+  RefreshCw,
   CheckSquare,
   Bug,
   Lightbulb,
@@ -19,6 +20,7 @@ import { ItemType, Priority, Project, Item } from '../types';
 import { ITEM_TYPE_CONFIG, PRIORITY_CONFIG } from '../utils/format';
 import { WindowControls } from './WindowControls';
 import { SearchInput } from './ui/SearchInput';
+import { toast } from '../store/useToastStore';
 
 const TYPE_ICONS: Record<ItemType, React.FC<{ className?: string }>> = {
   task: CheckSquare,
@@ -32,10 +34,14 @@ const TYPE_ICONS: Record<ItemType, React.FC<{ className?: string }>> = {
 
 export const HeaderBar: React.FC = () => {
   const {
+    workspace,
     items,
     projects,
     viewMode,
     filterOptions,
+    loadItems,
+    loadProjects,
+    toggleSidebar,
     setSearchQuery,
     setFilterOptions,
     setProjectModalOpen,
@@ -45,9 +51,44 @@ export const HeaderBar: React.FC = () => {
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
   const [activeFilterTab, setActiveFilterTab] = useState<'type' | 'priority' | 'project'>('type');
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const filterDropdownRef = useRef<HTMLDivElement>(null);
   const sortDropdownRef = useRef<HTMLDivElement>(null);
+
+  const supabaseUrl = workspace ? localStorage.getItem(`leeflet_supabase_url_${workspace.id}`) : null;
+  const isCloudSync = workspace ? localStorage.getItem(`leeflet_sync_mode_${workspace.id}`) === 'cloud' && Boolean(supabaseUrl) : false;
+
+  const handleRefresh = async () => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+    try {
+      await Promise.all([loadItems(), loadProjects()]);
+      toast.success(isCloudSync ? 'Synced with live database' : 'Workspace refreshed');
+    } catch {
+      toast.error('Failed to refresh data');
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 450);
+    }
+  };
+
+  // Keyboard shortcuts: Ctrl + R / F5 refresh, Ctrl + B toggle sidebar
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey && e.key.toLowerCase() === 'r') || e.key === 'F5') {
+        e.preventDefault();
+        handleRefresh();
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'b' || e.key === 'B')) {
+        e.preventDefault();
+        toggleSidebar();
+        return;
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [workspace, isCloudSync, isRefreshing, toggleSidebar]);
 
   // Click outside to auto-close dropdowns
   useEffect(() => {
@@ -462,6 +503,22 @@ export const HeaderBar: React.FC = () => {
         </div>
       </>
     )}
+
+        {/* Refresh / Sync Button */}
+        <button
+          type="button"
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          title={isCloudSync ? 'Sync with live database (Ctrl + R)' : 'Refresh workspace data (Ctrl + R)'}
+          className={`flex items-center justify-center w-7 h-7 rounded-[6px] border border-[#e5e7eb] dark:border-[#27272a] bg-[#f9fafb] dark:bg-[#18181b] text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white hover:bg-white dark:hover:bg-[#202024] hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-all shrink-0 active:scale-95 relative cursor-pointer ${
+            isRefreshing ? 'opacity-80' : ''
+          }`}
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-[#111827] dark:text-white' : ''}`} />
+          {isCloudSync && (
+            <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-[#18181b]" />
+          )}
+        </button>
 
         {/* + New Button */}
         <button

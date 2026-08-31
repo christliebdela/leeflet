@@ -20,10 +20,14 @@ import {
   X,
   RefreshCw,
   Lock,
+  Database,
+  Palette,
+  ArrowRight,
 } from 'lucide-react';
 import { useLeafStore } from '../store/useLeafStore';
 import { toast } from '../store/useToastStore';
 import { dbService } from '../services/db';
+import { getStoredTeamMembers, saveStoredTeamMembers } from '../utils/team';
 
 export type StatusIconType = 'zap' | 'message' | 'coffee' | 'rocket' | 'compass';
 
@@ -32,6 +36,7 @@ interface ProfileData {
   username: string;
   email: string;
   title: string;
+  avatarColor?: string;
   statusIcon: StatusIconType;
   statusText: string;
 }
@@ -50,6 +55,7 @@ const DEFAULT_PROFILE: ProfileData = {
   username: 'christlieb',
   email: 'christlieb@leeflet.local',
   title: 'Workspace Owner & Lead Architect',
+  avatarColor: 'bg-violet-600 dark:bg-violet-500',
   statusIcon: 'zap',
   statusText: 'In the zone',
 };
@@ -72,6 +78,15 @@ const STATUS_PRESETS: StatusPreset[] = [
   { icon: 'coffee', label: 'Coffee break', text: 'Coffee break' },
   { icon: 'rocket', label: 'Shipping', text: 'Shipping features' },
   { icon: 'compass', label: 'Away', text: 'Away from keyboard' },
+];
+
+const AVATAR_COLORS = [
+  { label: 'Violet', class: 'bg-violet-600 dark:bg-violet-500' },
+  { label: 'Emerald', class: 'bg-emerald-600 dark:bg-emerald-500' },
+  { label: 'Blue', class: 'bg-blue-600 dark:bg-blue-500' },
+  { label: 'Amber', class: 'bg-amber-600 dark:bg-amber-500' },
+  { label: 'Rose', class: 'bg-rose-600 dark:bg-rose-500' },
+  { label: 'Zinc', class: 'bg-zinc-800 dark:bg-zinc-700' },
 ];
 
 interface ToggleSwitchProps {
@@ -104,7 +119,9 @@ const ToggleSwitch: React.FC<ToggleSwitchProps> = ({ checked, onChange, ariaLabe
 );
 
 export const ProfileView: React.FC = () => {
-  const { workspace, items } = useLeafStore();
+  const { workspace, items, setViewMode } = useLeafStore();
+  const supabaseUrl = workspace ? localStorage.getItem(`leeflet_supabase_url_${workspace.id}`) : null;
+  const isCloudSync = workspace ? localStorage.getItem(`leeflet_sync_mode_${workspace.id}`) === 'cloud' && Boolean(supabaseUrl) : false;
 
   const [initialProfile, setInitialProfile] = useState<ProfileData>(() => {
     try {
@@ -166,6 +183,18 @@ export const ProfileView: React.FC = () => {
 
     try {
       localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
+
+      // Sync with team members store
+      const members = getStoredTeamMembers();
+      if (members.length > 0) {
+        members[0].name = profile.fullName;
+        members[0].email = profile.email;
+        if (profile.avatarColor) {
+          members[0].avatarColor = profile.avatarColor;
+        }
+        saveStoredTeamMembers(members);
+      }
+
       setInitialProfile(profile);
       setSavedSuccess(true);
       toast.success('Profile updated');
@@ -258,7 +287,7 @@ export const ProfileView: React.FC = () => {
         {/* Profile Header (Linear Style) */}
         <div className="flex items-center justify-between gap-4 pb-5 border-b border-[#e5e7eb] dark:border-[#27272a]">
           <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-xl bg-[#f4f5f6] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#323238] flex items-center justify-center font-bold text-sm text-[#111827] dark:text-[#f4f4f5] shrink-0 shadow-2xs">
+            <div className={`w-12 h-12 rounded-xl text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-2xs transition-colors ${profile.avatarColor || 'bg-violet-600 dark:bg-violet-500'}`}>
               {getInitials(profile.fullName)}
             </div>
             <div>
@@ -375,6 +404,84 @@ export const ProfileView: React.FC = () => {
                 placeholder="e.g. Frontend Engineer"
               />
             </div>
+
+            {/* Avatar Color */}
+            <div className="flex items-center justify-between px-4 py-3 gap-4">
+              <label className="text-[#6b7280] dark:text-[#a1a1aa] font-medium shrink-0 w-32 flex items-center gap-1.5">
+                <Palette className="w-3.5 h-3.5" />
+                <span>Avatar Color</span>
+              </label>
+              <div className="flex items-center gap-2">
+                {AVATAR_COLORS.map((c) => (
+                  <button
+                    key={c.class}
+                    type="button"
+                    title={c.label}
+                    onClick={() => setProfile({ ...profile, avatarColor: c.class })}
+                    className={`w-5 h-5 rounded-full ${c.class} flex items-center justify-center transition-all cursor-pointer ${
+                      (profile.avatarColor || 'bg-violet-600 dark:bg-violet-500') === c.class
+                        ? 'ring-2 ring-offset-2 ring-[#111827] dark:ring-white scale-110'
+                        : 'opacity-70 hover:opacity-100 hover:scale-105'
+                    }`}
+                  >
+                    {(profile.avatarColor || 'bg-violet-600 dark:bg-violet-500') === c.class && (
+                      <Check className="w-3 h-3 text-white stroke-[3]" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Team & Cloud Database Identity */}
+        <div className="space-y-1.5">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-[#9ca3af] dark:text-[#71717a] px-1">
+            Team & Database Identity
+          </div>
+          <div className="border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] bg-white dark:bg-[#18181b] p-4 text-xs space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-[6px] bg-[#f4f5f6] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#323238] flex items-center justify-center text-[#111827] dark:text-white shrink-0">
+                  <Database className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="font-semibold text-xs text-[#111827] dark:text-white">
+                    {workspace?.name || 'Workspace'}
+                  </div>
+                  <div className="text-[11px] text-[#6b7280] dark:text-[#a1a1aa] font-mono">
+                    {supabaseUrl ? supabaseUrl.replace('https://', '') : 'Local SQLite / IndexedDB'}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {isCloudSync ? (
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>Realtime Connected</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-[#f4f5f6] dark:bg-[#202024] text-[#6b7280] dark:text-[#a1a1aa] border border-[#e5e7eb] dark:border-[#27272a]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#9ca3af]" />
+                    <span>Local Mode</span>
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => setViewMode({ type: 'settings' })}
+                  className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-[5px] border border-[#e5e7eb] dark:border-[#27272a] bg-[#f9fafb] dark:bg-[#202024] text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] transition-colors"
+                >
+                  <span>Sync Settings</span>
+                  <ArrowRight className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-[#6b7280] dark:text-[#a1a1aa] leading-relaxed">
+              Your profile, assigned tasks, and avatar colors automatically replicate across your teammates' workspaces when connected to a team database.
+            </p>
           </div>
         </div>
 

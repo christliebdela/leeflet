@@ -48,11 +48,13 @@ export interface Item {
   isPinned?: boolean;
 }
 
+export type RoleId = 'Admin' | 'Developer' | 'Member' | 'Viewer' | 'Owner';
+
 export interface TeamMember {
   id: string;
   name: string;
   email: string;
-  role: string;
+  role: RoleId | string;
   status: 'active' | 'invited';
   joinedAt?: string;
   avatarColor?: string;
@@ -98,7 +100,7 @@ export type ViewMode =
   | { type: 'archived' }
   | { type: 'team' }
   | { type: 'profile' }
-  | { type: 'settings' };
+  | { type: 'settings'; tab?: 'preferences' | 'shortcuts' | 'sync' | 'data'; section?: string };
 
 export interface FilterOptions {
   searchQuery: string;
@@ -109,3 +111,73 @@ export interface FilterOptions {
   tags?: string[];
   sortBy?: 'manual' | 'updated_desc' | 'created_desc' | 'priority_desc' | 'title_asc' | 'project_asc';
 }
+
+export type SidebarCollapseMode = 'icons' | 'hidden';
+
+export type ColorThemeId =
+  | 'default'
+  | 'midnight-sage'
+  | 'abyssal-azure'
+  | 'warm-espresso'
+  | 'cyber-violet'
+  | 'nordic-frost';
+
+export interface ThemePreset {
+  id: ColorThemeId;
+  name: string;
+  dotColor: string;
+  accentColor: string;
+  description: string;
+  bgHex: string;
+}
+
+export const THEME_PRESETS: ThemePreset[] = [
+  {
+    id: 'default',
+    name: 'Default Dark',
+    dotColor: '#a1a1aa',
+    accentColor: '#10b981',
+    description: 'The original clean Charcoal & Zinc Leeflet dark mode',
+    bgHex: '#0f0f11',
+  },
+  {
+    id: 'midnight-sage',
+    name: 'Midnight Sage',
+    dotColor: '#10b981',
+    accentColor: '#34d399',
+    description: 'Deep botanical dark with organic emerald undertone',
+    bgHex: '#0b120f',
+  },
+  {
+    id: 'abyssal-azure',
+    name: 'Abyssal Azure',
+    dotColor: '#38bdf8',
+    accentColor: '#0284c7',
+    description: 'Deep oceanic navy with electric cyan glow',
+    bgHex: '#0a0e17',
+  },
+  {
+    id: 'warm-espresso',
+    name: 'Warm Espresso',
+    dotColor: '#f59e0b',
+    accentColor: '#d97706',
+    description: 'Cozy roasted cocoa with warm amber radiance',
+    bgHex: '#120f0d',
+  },
+  {
+    id: 'cyber-violet',
+    name: 'Cyber Violet',
+    dotColor: '#a855f7',
+    accentColor: '#9333ea',
+    description: 'Synthwave twilight noir with vivid violet ambiance',
+    bgHex: '#0e0b17',
+  },
+  {
+    id: 'nordic-frost',
+    name: 'Nordic Slate',
+    dotColor: '#60a5fa',
+    accentColor: '#3b82f6',
+    description: 'Crisp Scandinavian steel with icy blue clarity',
+    bgHex: '#0c1118',
+  },
+];

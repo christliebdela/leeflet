@@ -45,6 +45,78 @@ fn read_file_from_path(path: String) -> Result<String, String> {
     std::fs::read_to_string(&path).map_err(|e| e.to_string())
 }
 
+#[derive(serde::Deserialize)]
+pub struct SmtpConfig {
+    pub host: String,
+    pub port: u16,
+    pub encryption: String, // "tls", "ssl", or "none"
+    pub username: String,
+    pub password: String,
+    pub from_email: String,
+    pub from_name: Option<String>,
+}
+
+#[derive(serde::Deserialize)]
+pub struct EmailPayload {
+    pub to_email: String,
+    pub to_name: Option<String>,
+    pub subject: String,
+    pub html_body: String,
+}
+
+#[tauri::command]
+fn send_smtp_email(config: SmtpConfig, payload: EmailPayload) -> Result<(), String> {
+    use lettre::message::{header::ContentType, Message, SinglePart};
+    use lettre::transport::smtp::authentication::Credentials;
+    use lettre::{SmtpTransport, Transport};
+
+    let from_formatted = match &config.from_name {
+        Some(name) if !name.trim().is_empty() => format!("{} <{}>", name.trim(), config.from_email.trim()),
+        _ => config.from_email.trim().to_string(),
+    };
+
+    let to_formatted = match &payload.to_name {
+        Some(name) if !name.trim().is_empty() => format!("{} <{}>", name.trim(), payload.to_email.trim()),
+        _ => payload.to_email.trim().to_string(),
+    };
+
+    let email = Message::builder()
+        .from(from_formatted.parse().map_err(|e| format!("Invalid 'from' address ({}): {}", from_formatted, e))?)
+        .to(to_formatted.parse().map_err(|e| format!("Invalid 'to' address ({}): {}", to_formatted, e))?)
+        .subject(payload.subject)
+        .singlepart(
+            SinglePart::builder()
+                .header(ContentType::TEXT_HTML)
+                .body(payload.html_body),
+        )
+        .map_err(|e| format!("Failed to create email message: {}", e))?;
+
+    let creds = Credentials::new(config.username.trim().to_string(), config.password.trim().to_string());
+
+    let mailer = if config.port == 465 || config.encryption == "ssl" {
+        SmtpTransport::relay(config.host.trim())
+            .map_err(|e| format!("Could not connect to SMTP host {}: {}", config.host, e))?
+            .port(config.port)
+            .credentials(creds)
+            .build()
+    } else if config.encryption == "none" {
+        SmtpTransport::builder_dangerous(config.host.trim())
+            .port(config.port)
+            .credentials(creds)
+            .build()
+    } else {
+        // Standard TLS / STARTTLS (587, 2525)
+        SmtpTransport::starttls_relay(config.host.trim())
+            .map_err(|e| format!("Could not connect via STARTTLS to {}: {}", config.host, e))?
+            .port(config.port)
+            .credentials(creds)
+            .build()
+    };
+
+    mailer.send(&email).map_err(|e| format!("SMTP delivery failed: {}", e))?;
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -144,7 +216,8 @@ pub fn run() {
             get_default_workspace_path,
             open_in_file_manager,
             write_file_to_path,
-            read_file_from_path
+            read_file_from_path,
+            send_smtp_email
         ])
         .run(tauri::generate_context!())
         .expect("error while running leeflet application");

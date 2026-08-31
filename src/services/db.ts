@@ -399,13 +399,29 @@ export class DatabaseService {
 
   // --- Export & Backup ---
 
-  public async exportWorkspaceData(): Promise<string> {
-    const workspace = await this.getActiveWorkspace();
-    const projects = await this.getProjects();
-    const items = await this.getItems();
+  public async exportWorkspaceData(workspaceId?: string): Promise<string> {
+    const wsId = workspaceId || this.getActiveWorkspaceId();
+    let workspace: Workspace | null = null;
+    if (wsId) {
+      const raw = localStorage.getItem(`${STORAGE_KEY_PREFIX}${wsId}`);
+      if (raw) {
+        try { workspace = JSON.parse(raw); } catch {}
+      }
+    }
+    if (!workspace) {
+      workspace = await this.getActiveWorkspace();
+    }
+    if (!workspace) {
+      throw new Error('No active workspace found to export');
+    }
+    const projectsRaw = localStorage.getItem(`${STORAGE_KEY_PREFIX}${workspace.id}_projects`);
+    const itemsRaw = localStorage.getItem(`${STORAGE_KEY_PREFIX}${workspace.id}_items`);
+    const projects = projectsRaw ? JSON.parse(projectsRaw) : [];
+    const items = itemsRaw ? JSON.parse(itemsRaw) : [];
 
     const bundle = {
       version: '1.0.0',
+      scope: 'single_workspace',
       exportedAt: new Date().toISOString(),
       workspace,
       projects,
@@ -415,8 +431,53 @@ export class DatabaseService {
     return JSON.stringify(bundle, null, 2);
   }
 
+  public async exportAllWorkspacesData(): Promise<string> {
+    const workspaces = await this.getAllWorkspaces();
+    const workspaceBundles = workspaces.map((ws) => {
+      const projectsRaw = localStorage.getItem(`${STORAGE_KEY_PREFIX}${ws.id}_projects`);
+      const itemsRaw = localStorage.getItem(`${STORAGE_KEY_PREFIX}${ws.id}_items`);
+      return {
+        workspace: ws,
+        projects: projectsRaw ? JSON.parse(projectsRaw) : [],
+        items: itemsRaw ? JSON.parse(itemsRaw) : [],
+      };
+    });
+
+    const bundle = {
+      version: '2.0.0',
+      scope: 'all_workspaces',
+      exportedAt: new Date().toISOString(),
+      totalWorkspaces: workspaces.length,
+      workspaces: workspaceBundles,
+    };
+
+    return JSON.stringify(bundle, null, 2);
+  }
+
   public async importWorkspaceData(jsonStr: string): Promise<Workspace> {
     const bundle = JSON.parse(jsonStr);
+
+    // Multi-workspace archive support
+    if (bundle.scope === 'all_workspaces' && Array.isArray(bundle.workspaces)) {
+      let lastWs: Workspace | null = null;
+      for (const item of bundle.workspaces) {
+        if (item.workspace && item.projects && item.items) {
+          const ws = item.workspace as Workspace;
+          localStorage.setItem(`${STORAGE_KEY_PREFIX}${ws.id}`, JSON.stringify(ws));
+          localStorage.setItem(`${STORAGE_KEY_PREFIX}${ws.id}_projects`, JSON.stringify(item.projects));
+          localStorage.setItem(`${STORAGE_KEY_PREFIX}${ws.id}_items`, JSON.stringify(item.items));
+          lastWs = ws;
+        }
+      }
+      if (lastWs) {
+        localStorage.setItem(ACTIVE_WS_KEY, lastWs.id);
+        this.activeWorkspaceId = lastWs.id;
+        return lastWs;
+      }
+      throw new Error('No valid workspaces found in multi-workspace archive');
+    }
+
+    // Single workspace archive
     if (!bundle.workspace || !bundle.projects || !bundle.items) {
       throw new Error('Invalid leeflet workspace backup bundle');
     }

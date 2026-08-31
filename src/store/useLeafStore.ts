@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Workspace, Project, Item, ViewMode, FilterOptions, ChecklistItem, Attachment, ItemType, Priority, Status } from '../types';
+import { Workspace, Project, Item, ViewMode, FilterOptions, ChecklistItem, Attachment, ItemType, Priority, Status, ColorThemeId, SidebarCollapseMode } from '../types';
 import { dbService } from '../services/db';
 import { broadcastSync, subscribeToSync } from '../utils/sync';
 import { toast } from './useToastStore';
@@ -25,9 +25,16 @@ interface LeafState {
   loadingMessage: string;
   isStandby: boolean;
   standbyJokesEnabled: boolean;
+  isSidebarCollapsed: boolean;
+  sidebarCollapseMode: SidebarCollapseMode;
   theme: 'light' | 'dark';
+  colorTheme: ColorThemeId;
 
   // Actions
+  toggleSidebar: () => void;
+  setSidebarCollapsed: (collapsed: boolean) => void;
+  setSidebarCollapseMode: (mode: SidebarCollapseMode) => void;
+  setColorTheme: (colorTheme: ColorThemeId) => void;
   initialize: (customLoadingMessage?: string) => Promise<void>;
   setLoadingMessage: (msg: string) => void;
   setStandby: (isStandby: boolean) => void;
@@ -83,6 +90,37 @@ const getInitialTheme = (): 'light' | 'dark' => {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 };
 
+const getInitialColorTheme = (): ColorThemeId => {
+  try {
+    const saved = localStorage.getItem('leaf_color_theme') as ColorThemeId | null;
+    if (saved && ['default', 'midnight-sage', 'abyssal-azure', 'warm-espresso', 'cyber-violet', 'nordic-frost'].includes(saved)) {
+      return saved;
+    }
+  } catch {}
+  return 'default';
+};
+
+const getInitialSidebarCollapseMode = (): SidebarCollapseMode => {
+  try {
+    const saved = localStorage.getItem('leaf_pref_sidebar_collapse_mode') as SidebarCollapseMode | null;
+    if (saved === 'hidden' || saved === 'icons') return saved;
+  } catch {}
+  return 'icons';
+};
+
+const getInitialViewMode = (): ViewMode => {
+  try {
+    const saved = localStorage.getItem('leaf_current_view_mode');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed && typeof parsed === 'object' && parsed.type) {
+        return parsed;
+      }
+    }
+  } catch {}
+  return { type: 'inbox' };
+};
+
 export const useLeafStore = create<LeafState>((set, get) => ({
   workspace: null,
   workspaces: [],
@@ -90,7 +128,7 @@ export const useLeafStore = create<LeafState>((set, get) => ({
   items: [],
   selectedItemId: null,
   selectedProjectId: null,
-  viewMode: { type: 'inbox' },
+  viewMode: getInitialViewMode(),
   filterOptions: {
     searchQuery: '',
     sortBy: 'manual',
@@ -106,7 +144,33 @@ export const useLeafStore = create<LeafState>((set, get) => ({
   loadingMessage: 'loading workspace...',
   isStandby: false,
   standbyJokesEnabled: typeof window !== 'undefined' && localStorage.getItem('leaf_standby_jokes_enabled') === 'true',
+  isSidebarCollapsed: typeof window !== 'undefined' && localStorage.getItem('leaf_sidebar_collapsed') === 'true',
+  sidebarCollapseMode: getInitialSidebarCollapseMode(),
   theme: getInitialTheme(),
+  colorTheme: getInitialColorTheme(),
+
+  setSidebarCollapseMode: (sidebarCollapseMode: SidebarCollapseMode) => {
+    localStorage.setItem('leaf_pref_sidebar_collapse_mode', sidebarCollapseMode);
+    set({ sidebarCollapseMode });
+  },
+
+  setColorTheme: (colorTheme: ColorThemeId) => {
+    localStorage.setItem('leaf_color_theme', colorTheme);
+    if (typeof document !== 'undefined') {
+      document.documentElement.setAttribute('data-color-theme', colorTheme);
+    }
+    set({ colorTheme });
+  },
+
+  toggleSidebar: () => {
+    const next = !get().isSidebarCollapsed;
+    localStorage.setItem('leaf_sidebar_collapsed', String(next));
+    set({ isSidebarCollapsed: next });
+  },
+  setSidebarCollapsed: (collapsed: boolean) => {
+    localStorage.setItem('leaf_sidebar_collapsed', String(collapsed));
+    set({ isSidebarCollapsed: collapsed });
+  },
 
   setLoadingMessage: (loadingMessage: string) => set({ loadingMessage }),
   setStandby: (isStandby: boolean) => set({ isStandby }),
@@ -169,6 +233,7 @@ export const useLeafStore = create<LeafState>((set, get) => ({
     } else {
       document.documentElement.classList.remove('dark');
     }
+    document.documentElement.setAttribute('data-color-theme', get().colorTheme);
 
     // Subscribe to real-time inter-window sync
     if (typeof window !== 'undefined' && !(window as any).__leaf_sync_active) {
@@ -385,14 +450,21 @@ export const useLeafStore = create<LeafState>((set, get) => ({
       isWorkspaceModalOpen: id ? false : get().isWorkspaceModalOpen,
     }),
   setSelectedProjectId: (id) => {
+    const nextView: ViewMode = id ? { type: 'project', projectId: id } : { type: 'inbox' };
+    try {
+      localStorage.setItem('leaf_current_view_mode', JSON.stringify(nextView));
+    } catch {}
     set({
       selectedProjectId: id,
       selectedItemId: null,
       isWorkspaceModalOpen: false,
-      viewMode: id ? { type: 'project', projectId: id } : { type: 'inbox' },
+      viewMode: nextView,
     });
   },
   setViewMode: (viewMode) => {
+    try {
+      localStorage.setItem('leaf_current_view_mode', JSON.stringify(viewMode));
+    } catch {}
     set({
       viewMode,
       selectedItemId: null,

@@ -23,6 +23,8 @@ import {
   Moon,
   Minimize2,
   Coffee,
+  PanelLeftClose,
+  PanelLeftOpen,
   Check,
   Link2,
   Building2,
@@ -30,6 +32,8 @@ import {
 import { dbService } from '../services/db';
 import { ViewMode, ItemType, Priority, Project, Item, Workspace } from '../types';
 import { enterMiniMode } from '../utils/window';
+import { Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
+import { toast } from '../store/useToastStore';
 
 export const Sidebar: React.FC = () => {
   const {
@@ -39,7 +43,6 @@ export const Sidebar: React.FC = () => {
     createWorkspace,
     renameWorkspace,
     deleteWorkspace,
-    setWorkspaceModalOpen,
     projects,
     items,
     viewMode,
@@ -48,6 +51,10 @@ export const Sidebar: React.FC = () => {
     deleteProject,
     theme,
     toggleTheme,
+    isSidebarCollapsed,
+    sidebarCollapseMode,
+    toggleSidebar,
+    initialize,
   } = useLeafStore();
 
   const [isProjectsCollapsed, setIsProjectsCollapsed] = useState(false);
@@ -97,17 +104,55 @@ export const Sidebar: React.FC = () => {
   const handleJoinWorkspace = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inviteInput.trim()) return;
+
     let teamName = 'Team Workspace';
+    let supabaseUrl = '';
+    let supabaseKey = '';
+    let userRole = 'member';
+
     try {
-      if (inviteInput.includes('name=')) {
-        const url = new URL(inviteInput.replace('leeflet://', 'http://'));
-        teamName = url.searchParams.get('name') || teamName;
+      const trimmed = inviteInput.trim();
+      let jsonPayload = '';
+      if (trimmed.includes('#data=')) {
+        const rawBase64 = trimmed.split('#data=')[1];
+        jsonPayload = decodeURIComponent(escape(atob(rawBase64)));
+      } else if (trimmed.startsWith('ey') || (!trimmed.includes('://') && !trimmed.includes('&') && trimmed.length > 20)) {
+        jsonPayload = decodeURIComponent(escape(atob(trimmed)));
       }
-    } catch {
-      // ignore parse error
+
+      if (jsonPayload) {
+        const parsed = JSON.parse(jsonPayload);
+        teamName = parsed.workspaceName || parsed.wsName || teamName;
+        supabaseUrl = parsed.supabaseUrl || parsed.url || '';
+        supabaseKey = parsed.supabaseAnonKey || parsed.key || '';
+        userRole = parsed.role || 'member';
+      } else if (trimmed.includes('server=')) {
+        const url = new URL(trimmed.replace('leeflet://', 'http://'));
+        supabaseUrl = url.searchParams.get('server') || '';
+        supabaseKey = url.searchParams.get('key') || '';
+        teamName = url.searchParams.get('name') || teamName;
+        userRole = url.searchParams.get('role') || 'member';
+      }
+    } catch (err) {
+      console.warn('Could not parse invite link:', err);
     }
-    const defaultPath = `C:\\leeflet\\workspaces\\team-${Date.now()}`;
-    await createWorkspace(teamName, defaultPath);
+
+    const sanitized = teamName.toLowerCase().replace(/[^a-z0-9]/g, '-');
+    const defaultPath = `C:\\leeflet\\workspaces\\team-${sanitized}-${Date.now()}`;
+    const newWs = await createWorkspace(teamName, defaultPath);
+
+    if (newWs && newWs.id) {
+      if (supabaseUrl && supabaseKey) {
+        localStorage.setItem(`leeflet_supabase_url_${newWs.id}`, supabaseUrl);
+        localStorage.setItem(`leeflet_supabase_anon_key_${newWs.id}`, supabaseKey);
+        localStorage.setItem(`leeflet_sync_mode_${newWs.id}`, 'cloud');
+      }
+      localStorage.setItem(`leeflet_workspace_role_${newWs.id}`, userRole);
+      localStorage.setItem(`leeflet_is_joined_workspace_${newWs.id}`, 'true');
+      toast.success(`Joined ${teamName} (${userRole})`);
+      await initialize('joining team workspace...');
+    }
+
     setInviteInput('');
     setIsJoiningWorkspace(false);
   };
@@ -191,19 +236,203 @@ export const Sidebar: React.FC = () => {
     setProjectToDelete(null);
   };
 
+  if (isSidebarCollapsed) {
+    if (sidebarCollapseMode === 'hidden') {
+      return <aside className="w-0 border-r-0 overflow-hidden transition-all duration-200" />;
+    }
+
+    return (
+      <aside
+        className="w-14 h-full bg-[#f4f5f6] dark:bg-[#121214] border-r border-[#e5e7eb] dark:border-[#27272a] flex flex-col justify-between items-center py-2.5 select-none text-xs text-[#374151] dark:text-[#d4d4d8] shrink-0 transition-[width,border-color] duration-200 ease-in-out z-20"
+      >
+        {/* Top Expand / Logo button */}
+        <div className="flex flex-col items-center gap-3 w-full" data-tauri-drag-region>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={toggleSidebar}
+                className="w-9 h-9 rounded-[7px] hover:bg-[#e5e7eb]/70 dark:hover:bg-[#1f1f23] flex items-center justify-center transition-colors cursor-pointer group/rail relative"
+              >
+                <img
+                  src="/leaf_logo.png"
+                  alt="leeflet"
+                  className="w-5 h-5 object-contain group-hover/rail:opacity-0 transition-opacity"
+                />
+                <PanelLeftOpen className="w-4 h-4 text-[#111827] dark:text-white absolute opacity-0 group-hover/rail:opacity-100 transition-opacity" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">Expand sidebar (Ctrl + B)</TooltipContent>
+          </Tooltip>
+
+          {/* Primary View Icons */}
+          <div className="flex flex-col items-center gap-1 w-full px-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => setViewMode({ type: 'inbox' })}
+                  className={`w-9 h-9 flex items-center justify-center rounded-[6px] transition-colors cursor-pointer relative ${
+                    isViewActive({ type: 'inbox' })
+                      ? 'bg-[#e5e7eb] dark:bg-[#27272a] text-[#111827] dark:text-white font-semibold'
+                      : 'text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white'
+                  }`}
+                >
+                  <Layers className="w-4 h-4" />
+                  {inboxCount > 0 && (
+                    <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-[#111827] dark:bg-white" />
+                  )}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Backlog (Ctrl + I)</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => setViewMode({ type: 'my_queue' })}
+                  className={`w-9 h-9 flex items-center justify-center rounded-[6px] transition-colors cursor-pointer relative ${
+                    isViewActive({ type: 'my_queue' })
+                      ? 'bg-[#e5e7eb] dark:bg-[#27272a] text-[#111827] dark:text-white font-semibold'
+                      : 'text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white'
+                  }`}
+                >
+                  <ListTodo className="w-4 h-4" />
+                  {queueCount > 0 && (
+                    <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  )}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right">My Queue (Ctrl + Q)</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => setViewMode({ type: 'team' })}
+                  className={`w-9 h-9 flex items-center justify-center rounded-[6px] transition-colors cursor-pointer ${
+                    isViewActive({ type: 'team' })
+                      ? 'bg-[#e5e7eb] dark:bg-[#27272a] text-[#111827] dark:text-white font-semibold'
+                      : 'text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white'
+                  }`}
+                >
+                  <Users className="w-4 h-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Team</TooltipContent>
+            </Tooltip>
+          </div>
+
+          {/* Projects Divider & Dots */}
+          {projects.length > 0 && (
+            <div className="w-full flex flex-col items-center gap-1.5 px-2 pt-2 border-t border-[#e5e7eb] dark:border-[#27272a]">
+              {projects.slice(0, 5).map((project) => {
+                const isActive = viewMode.type === 'project' && viewMode.projectId === project.id;
+                return (
+                  <Tooltip key={project.id}>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={() => setViewMode({ type: 'project', projectId: project.id })}
+                        className={`w-8 h-8 flex items-center justify-center rounded-[6px] transition-colors cursor-pointer text-xs font-semibold ${
+                          isActive
+                            ? 'bg-[#e5e7eb] dark:bg-[#27272a] text-[#111827] dark:text-white'
+                            : 'text-[#6b7280] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white'
+                        }`}
+                      >
+                        <span
+                          className="w-2.5 h-2.5 rounded-full"
+                          style={{ backgroundColor: project.color || '#10b981' }}
+                        />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">{project.name}</TooltipContent>
+                  </Tooltip>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Bottom Tools in Rail */}
+        <div className="flex flex-col items-center gap-1 w-full px-2 pt-2 border-t border-[#e5e7eb] dark:border-[#27272a]">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={toggleTheme}
+                className="w-9 h-9 flex items-center justify-center rounded-[6px] text-[#6b7280] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white transition-colors cursor-pointer"
+              >
+                {theme === 'dark' ? <Moon className="w-3.5 h-3.5" /> : <Sun className="w-3.5 h-3.5" />}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">Toggle Theme</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={() => enterMiniMode()}
+                className="w-9 h-9 flex items-center justify-center rounded-[6px] text-[#6b7280] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white transition-colors cursor-pointer"
+              >
+                <Minimize2 className="w-3.5 h-3.5" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">Mini Mode (M)</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={() => useLeafStore.getState().setStandby(true)}
+                className="w-9 h-9 flex items-center justify-center rounded-[6px] text-[#6b7280] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white transition-colors cursor-pointer"
+              >
+                <Coffee className="w-3.5 h-3.5" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">Coffee Break (Z)</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={() => setViewMode({ type: 'profile' })}
+                className={`w-9 h-9 flex items-center justify-center rounded-[6px] transition-colors cursor-pointer ${
+                  isViewActive({ type: 'profile' })
+                    ? 'bg-[#e5e7eb] dark:bg-[#27272a]'
+                    : 'hover:bg-[#ebecee] dark:hover:bg-[#1f1f23]'
+                }`}
+              >
+                <div className="w-5 h-5 rounded-full bg-[#111827] dark:bg-white text-white dark:text-[#111827] text-[10px] font-bold flex items-center justify-center">
+                  C
+                </div>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">Profile (Owner)</TooltipContent>
+          </Tooltip>
+        </div>
+      </aside>
+    );
+  }
+
   return (
     <>
       <aside className="w-52 h-full bg-[#f4f5f6] dark:bg-[#121214] border-r border-[#e5e7eb] dark:border-[#27272a] flex flex-col justify-between select-none text-xs text-[#374151] dark:text-[#d4d4d8] shrink-0 transition-colors">
         {/* Workspace Switcher Header */}
         <div
           ref={workspaceContainerRef}
-          className="h-12 px-2 flex items-center select-none shrink-0 relative"
+          className="h-12 px-2 flex items-center justify-between gap-1 select-none shrink-0 relative"
           data-tauri-drag-region
         >
           <button
             type="button"
             onClick={() => setIsWorkspaceMenuOpen(!isWorkspaceMenuOpen)}
-            className="w-full flex items-center justify-between p-1.5 rounded-[6px] hover:bg-[#e5e7eb]/70 dark:hover:bg-[#1f1f23] transition-colors group text-left select-none"
+            className="flex-1 flex items-center justify-between p-1.5 rounded-[6px] hover:bg-[#e5e7eb]/70 dark:hover:bg-[#1f1f23] transition-colors group text-left select-none min-w-0"
           >
             <div className="flex items-center gap-2 min-w-0">
               <div className="w-5 h-5 flex items-center justify-center shrink-0">
@@ -218,10 +447,19 @@ export const Sidebar: React.FC = () => {
               </span>
             </div>
             <ChevronDown
-              className={`w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa] group-hover:text-[#111827] dark:group-hover:text-white transition-transform shrink-0 ${
+              className={`w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa] group-hover:text-[#111827] dark:group-hover:text-white transition-transform shrink-0 ml-1 ${
                 isWorkspaceMenuOpen ? 'rotate-180' : ''
               }`}
             />
+          </button>
+
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            title="Collapse sidebar (Ctrl + B)"
+            className="p-1.5 rounded-[5px] hover:bg-[#e5e7eb]/70 dark:hover:bg-[#1f1f23] text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white transition-colors shrink-0 cursor-pointer"
+          >
+            <PanelLeftClose className="w-3.5 h-3.5" />
           </button>
 
           {/* Workspace Dropdown Menu */}
@@ -317,12 +555,12 @@ export const Sidebar: React.FC = () => {
                   type="button"
                   onClick={() => {
                     setIsWorkspaceMenuOpen(false);
-                    setWorkspaceModalOpen(true);
+                    setViewMode({ type: 'settings' });
                   }}
                   className="w-full text-left px-2 py-1.5 rounded-[4px] text-xs text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] flex items-center gap-2 transition-colors"
                 >
                   <Settings className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
-                  <span>Workspace Settings & Export...</span>
+                  <span>Workspace Settings</span>
                 </button>
               </div>
             </div>
@@ -394,9 +632,6 @@ export const Sidebar: React.FC = () => {
                 <Users className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
                 <span>Team</span>
               </div>
-              <span className="text-[10.5px] text-[#9ca3af] dark:text-[#71717a] font-normal">
-                Soon
-              </span>
             </button>
           </div>
 
@@ -647,23 +882,7 @@ export const Sidebar: React.FC = () => {
             </kbd>
           </button>
 
-          {/* Settings */}
-          <button
-            onClick={() => setViewMode({ type: 'settings' })}
-            className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] transition-colors text-xs font-medium ${
-              isViewActive({ type: 'settings' })
-                ? 'bg-[#ebecee] dark:bg-[#27272a] text-[#111827] dark:text-white font-semibold'
-                : 'text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white'
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              <Settings className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
-              <span>Settings</span>
-            </div>
-            <kbd className="w-4 h-4 flex items-center justify-center rounded-[3px] bg-[#ebecee] dark:bg-[#27272a] border border-[#e5e7eb] dark:border-[#3f3f46] font-mono text-[9px] font-semibold text-[#6b7280] dark:text-[#a1a1aa] shrink-0 leading-none">
-              S
-            </kbd>
-          </button>
+
 
           {/* User Profile */}
           <button

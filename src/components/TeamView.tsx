@@ -8,13 +8,13 @@ import {
   ChevronDown,
   Check,
   Link2,
+  Settings,
 } from 'lucide-react';
 import { useLeafStore } from '../store/useLeafStore';
 import { toast } from '../store/useToastStore';
 import { getStoredTeamMembers, saveStoredTeamMembers } from '../utils/team';
-import { TeamMember } from '../types';
-
-export type RoleId = 'Admin' | 'Developer' | 'Member' | 'Viewer';
+import { isSmtpConfigured, sendInviteEmail, generateInviteDeepLink } from '../utils/smtp';
+import { TeamMember, RoleId } from '../types';
 
 interface RoleConfig {
   id: RoleId;
@@ -51,8 +51,9 @@ const ROLES: RoleConfig[] = [
 ];
 
 export const TeamView: React.FC = () => {
-  const { workspace } = useLeafStore();
+  const { workspace, setViewMode } = useLeafStore();
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [showSmtpRequiredModal, setShowSmtpRequiredModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<RoleId>('Developer');
   const [isRoleMenuOpen, setIsRoleMenuOpen] = useState(false);
@@ -76,7 +77,7 @@ export const TeamView: React.FC = () => {
     }
   }, [isRoleMenuOpen]);
 
-  const handleSendInvite = (e: React.FormEvent) => {
+  const handleSendInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     const email = inviteEmail.trim();
     if (!email || !email.includes('@')) {
@@ -84,8 +85,27 @@ export const TeamView: React.FC = () => {
       return;
     }
 
-    setIsSubmitting(true);
-    setTimeout(() => {
+    if (!isSmtpConfigured()) {
+      setShowSmtpRequiredModal(true);
+      return;
+    }
+
+    if (!workspace) {
+      toast.error('No active workspace selected');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const roleConfig = ROLES.find((r) => r.id === inviteRole) || ROLES[1];
+      await sendInviteEmail(
+        email,
+        email.split('@')[0],
+        workspace,
+        inviteRole,
+        roleConfig.description
+      );
+
       const newMember: TeamMember = {
         id: `member_${Date.now()}`,
         name: email.split('@')[0],
@@ -99,21 +119,26 @@ export const TeamView: React.FC = () => {
       setMembers(updated);
       saveStoredTeamMembers(updated);
       setInviteEmail('');
-      setIsSubmitting(false);
       setIsInviteModalOpen(false);
       setIsRoleMenuOpen(false);
-      toast.success(`Invitation sent to ${email} as ${inviteRole}`);
-    }, 350);
+      toast.success(`Invitation email delivered to ${email} as ${inviteRole}`);
+    } catch (err: any) {
+      console.error('SMTP Invite Error:', err);
+      toast.error(`Email send failed: ${err.message || String(err)}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleCopyInviteLink = () => {
-    const mockLink = `https://leeflet.app/join/${workspace?.id || 'ws'}_${Math.random().toString(36).substring(2, 7)}`;
-    navigator.clipboard?.writeText(mockLink).then(() => {
+    if (!workspace) return;
+    const dynamicLink = generateInviteDeepLink(workspace, inviteRole);
+    navigator.clipboard?.writeText(dynamicLink).then(() => {
       setHasCopiedLink(true);
-      toast.info('Invite link copied to clipboard');
-      setTimeout(() => setHasCopiedLink(false), 2000);
+      toast.success(`Invite link copied with ${inviteRole} role permissions`);
+      setTimeout(() => setHasCopiedLink(false), 2500);
     }).catch(() => {
-      toast.info('Invite link: ' + mockLink);
+      toast.info(`Invite link: ${dynamicLink}`);
     });
   };
 
@@ -357,6 +382,68 @@ export const TeamView: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* SMTP Required Prompt Modal */}
+      {showSmtpRequiredModal && (
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowSmtpRequiredModal(false);
+          }}
+          className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 select-none"
+        >
+          <div className="w-full max-w-md bg-white dark:bg-[#18181b] rounded-[10px] border border-[#e5e7eb] dark:border-[#27272a] shadow-modal p-5 space-y-4">
+            <div className="flex items-center justify-between border-b border-[#f3f4f6] dark:border-[#27272a] pb-2.5">
+              <div className="flex items-center gap-2 text-[#111827] dark:text-[#f4f4f5]">
+                <Mail className="w-4 h-4 text-[#111827] dark:text-white" />
+                <h2 className="text-xs font-semibold">SMTP Configuration Required</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSmtpRequiredModal(false)}
+                className="p-1 rounded-[4px] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] text-[#6b7280] dark:text-[#a1a1aa] cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-xs text-[#6b7280] dark:text-[#a1a1aa] leading-relaxed">
+                To dispatch automated email invitations directly from your desktop app, configure your outbound SMTP mail server in Settings.
+              </p>
+              <div className="p-3 rounded-[6px] bg-[#f9fafb] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#27272a] text-[11px] text-[#4b5563] dark:text-[#d4d4d8]">
+                You can also copy a direct invite link with the assigned role embedded to share with your teammate immediately.
+              </div>
+            </div>
+
+            <div className="pt-2 flex items-center justify-between gap-2 border-t border-[#f3f4f6] dark:border-[#27272a]">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSmtpRequiredModal(false);
+                  handleCopyInviteLink();
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#4b5563] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] rounded-[6px] transition-colors cursor-pointer"
+              >
+                <Link2 className="w-3.5 h-3.5" />
+                <span>Copy Link Instead</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSmtpRequiredModal(false);
+                  setIsInviteModalOpen(false);
+                  setViewMode({ type: 'settings', tab: 'sync', section: 'smtp' });
+                }}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold bg-[#111827] dark:bg-white text-white dark:text-[#111827] rounded-[6px] hover:bg-[#1f2937] dark:hover:bg-[#e4e4e7] transition-all shadow-subtle cursor-pointer"
+              >
+                <Settings className="w-3.5 h-3.5" />
+                <span>Configure SMTP in Settings</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

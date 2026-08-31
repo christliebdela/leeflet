@@ -37,6 +37,7 @@ export const App: React.FC = () => {
     standbyJokesEnabled,
     setStandby,
     setQuickCaptureOpen,
+    toggleSidebar,
   } = useLeafStore();
 
   // Joke navigation state (history so ← goes back, → fetches next)
@@ -160,6 +161,13 @@ export const App: React.FC = () => {
         return;
       }
 
+      // 4b. Toggle Sidebar: Ctrl + B / Cmd + B
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'b' || e.key === 'B')) {
+        e.preventDefault();
+        toggleSidebar();
+        return;
+      }
+
       // 5. Mini Mode: 'm' / 'M' (when not typing) or Ctrl+M
       if (!isInput && (e.key === 'm' || e.key === 'M') && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
         e.preventDefault();
@@ -223,6 +231,7 @@ export const App: React.FC = () => {
     setQuickCaptureOpen,
     isStandby,
     setStandby,
+    toggleSidebar,
   ]);
 
   if (isLoading) {

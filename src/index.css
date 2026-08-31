@@ -8,6 +8,13 @@
     font-style: italic;
     letter-spacing: -0.015em;
   }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
 
 @layer base {
@@ -144,3 +151,128 @@
   animation: captureBounceIn 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   transform-origin: center bottom;
 }
+
+/* ========================================================
+   INTERFACE COLOR THEMES (Linear-inspired Unique Palettes)
+   ======================================================== */
+
+/* 1. Midnight Sage (Leeflet Botanical Dark) */
+html.dark[data-color-theme="midnight-sage"] {
+  --theme-bg-app: #0b120f;
+  --theme-bg-sidebar: #080d0b;
+  --theme-bg-card: #111a15;
+  --theme-bg-card-elevated: #16221c;
+  --theme-border: #1a2921;
+  --theme-accent: #10b981;
+}
+
+/* 2. Abyssal Azure (Deep Oceanic Navy with Electric Cyan) */
+html.dark[data-color-theme="abyssal-azure"] {
+  --theme-bg-app: #0a0e17;
+  --theme-bg-sidebar: #070a11;
+  --theme-bg-card: #0f1523;
+  --theme-bg-card-elevated: #151d30;
+  --theme-border: #1a253b;
+  --theme-accent: #38bdf8;
+}
+
+/* 3. Warm Espresso (Cozy Roasted Cocoa & Amber) */
+html.dark[data-color-theme="warm-espresso"] {
+  --theme-bg-app: #120f0d;
+  --theme-bg-sidebar: #0e0b09;
+  --theme-bg-card: #191411;
+  --theme-bg-card-elevated: #221c17;
+  --theme-border: #2c231c;
+  --theme-accent: #f59e0b;
+}
+
+/* 4. Cyber Violet (Synthwave Twilight Noir) */
+html.dark[data-color-theme="cyber-violet"] {
+  --theme-bg-app: #0e0b17;
+  --theme-bg-sidebar: #0a0711;
+  --theme-bg-card: #151022;
+  --theme-bg-card-elevated: #1e1630;
+  --theme-border: #281d40;
+  --theme-accent: #a855f7;
+}
+
+/* 5. Nordic Slate (Scandinavian Steel & Icy Blue) */
+html.dark[data-color-theme="nordic-frost"] {
+  --theme-bg-app: #0c1118;
+  --theme-bg-sidebar: #090c12;
+  --theme-bg-card: #121822;
+  --theme-bg-card-elevated: #18202d;
+  --theme-border: #1f2a3a;
+  --theme-accent: #60a5fa;
+}
+
+/* Apply theme overrides to custom tinted themes only (not default) */
+html.dark[data-color-theme="midnight-sage"] .dark\:bg-\[\#0f0f11\],
+html.dark[data-color-theme="abyssal-azure"] .dark\:bg-\[\#0f0f11\],
+html.dark[data-color-theme="warm-espresso"] .dark\:bg-\[\#0f0f11\],
+html.dark[data-color-theme="cyber-violet"] .dark\:bg-\[\#0f0f11\],
+html.dark[data-color-theme="nordic-frost"] .dark\:bg-\[\#0f0f11\],
+html.dark[data-color-theme="midnight-sage"] div.h-screen.w-screen,
+html.dark[data-color-theme="abyssal-azure"] div.h-screen.w-screen,
+html.dark[data-color-theme="warm-espresso"] div.h-screen.w-screen,
+html.dark[data-color-theme="cyber-violet"] div.h-screen.w-screen,
+html.dark[data-color-theme="nordic-frost"] div.h-screen.w-screen {
+  background-color: var(--theme-bg-app) !important;
+}
+
+html.dark[data-color-theme="midnight-sage"] aside,
+html.dark[data-color-theme="abyssal-azure"] aside,
+html.dark[data-color-theme="warm-espresso"] aside,
+html.dark[data-color-theme="cyber-violet"] aside,
+html.dark[data-color-theme="nordic-frost"] aside,
+html.dark[data-color-theme="midnight-sage"] .dark\:bg-\[\#121214\],
+html.dark[data-color-theme="abyssal-azure"] .dark\:bg-\[\#121214\],
+html.dark[data-color-theme="warm-espresso"] .dark\:bg-\[\#121214\],
+html.dark[data-color-theme="cyber-violet"] .dark\:bg-\[\#121214\],
+html.dark[data-color-theme="nordic-frost"] .dark\:bg-\[\#121214\] {
+  background-color: var(--theme-bg-sidebar) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html.dark[data-color-theme="midnight-sage"] .dark\:bg-\[\#18181b\],
+html.dark[data-color-theme="abyssal-azure"] .dark\:bg-\[\#18181b\],
+html.dark[data-color-theme="warm-espresso"] .dark\:bg-\[\#18181b\],
+html.dark[data-color-theme="cyber-violet"] .dark\:bg-\[\#18181b\],
+html.dark[data-color-theme="nordic-frost"] .dark\:bg-\[\#18181b\] {
+  background-color: var(--theme-bg-card) !important;
+}
+
+html.dark[data-color-theme="midnight-sage"] .dark\:bg-\[\#202024\],
+html.dark[data-color-theme="abyssal-azure"] .dark\:bg-\[\#202024\],
+html.dark[data-color-theme="warm-espresso"] .dark\:bg-\[\#202024\],
+html.dark[data-color-theme="cyber-violet"] .dark\:bg-\[\#202024\],
+html.dark[data-color-theme="nordic-frost"] .dark\:bg-\[\#202024\],
+html.dark[data-color-theme="midnight-sage"] .dark\:bg-\[\#1c1c1f\],
+html.dark[data-color-theme="abyssal-azure"] .dark\:bg-\[\#1c1c1f\],
+html.dark[data-color-theme="warm-espresso"] .dark\:bg-\[\#1c1c1f\],
+html.dark[data-color-theme="cyber-violet"] .dark\:bg-\[\#1c1c1f\],
+html.dark[data-color-theme="nordic-frost"] .dark\:bg-\[\#1c1c1f\] {
+  background-color: var(--theme-bg-card-elevated) !important;
+}
+
+html.dark[data-color-theme="midnight-sage"] .dark\:border-\[\#27272a\],
+html.dark[data-color-theme="abyssal-azure"] .dark\:border-\[\#27272a\],
+html.dark[data-color-theme="warm-espresso"] .dark\:border-\[\#27272a\],
+html.dark[data-color-theme="cyber-violet"] .dark\:border-\[\#27272a\],
+html.dark[data-color-theme="nordic-frost"] .dark\:border-\[\#27272a\],
+html.dark[data-color-theme="midnight-sage"] .dark\:border-\[\#323238\],
+html.dark[data-color-theme="abyssal-azure"] .dark\:border-\[\#323238\],
+html.dark[data-color-theme="warm-espresso"] .dark\:border-\[\#323238\],
+html.dark[data-color-theme="cyber-violet"] .dark\:border-\[\#323238\],
+html.dark[data-color-theme="nordic-frost"] .dark\:border-\[\#323238\] {
+  border-color: var(--theme-border) !important;
+}
+
+html.dark[data-color-theme="midnight-sage"] .dark\:divide-\[\#27272a\] > :not([hidden]) ~ :not([hidden]),
+html.dark[data-color-theme="abyssal-azure"] .dark\:divide-\[\#27272a\] > :not([hidden]) ~ :not([hidden]),
+html.dark[data-color-theme="warm-espresso"] .dark\:divide-\[\#27272a\] > :not([hidden]) ~ :not([hidden]),
+html.dark[data-color-theme="cyber-violet"] .dark\:divide-\[\#27272a\] > :not([hidden]) ~ :not([hidden]),
+html.dark[data-color-theme="nordic-frost"] .dark\:divide-\[\#27272a\] > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--theme-border) !important;
+}
+
