@@ -428,7 +428,7 @@ export const TeamView: React.FC = () => {
                   </div>
 
                   {/* Actions Menu Trigger (Disabled for Owner) */}
-                  {!isOwner ? (
+                  {!isOwner && (
                     <div className="relative">
                       <button
                         type="button"
@@ -527,8 +527,6 @@ export const TeamView: React.FC = () => {
                         </div>
                       )}
                     </div>
-                  ) : (
-                    <div className="w-6 h-6 shrink-0" />
                   )}
                 </div>
               </div>
