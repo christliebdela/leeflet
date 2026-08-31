@@ -165,10 +165,10 @@ export const THEME_PRESETS: ThemePreset[] = [
   },
   {
     id: 'deep-black',
-    name: 'Deep Black',
+    name: 'Noir',
     dotColor: '#ffffff',
     accentColor: '#ffffff',
-    description: 'OLED pitch-black #000000 with pure contrast.',
+    description: 'Pure void. OLED black with sharp contrast.',
     bgHex: '#000000',
     sidebarHex: '#000000',
     cardHex: '#09090b',

@@ -156,7 +156,7 @@
    INTERFACE COLOR THEMES
    ======================================================== */
 
-/* 1. Deep Black (OLED Pitch Black) */
+/* 1. Noir (OLED Pitch Black) */
 html.dark[data-color-theme="deep-black"] {
   --theme-bg-app: #000000;
   --theme-bg-sidebar: #000000;
