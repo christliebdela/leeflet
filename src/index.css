@@ -178,27 +178,87 @@ html.dark[data-color-theme="charcoal"] {
   --theme-accent: #10b981;
 }
 
-/* 3. Claude (Warm Clay & Paper) */
+/* 3. Claude (Anthropic Warm Stone & Terracotta) */
 html.dark[data-color-theme="claude"] {
-  --theme-bg-app: #181614;
-  --theme-bg-sidebar: #13110f;
-  --theme-bg-card: #201d19;
-  --theme-bg-card-elevated: #292520;
-  --theme-border: #363028;
-  --theme-accent: #d97706;
+  --theme-bg-app: #1b1917;
+  --theme-bg-sidebar: #141210;
+  --theme-bg-card: #24201c;
+  --theme-bg-card-elevated: #2c2824;
+  --theme-border: #3a3530;
+  --theme-accent: #da7756;
 }
 
-/* 3. Kanagawa (Inky Dark & Warm Lotus) */
+/* 4. Tokyo Night (folke/tokyo-night.nvim) */
+html.dark[data-color-theme="tokyo-night"] {
+  --theme-bg-app: #1a1b26;
+  --theme-bg-sidebar: #16161e;
+  --theme-bg-card: #1f2335;
+  --theme-bg-card-elevated: #24283b;
+  --theme-border: #292e42;
+  --theme-accent: #7aa2f7;
+}
+
+/* 5. Catppuccin Mocha */
+html.dark[data-color-theme="catppuccin"] {
+  --theme-bg-app: #1e1e2e;
+  --theme-bg-sidebar: #181825;
+  --theme-bg-card: #313244;
+  --theme-bg-card-elevated: #45475a;
+  --theme-border: #585b70;
+  --theme-accent: #cba6f7;
+}
+
+/* 6. Dracula */
+html.dark[data-color-theme="dracula"] {
+  --theme-bg-app: #282a36;
+  --theme-bg-sidebar: #21222c;
+  --theme-bg-card: #343746;
+  --theme-bg-card-elevated: #44475a;
+  --theme-border: #6272a4;
+  --theme-accent: #bd93f9;
+}
+
+/* 7. Nord */
+html.dark[data-color-theme="nord"] {
+  --theme-bg-app: #2e3440;
+  --theme-bg-sidebar: #242933;
+  --theme-bg-card: #3b4252;
+  --theme-bg-card-elevated: #434c5e;
+  --theme-border: #4c566a;
+  --theme-accent: #88c0d0;
+}
+
+/* 8. Gruvbox Dark */
+html.dark[data-color-theme="gruvbox"] {
+  --theme-bg-app: #282828;
+  --theme-bg-sidebar: #1d2021;
+  --theme-bg-card: #3c3836;
+  --theme-bg-card-elevated: #504945;
+  --theme-border: #665c54;
+  --theme-accent: #fabd2f;
+}
+
+/* 9. Rosé Pine */
+html.dark[data-color-theme="rose-pine"] {
+  --theme-bg-app: #191724;
+  --theme-bg-sidebar: #14121f;
+  --theme-bg-card: #1f1d2e;
+  --theme-bg-card-elevated: #26233a;
+  --theme-border: #393552;
+  --theme-accent: #ebbcba;
+}
+
+/* 10. Kanagawa Wave */
 html.dark[data-color-theme="kanagawa"] {
   --theme-bg-app: #1f1f28;
   --theme-bg-sidebar: #16161d;
   --theme-bg-card: #2a2a37;
   --theme-bg-card-elevated: #363646;
-  --theme-border: #3b3b4f;
+  --theme-border: #54546d;
   --theme-accent: #7e9cd8;
 }
 
-/* 4. Kanagawa Dragon (Near-Black Dragon) */
+/* 11. Kanagawa Dragon */
 html.dark[data-color-theme="kanagawa-dragon"] {
   --theme-bg-app: #12120f;
   --theme-bg-sidebar: #0d0d0c;
@@ -208,114 +268,54 @@ html.dark[data-color-theme="kanagawa-dragon"] {
   --theme-accent: #8ba4b0;
 }
 
-/* 5. Tokyo Night (Calm Blue Dark) */
-html.dark[data-color-theme="tokyo-night"] {
-  --theme-bg-app: #1a1b26;
-  --theme-bg-sidebar: #16161e;
-  --theme-bg-card: #24283b;
-  --theme-bg-card-elevated: #2f354f;
-  --theme-border: #384061;
-  --theme-accent: #7aa2f7;
-}
-
-/* 6. Catppuccin (Mocha Pastel) */
-html.dark[data-color-theme="catppuccin"] {
-  --theme-bg-app: #1e1e2e;
-  --theme-bg-sidebar: #181825;
-  --theme-bg-card: #28283d;
-  --theme-bg-card-elevated: #313244;
-  --theme-border: #45475a;
-  --theme-accent: #cba6f7;
-}
-
-/* 7. Rosé Pine (Soho Pine & Rose) */
-html.dark[data-color-theme="rose-pine"] {
-  --theme-bg-app: #191724;
-  --theme-bg-sidebar: #14121f;
-  --theme-bg-card: #232136;
-  --theme-bg-card-elevated: #2a283e;
-  --theme-border: #393552;
-  --theme-accent: #ebbcba;
-}
-
-/* 8. Everforest (Soft Forest Green) */
+/* 12. Everforest Dark */
 html.dark[data-color-theme="everforest"] {
-  --theme-bg-app: #232a2e;
-  --theme-bg-sidebar: #1e2326;
-  --theme-bg-card: #2d353b;
-  --theme-bg-card-elevated: #343f44;
-  --theme-border: #425047;
+  --theme-bg-app: #2d353b;
+  --theme-bg-sidebar: #232a2e;
+  --theme-bg-card: #343f44;
+  --theme-bg-card-elevated: #3d484d;
+  --theme-border: #475258;
   --theme-accent: #a7c080;
 }
 
-/* 9. Nord (Arctic North-Bluish) */
-html.dark[data-color-theme="nord"] {
-  --theme-bg-app: #242933;
-  --theme-bg-sidebar: #1f232a;
-  --theme-bg-card: #2e3440;
-  --theme-bg-card-elevated: #3b4252;
-  --theme-border: #4c566a;
-  --theme-accent: #88c0d0;
-}
-
-/* 10. Gruvbox (Earthy Retro) */
-html.dark[data-color-theme="gruvbox"] {
-  --theme-bg-app: #1d2021;
-  --theme-bg-sidebar: #181a1b;
-  --theme-bg-card: #282828;
-  --theme-bg-card-elevated: #32302f;
-  --theme-border: #3c3836;
-  --theme-accent: #fabd2f;
-}
-
-/* 11. Dracula (High-Contrast Purple) */
-html.dark[data-color-theme="dracula"] {
-  --theme-bg-app: #21222c;
-  --theme-bg-sidebar: #191a21;
-  --theme-bg-card: #282a36;
-  --theme-bg-card-elevated: #343746;
-  --theme-border: #44475a;
-  --theme-accent: #bd93f9;
-}
-
-/* 12. Solarized (Precision Low-Glare) */
+/* 13. Solarized Dark */
 html.dark[data-color-theme="solarized"] {
-  --theme-bg-app: #00212b;
-  --theme-bg-sidebar: #001b24;
-  --theme-bg-card: #002b36;
-  --theme-bg-card-elevated: #073642;
-  --theme-border: #0e4a59;
+  --theme-bg-app: #002b36;
+  --theme-bg-sidebar: #00212b;
+  --theme-bg-card: #073642;
+  --theme-bg-card-elevated: #0a4756;
+  --theme-border: #0e5668;
   --theme-accent: #268bd2;
 }
 
-/* 13. Tide (Deep Slate & Teal) */
-html.dark[data-color-theme="tide"] {
-  --theme-bg-app: #0d151c;
-  --theme-bg-sidebar: #090e13;
-  --theme-bg-card: #15202b;
-  --theme-bg-card-elevated: #1d2b3a;
-  --theme-border: #273a4e;
-  --theme-accent: #38bdf8;
+/* 14. One Dark */
+html.dark[data-color-theme="one-dark"] {
+  --theme-bg-app: #282c34;
+  --theme-bg-sidebar: #21252b;
+  --theme-bg-card: #2c313a;
+  --theme-bg-card-elevated: #353b45;
+  --theme-border: #3e4451;
+  --theme-accent: #61afef;
 }
 
-/* 14. Sage (Calm Forest Green) */
-html.dark[data-color-theme="sage"] {
-  --theme-bg-app: #141b18;
-  --theme-bg-sidebar: #0f1412;
-  --theme-bg-card: #1c2420;
-  --theme-bg-card-elevated: #242f2a;
-  --theme-border: #2e3d36;
-  --theme-accent: #86efac;
+/* 15. Monokai Pro */
+html.dark[data-color-theme="monokai-pro"] {
+  --theme-bg-app: #2d2a2e;
+  --theme-bg-sidebar: #221f22;
+  --theme-bg-card: #3a383c;
+  --theme-bg-card-elevated: #403e41;
+  --theme-border: #49464e;
+  --theme-accent: #ffd866;
 }
 
-/* 15. Caffeine (Roasted Espresso & Latte) */
-html.dark[data-color-theme="caffeine"] {
-  --theme-bg-app: #140f0c;
-  --theme-bg-sidebar: #0f0b09;
-  --theme-bg-card: #1e1713;
-  --theme-bg-card-elevated: #29201a;
-  --theme-border: #3d2f26;
-  --theme-accent: #f59e0b;
+/* 16. GitHub Dark */
+html.dark[data-color-theme="github-dark"] {
+  --theme-bg-app: #0d1117;
+  --theme-bg-sidebar: #010409;
+  --theme-bg-card: #161b22;
+  --theme-bg-card-elevated: #21262d;
+  --theme-border: #30363d;
+  --theme-accent: #58a6ff;
 }
 
 /* Universal Theme Overrides across entire application */

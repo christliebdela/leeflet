@@ -100,9 +100,9 @@ const getInitialColorTheme = (): ColorThemeId => {
     if (rawSaved === 'deep-black') return 'default';
     const saved = rawSaved as ColorThemeId | null;
     const validIds: ColorThemeId[] = [
-      'default', 'charcoal', 'claude', 'kanagawa', 'kanagawa-dragon', 'tokyo-night',
-      'catppuccin', 'rose-pine', 'everforest', 'nord', 'gruvbox', 'dracula',
-      'solarized', 'tide', 'sage', 'caffeine',
+      'default', 'charcoal', 'claude', 'tokyo-night', 'catppuccin', 'dracula',
+      'nord', 'gruvbox', 'rose-pine', 'kanagawa', 'kanagawa-dragon', 'everforest',
+      'solarized', 'one-dark', 'monokai-pro', 'github-dark', 'tide', 'sage', 'caffeine',
     ];
     if (saved && validIds.includes(saved)) {
       return saved;
