@@ -360,12 +360,6 @@ export const TeamView: React.FC = () => {
                           Suspended
                         </span>
                       )}
-                      {isOwner && (
-                        <span className="text-[10px] text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/40 border border-violet-200 dark:border-violet-800/60 px-1.5 py-0.2 rounded font-semibold flex items-center gap-0.5">
-                          <ShieldCheck className="w-2.5 h-2.5" />
-                          Owner
-                        </span>
-                      )}
                     </div>
                     <div className="text-[11px] text-[#9ca3af] dark:text-[#71717a] truncate">
                       {member.email || 'No email provided'}
@@ -378,8 +372,9 @@ export const TeamView: React.FC = () => {
                   {/* Role Selector */}
                   <div className="relative">
                     {isOwner ? (
-                      <span className="px-2 py-1 text-[11px] font-semibold text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/30 rounded-[5px] border border-violet-200 dark:border-violet-800/40">
-                        Owner
+                      <span className="flex items-center gap-1.5 px-2.5 py-1 text-[11.5px] font-semibold text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/30 rounded-[5px] border border-violet-200 dark:border-violet-800/40 select-none">
+                        <ShieldCheck className="w-3 h-3 text-violet-600 dark:text-violet-400" />
+                        <span>Owner</span>
                       </span>
                     ) : isPending ? (
                       <span
