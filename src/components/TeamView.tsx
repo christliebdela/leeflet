@@ -716,12 +716,13 @@ export const TeamView: React.FC = () => {
               {/* Email Address */}
               <div>
                 <label className="block text-[11px] font-medium text-[#6b7280] dark:text-[#a1a1aa] mb-1.5">
-                  Email address
+                  Email address <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
                   <Mail className="w-3.5 h-3.5 text-[#9ca3af] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                   <input
                     type="email"
+                    required
                     value={inviteEmail}
                     onChange={(e) => setInviteEmail(e.target.value)}
                     placeholder="colleague@company.com"
