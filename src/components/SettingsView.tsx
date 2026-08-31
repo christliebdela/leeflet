@@ -45,6 +45,7 @@ import { formatFileSize, ITEM_TYPE_CONFIG, PRIORITY_CONFIG } from '../utils/form
 import { toast } from '../store/useToastStore';
 import { INITIAL_SCHEMA_SQL } from '../utils/schemaSql';
 import { getStoredSmtpConfig, saveStoredSmtpConfig, isSmtpConfigured, sendTestEmail } from '../utils/smtp';
+import { getDiceBearSvgUrl } from '../utils/avatars';
 
 type SettingsTab = 'preferences' | 'shortcuts' | 'sync' | 'data' | 'about';
 
@@ -152,6 +153,7 @@ export const SettingsView: React.FC = () => {
     }
   }, [viewMode]);
   const [copiedPath, setCopiedPath] = useState(false);
+  const [authorAvatarError, setAuthorAvatarError] = useState(false);
   const [shortcutFilter, setShortcutFilter] = useState('');
   const [isExporting, setIsExporting] = useState(false);
   const [exportScope, setExportScope] = useState<'current' | 'all'>('current');
@@ -2400,18 +2402,19 @@ export const SettingsView: React.FC = () => {
           {/* Creator & Engineering Spotlight */}
           <div className="p-4 sm:p-5 rounded-[8px] bg-white dark:bg-[#18181b] border border-[#e5e7eb] dark:border-[#27272a] flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
             <div className="flex items-center gap-3.5">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-zinc-800 to-zinc-600 border border-white/20 flex items-center justify-center text-white font-bold text-xs tracking-wider shadow-xs shrink-0 select-none">
-                CD
+              <div className="w-10 h-10 rounded-full overflow-hidden bg-[#27272a] border border-[#e5e7eb] dark:border-[#323238] flex items-center justify-center shadow-xs shrink-0 select-none">
+                <img
+                  src={authorAvatarError ? getDiceBearSvgUrl('bottts-neutral', 'Christlieb') : 'https://github.com/christliebdela.png'}
+                  alt="Christlieb Dela"
+                  onError={() => setAuthorAvatarError(true)}
+                  className="w-full h-full object-cover"
+                  loading="eager"
+                />
               </div>
               <div className="space-y-0.5">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-[#111827] dark:text-[#f4f4f5]">
-                    Christlieb Dela
-                  </span>
-                  <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                    Creator &amp; Engineer
-                  </span>
-                </div>
+                <span className="text-xs font-semibold text-[#111827] dark:text-[#f4f4f5]">
+                  Christlieb Dela
+                </span>
                 <p className="text-[11px] text-[#6b7280] dark:text-[#a1a1aa]">
                   Designed and engineered for focused, lightning-fast local &amp; cloud workflows.
                 </p>
