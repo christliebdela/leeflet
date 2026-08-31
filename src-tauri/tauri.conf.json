@@ -23,6 +23,7 @@
         "decorations": false,
         "center": true,
         "transparent": true,
+        "backgroundColor": [18, 18, 20, 255],
         "shadow": true,
         "dragDropEnabled": false
       },

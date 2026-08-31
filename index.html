@@ -6,6 +6,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>leeflet</title>
     <!-- Prevent theme flash before paint -->
+    <style>
+      :root {
+        background-color: #f9fafb;
+      }
+      :root.dark {
+        background-color: #121214;
+      }
+      html, body {
+        background-color: inherit;
+      }
+    </style>
     <script>
       (function() {
         try {
@@ -13,10 +24,11 @@
           var isDark = saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
           if (isDark) {
             document.documentElement.classList.add('dark');
+            document.documentElement.style.backgroundColor = '#121214';
           } else {
             document.documentElement.classList.remove('dark');
+            document.documentElement.style.backgroundColor = '#f9fafb';
           }
-          document.documentElement.style.backgroundColor = 'transparent';
         } catch (e) {}
       })();
     </script>
