@@ -97,8 +97,9 @@ const getInitialTheme = (): 'light' | 'dark' => {
 const getInitialColorTheme = (): ColorThemeId => {
   try {
     const saved = localStorage.getItem('leaf_color_theme') as ColorThemeId | null;
+    if (saved === 'deep-black') return 'default';
     const validIds: ColorThemeId[] = [
-      'default', 'deep-black', 'claude', 'kanagawa', 'kanagawa-dragon', 'tokyo-night',
+      'default', 'claude', 'kanagawa', 'kanagawa-dragon', 'tokyo-night',
       'catppuccin', 'rose-pine', 'everforest', 'nord', 'gruvbox', 'dracula',
       'solarized', 'tide', 'sage', 'caffeine',
     ];
@@ -106,7 +107,7 @@ const getInitialColorTheme = (): ColorThemeId => {
       return saved;
     }
   } catch {}
-  return 'deep-black';
+  return 'default';
 };
 
 const getInitialSidebarCollapseMode = (): SidebarCollapseMode => {

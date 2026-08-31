@@ -156,7 +156,9 @@
    INTERFACE COLOR THEMES
    ======================================================== */
 
-/* 1. Noir (OLED Pitch Black) */
+/* 1. Noir (Default Flagship - OLED Pitch Black) */
+html.dark,
+html.dark[data-color-theme="default"],
 html.dark[data-color-theme="deep-black"] {
   --theme-bg-app: #000000;
   --theme-bg-sidebar: #000000;
@@ -306,35 +308,36 @@ html.dark[data-color-theme="caffeine"] {
   --theme-accent: #f59e0b;
 }
 
-/* Universal Theme Overrides for custom themes */
-html.dark[data-color-theme]:not([data-color-theme="default"]) div.h-screen.w-screen,
-html.dark[data-color-theme]:not([data-color-theme="default"]) .dark\:bg-\[\#0f0f11\] {
+/* Universal Theme Overrides across entire application */
+html.dark div.h-screen.w-screen,
+html.dark .dark\:bg-\[\#0f0f11\],
+html.dark .dark\:bg-\[\#0c0c0e\] {
   background-color: var(--theme-bg-app) !important;
 }
 
-html.dark[data-color-theme]:not([data-color-theme="default"]) aside,
-html.dark[data-color-theme]:not([data-color-theme="default"]) .dark\:bg-\[\#121214\] {
+html.dark aside,
+html.dark .dark\:bg-\[\#121214\] {
   background-color: var(--theme-bg-sidebar) !important;
   border-color: var(--theme-border) !important;
 }
 
-html.dark[data-color-theme]:not([data-color-theme="default"]) .dark\:bg-\[\#18181b\] {
+html.dark .dark\:bg-\[\#18181b\] {
   background-color: var(--theme-bg-card) !important;
 }
 
-html.dark[data-color-theme]:not([data-color-theme="default"]) .dark\:bg-\[\#202024\],
-html.dark[data-color-theme]:not([data-color-theme="default"]) .dark\:bg-\[\#1c1c1f\],
-html.dark[data-color-theme]:not([data-color-theme="default"]) .dark\:bg-\[\#27272a\] {
+html.dark .dark\:bg-\[\#202024\],
+html.dark .dark\:bg-\[\#1c1c1f\],
+html.dark .dark\:bg-\[\#27272a\] {
   background-color: var(--theme-bg-card-elevated) !important;
 }
 
-html.dark[data-color-theme]:not([data-color-theme="default"]) .dark\:border-\[\#27272a\],
-html.dark[data-color-theme]:not([data-color-theme="default"]) .dark\:border-\[\#323238\],
-html.dark[data-color-theme]:not([data-color-theme="default"]) .dark\:border-\[\#3f3f46\] {
+html.dark .dark\:border-\[\#27272a\],
+html.dark .dark\:border-\[\#323238\],
+html.dark .dark\:border-\[\#3f3f46\] {
   border-color: var(--theme-border) !important;
 }
 
-html.dark[data-color-theme]:not([data-color-theme="default"]) .dark\:divide-\[\#27272a\] > :not([hidden]) ~ :not([hidden]) {
+html.dark .dark\:divide-\[\#27272a\] > :not([hidden]) ~ :not([hidden]) {
   border-color: var(--theme-border) !important;
 }
 
