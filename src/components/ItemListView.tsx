@@ -29,13 +29,13 @@ const LinearPriorityIcon: React.FC<{ priority: string }> = ({ priority }) => {
   switch (priority) {
     case 'critical':
       return (
-        <span title="Urgent / Critical" className="w-4 h-4 flex items-center justify-center text-rose-500 shrink-0">
+        <span className="w-4 h-4 flex items-center justify-center text-rose-500 shrink-0">
           <AlertCircle className="w-3.5 h-3.5" />
         </span>
       );
     case 'high':
       return (
-        <span title="High Priority" className="w-4 h-4 flex items-end justify-center gap-[1.5px] pb-0.5 shrink-0">
+        <span className="w-4 h-4 flex items-end justify-center gap-[1.5px] pb-0.5 shrink-0">
           <span className="w-[2px] h-[4px] bg-amber-500 rounded-full" />
           <span className="w-[2px] h-[7px] bg-amber-500 rounded-full" />
           <span className="w-[2px] h-[10px] bg-amber-500 rounded-full" />
@@ -43,7 +43,7 @@ const LinearPriorityIcon: React.FC<{ priority: string }> = ({ priority }) => {
       );
     case 'medium':
       return (
-        <span title="Medium Priority" className="w-4 h-4 flex items-end justify-center gap-[1.5px] pb-0.5 shrink-0">
+        <span className="w-4 h-4 flex items-end justify-center gap-[1.5px] pb-0.5 shrink-0">
           <span className="w-[2px] h-[4px] bg-amber-500/80 rounded-full" />
           <span className="w-[2px] h-[7px] bg-amber-500/80 rounded-full" />
           <span className="w-[2px] h-[10px] bg-[#e5e7eb] dark:bg-[#3f3f46] rounded-full" />
@@ -51,7 +51,7 @@ const LinearPriorityIcon: React.FC<{ priority: string }> = ({ priority }) => {
       );
     case 'low':
       return (
-        <span title="Low Priority" className="w-4 h-4 flex items-end justify-center gap-[1.5px] pb-0.5 shrink-0">
+        <span className="w-4 h-4 flex items-end justify-center gap-[1.5px] pb-0.5 shrink-0">
           <span className="w-[2px] h-[4px] bg-blue-400 rounded-full" />
           <span className="w-[2px] h-[7px] bg-[#e5e7eb] dark:bg-[#3f3f46] rounded-full" />
           <span className="w-[2px] h-[10px] bg-[#e5e7eb] dark:bg-[#3f3f46] rounded-full" />
@@ -59,7 +59,7 @@ const LinearPriorityIcon: React.FC<{ priority: string }> = ({ priority }) => {
       );
     default:
       return (
-        <span title="No Priority" className="w-4 h-4 flex items-center justify-center text-[#9ca3af] dark:text-[#52525b] text-[11px] shrink-0 font-mono select-none">
+        <span className="w-4 h-4 flex items-center justify-center text-[#9ca3af] dark:text-[#52525b] text-[11px] shrink-0 font-mono select-none">
           —
         </span>
       );

@@ -22,7 +22,6 @@ export const MiddleTruncate: React.FC<MiddleTruncateProps> = ({
       <span
         className={`truncate min-w-0 max-w-full block ${className}`}
         style={style}
-        title={value}
       >
         {value}
       </span>
@@ -36,7 +35,6 @@ export const MiddleTruncate: React.FC<MiddleTruncateProps> = ({
     <span
       className={`inline-flex items-center min-w-0 max-w-full overflow-hidden ${className}`}
       style={style}
-      title={value}
     >
       <span className="truncate min-w-0">{prefix}</span>
       <span className="shrink-0">{suffix}</span>

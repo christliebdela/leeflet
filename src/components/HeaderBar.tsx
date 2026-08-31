@@ -22,6 +22,7 @@ import { ItemType, Priority, Project, Item } from '../types';
 import { ITEM_TYPE_CONFIG, PRIORITY_CONFIG } from '../utils/format';
 import { WindowControls } from './WindowControls';
 import { SearchInput } from './ui/SearchInput';
+import { Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
 import { toast } from '../store/useToastStore';
 
 const TYPE_ICONS: Record<ItemType, React.FC<{ className?: string }>> = {
@@ -547,43 +548,81 @@ export const HeaderBar: React.FC = () => {
       </>
     )}
 
-        {/* Cloud Sync button — only visible when cloud-connected */}
+        {/* Cloud Sync / Offline button — with rich custom tooltip */}
         {isCloudSync && (
-          <button
-            type="button"
-            onClick={() => handleRefresh(false)}
-            title={
-              isOnline
-                ? syncState === 'syncing'
-                  ? 'Syncing with Supabase...'
-                  : syncState === 'synced'
-                  ? 'Synced — click to sync again'
-                  : 'Cloud sync active — click to sync'
-                : 'Offline — reconnect to sync'
-            }
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] border text-xs font-medium shrink-0 whitespace-nowrap transition-colors cursor-pointer select-none ${
-              !isOnline
-                ? 'bg-[#f4f5f6] dark:bg-[#1c1c1f] border-[#e5e7eb] dark:border-[#27272a] text-[#9ca3af] dark:text-[#52525b]'
-                : 'bg-[#f4f5f6] dark:bg-[#1c1c1f] border-[#e5e7eb] dark:border-[#27272a] text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#27272a]'
-            }`}
-          >
-            {!isOnline ? (
-              <CloudOff className="w-3.5 h-3.5" />
-            ) : syncState === 'syncing' ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Cloud className="w-3.5 h-3.5" />
-            )}
-            <span>
-              {!isOnline
-                ? 'Offline'
-                : syncState === 'syncing'
-                ? 'Syncing'
-                : syncState === 'synced'
-                ? 'Synced'
-                : 'Cloud'}
-            </span>
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={() => handleRefresh(false)}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] border text-xs font-medium shrink-0 whitespace-nowrap transition-colors cursor-pointer select-none ${
+                  !isOnline
+                    ? 'bg-[#f4f5f6] dark:bg-[#1c1c1f] border-[#e5e7eb] dark:border-[#27272a] text-[#9ca3af] dark:text-[#52525b]'
+                    : 'bg-[#f4f5f6] dark:bg-[#1c1c1f] border-[#e5e7eb] dark:border-[#27272a] text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#27272a]'
+                }`}
+              >
+                {!isOnline ? (
+                  <CloudOff className="w-3.5 h-3.5" />
+                ) : syncState === 'syncing' ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Cloud className="w-3.5 h-3.5" />
+                )}
+                <span>
+                  {!isOnline
+                    ? 'Offline'
+                    : syncState === 'syncing'
+                    ? 'Syncing'
+                    : syncState === 'synced'
+                    ? 'Synced'
+                    : 'Cloud'}
+                </span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" align="end" className="p-2.5 max-w-[280px] space-y-1 text-left">
+              {!isOnline ? (
+                <>
+                  <div className="font-semibold text-xs text-white dark:text-[#f4f4f5] flex items-center gap-1.5">
+                    <CloudOff className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span>Working Offline</span>
+                  </div>
+                  <p className="text-[11px] text-[#d4d4d8] dark:text-[#a1a1aa] leading-relaxed">
+                    All your changes are saved locally. When you reconnect, updates will sync automatically to the cloud. Conflicting edits are merged using the latest write timestamp.
+                  </p>
+                </>
+              ) : syncState === 'syncing' ? (
+                <>
+                  <div className="font-semibold text-xs text-white dark:text-[#f4f4f5] flex items-center gap-1.5">
+                    <Loader2 className="w-3.5 h-3.5 text-blue-400 animate-spin shrink-0" />
+                    <span>Syncing with Cloud...</span>
+                  </div>
+                  <p className="text-[11px] text-[#d4d4d8] dark:text-[#a1a1aa] leading-relaxed">
+                    Replicating delta mutations and fetching the latest updates from your Supabase database.
+                  </p>
+                </>
+              ) : syncState === 'synced' ? (
+                <>
+                  <div className="font-semibold text-xs text-white dark:text-[#f4f4f5] flex items-center gap-1.5">
+                    <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span>Cloud Synchronized</span>
+                  </div>
+                  <p className="text-[11px] text-[#d4d4d8] dark:text-[#a1a1aa] leading-relaxed">
+                    Your workspace is fully up to date with your team's cloud database. Click to trigger a manual refresh.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="font-semibold text-xs text-white dark:text-[#f4f4f5] flex items-center gap-1.5">
+                    <Cloud className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span>Cloud Sync Active</span>
+                  </div>
+                  <p className="text-[11px] text-[#d4d4d8] dark:text-[#a1a1aa] leading-relaxed">
+                    Real-time WebSocket synchronization is active. Click to manually check for remote changes.
+                  </p>
+                </>
+              )}
+            </TooltipContent>
+          </Tooltip>
         )}
 
         {/* + New Button */}

@@ -27,6 +27,7 @@ import {
   HelpCircle,
   FileText,
   Cloud,
+  CloudOff,
   Key,
   Globe,
   Eye,
@@ -46,6 +47,7 @@ import { toast } from '../store/useToastStore';
 import { INITIAL_SCHEMA_SQL } from '../utils/schemaSql';
 import { getStoredSmtpConfig, saveStoredSmtpConfig, isSmtpConfigured, sendTestEmail } from '../utils/smtp';
 import { getDiceBearSvgUrl } from '../utils/avatars';
+import { Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
 
 type SettingsTab = 'preferences' | 'shortcuts' | 'sync' | 'data' | 'about';
 
@@ -1349,17 +1351,44 @@ export const SettingsView: React.FC = () => {
 
                 {/* Status Indicator Badge */}
                 <div className="self-start sm:self-auto shrink-0">
-                  {syncMode === 'cloud' && supabaseUrl ? (
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-[11px] font-medium bg-emerald-500/8 dark:bg-emerald-950/35 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 dark:border-emerald-500/25 shadow-2xs">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 ring-2 ring-emerald-500/20 animate-pulse" />
-                      <span>Cloud Sync Active</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-[11px] font-medium bg-[#f4f5f6] dark:bg-[#202024] text-[#6b7280] dark:text-[#a1a1aa] border border-[#e5e7eb] dark:border-[#27272a]">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#9ca3af]" />
-                      <span>Local Only (Offline)</span>
-                    </div>
-                  )}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      {syncMode === 'cloud' && supabaseUrl ? (
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-[11px] font-medium bg-emerald-500/8 dark:bg-emerald-950/35 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 dark:border-emerald-500/25 shadow-2xs cursor-help">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 ring-2 ring-emerald-500/20 animate-pulse" />
+                          <span>Cloud Sync Active</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-[11px] font-medium bg-[#f4f5f6] dark:bg-[#202024] text-[#6b7280] dark:text-[#a1a1aa] border border-[#e5e7eb] dark:border-[#27272a] cursor-help">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#9ca3af]" />
+                          <span>Local Only (Offline)</span>
+                        </div>
+                      )}
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" align="end" className="p-2.5 max-w-[280px] space-y-1 text-left">
+                      {syncMode === 'cloud' && supabaseUrl ? (
+                        <>
+                          <div className="font-semibold text-xs text-white dark:text-[#f4f4f5] flex items-center gap-1.5">
+                            <Cloud className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                            <span>Connected &amp; Replicating</span>
+                          </div>
+                          <p className="text-[11px] text-[#d4d4d8] dark:text-[#a1a1aa] leading-relaxed">
+                            Connected to your Supabase PostgreSQL database. Team mutations and presence updates synchronize over WebSockets in real-time.
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <div className="font-semibold text-xs text-white dark:text-[#f4f4f5] flex items-center gap-1.5">
+                            <CloudOff className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                            <span>Offline / Local Storage</span>
+                          </div>
+                          <p className="text-[11px] text-[#d4d4d8] dark:text-[#a1a1aa] leading-relaxed">
+                            All your edits are stored directly on your physical machine. When you connect a team database, local items will sync automatically with conflict resolution based on latest write timestamp.
+                          </p>
+                        </>
+                      )}
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
               </div>
             </div>
