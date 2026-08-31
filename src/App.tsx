@@ -97,6 +97,81 @@ export const App: React.FC = () => {
               }
               localStorage.setItem(`leeflet_workspace_role_${newWs.id}`, userRole);
               localStorage.setItem(`leeflet_is_joined_workspace_${newWs.id}`, 'true');
+
+              let myProfileName = '';
+              let myProfileEmail = '';
+              let myProfileMascot = '';
+              let myProfileAvatarUrl = '';
+              try {
+                const pRaw = localStorage.getItem('leeflet_user_profile_data') || localStorage.getItem('leaf_user_profile_data');
+                if (pRaw) {
+                  const p = JSON.parse(pRaw);
+                  if (p.fullName && p.fullName !== 'Alex' && p.fullName !== 'Alex Rivera' && p.fullName !== 'User') {
+                    myProfileName = p.fullName;
+                  }
+                  if (p.email) myProfileEmail = p.email;
+                  if (p.avatarMascot) myProfileMascot = p.avatarMascot;
+                  if (p.avatarUrl) myProfileAvatarUrl = p.avatarUrl;
+                }
+              } catch {}
+
+              if (!myProfileName) {
+                myProfileName = payload.invitedName || (payload.invitedEmail ? payload.invitedEmail.split('@')[0] : 'Team Member');
+              }
+              if (!myProfileEmail) {
+                myProfileEmail = payload.invitedEmail || '';
+              }
+
+              // Update local profile with invited name if fresh
+              try {
+                const pRaw = localStorage.getItem('leeflet_user_profile_data');
+                if (!pRaw || pRaw.includes('Alex Rivera') || pRaw.includes('"fullName":""')) {
+                  localStorage.setItem('leeflet_user_profile_data', JSON.stringify({
+                    fullName: myProfileName,
+                    username: myProfileName.toLowerCase().replace(/[^a-z0-9]/g, ''),
+                    email: myProfileEmail,
+                    title: userRole.charAt(0).toUpperCase() + userRole.slice(1),
+                    avatarMascot: myProfileMascot || 'bot-spark',
+                    avatarColor: 'bg-blue-600 dark:bg-blue-500',
+                  }));
+                }
+              } catch {}
+
+              const { OWNER_MEMBER_UUID, saveStoredTeamMembers } = await import('./utils/team');
+              const { pushTeamMemberToCloud, pullTeamMembersFromCloud } = await import('./services/cloudSync');
+
+              const adminMember = {
+                id: OWNER_MEMBER_UUID,
+                name: payload.invitedBy || 'Workspace Admin',
+                email: '',
+                role: 'Admin' as const,
+                status: 'active' as const,
+                joinedAt: 'Workspace Creator',
+                avatarColor: 'bg-violet-600 dark:bg-violet-500',
+              };
+
+              const selfMember = {
+                id: crypto.randomUUID(),
+                name: myProfileName,
+                email: myProfileEmail,
+                role: (userRole.charAt(0).toUpperCase() + userRole.slice(1)) as any,
+                status: 'active' as const,
+                joinedAt: 'Joined just now',
+                avatarColor: 'bg-blue-600 dark:bg-blue-500',
+                avatarMascot: myProfileMascot || undefined,
+                avatarUrl: myProfileAvatarUrl || undefined,
+              };
+
+              saveStoredTeamMembers([adminMember, selfMember], newWs.id);
+
+              if (supabaseUrl && supabaseKey) {
+                await pushTeamMemberToCloud(newWs.id, selfMember);
+                const remoteMembers = await pullTeamMembersFromCloud(newWs.id);
+                if (remoteMembers.length > 0) {
+                  saveStoredTeamMembers(remoteMembers, newWs.id);
+                }
+              }
+
               window.location.hash = '';
               await useLeafStore.getState().initialize('joining team workspace...');
             }

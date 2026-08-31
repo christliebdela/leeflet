@@ -838,15 +838,15 @@ export const QuickCaptureModal: React.FC = () => {
               </button>
 
               {isDueDateMenuOpen && (
-                <div className="absolute left-0 bottom-full mb-1.5 w-60 bg-white dark:bg-[#18181b] border border-[#e5e7eb] dark:border-[#27272a] rounded-[10px] shadow-2xl p-2 z-50 space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-100">
-                  <div className="grid grid-cols-3 gap-1 pb-1.5 border-b border-[#f3f4f6] dark:border-[#27272a]">
+                <div className="absolute left-0 bottom-full mb-1.5 w-48 bg-white dark:bg-[#18181b] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-2xl p-1.5 z-50 animate-in fade-in slide-in-from-bottom-2 duration-100">
+                  <div className="grid grid-cols-3 gap-0.5 pb-1 mb-0.5 border-b border-[#f3f4f6] dark:border-[#27272a]">
                     <button
                       type="button"
                       onClick={() => {
                         setDueDate(getPresetDate('today'));
                         setIsDueDateMenuOpen(false);
                       }}
-                      className="py-1 px-1 rounded-[5px] text-[11px] font-medium text-center text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] transition-colors"
+                      className="py-0.5 px-0.5 rounded-[4px] text-[10px] font-medium text-center text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] transition-colors"
                     >
                       Today
                     </button>
@@ -857,7 +857,7 @@ export const QuickCaptureModal: React.FC = () => {
                         setDueDate(getPresetDate('tomorrow'));
                         setIsDueDateMenuOpen(false);
                       }}
-                      className="py-1 px-1 rounded-[5px] text-[11px] font-medium text-center text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] transition-colors"
+                      className="py-0.5 px-0.5 rounded-[4px] text-[10px] font-medium text-center text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] transition-colors"
                     >
                       Tomorrow
                     </button>
@@ -868,7 +868,7 @@ export const QuickCaptureModal: React.FC = () => {
                         setDueDate(getPresetDate('next_week'));
                         setIsDueDateMenuOpen(false);
                       }}
-                      className="py-1 px-1 rounded-[5px] text-[11px] font-medium text-center text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] transition-colors"
+                      className="py-0.5 px-0.5 rounded-[4px] text-[10px] font-medium text-center text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] transition-colors"
                     >
                       Next Mon
                     </button>
@@ -890,8 +890,8 @@ export const QuickCaptureModal: React.FC = () => {
                   />
 
                   {dueDate && (
-                    <div className="pt-1.5 border-t border-[#f3f4f6] dark:border-[#27272a] flex items-center justify-between">
-                      <span className="text-[10px] text-[#6b7280] dark:text-[#a1a1aa] font-mono">
+                    <div className="pt-1 mt-0.5 border-t border-[#f3f4f6] dark:border-[#27272a] flex items-center justify-between">
+                      <span className="text-[9.5px] text-[#6b7280] dark:text-[#a1a1aa] font-mono">
                         {dueDate}
                       </span>
                       <button
@@ -900,9 +900,9 @@ export const QuickCaptureModal: React.FC = () => {
                           setDueDate(null);
                           setIsDueDateMenuOpen(false);
                         }}
-                        className="px-2 py-0.5 rounded-[4px] text-[11px] font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
+                        className="px-1.5 py-0.5 rounded-[3px] text-[9.5px] font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
                       >
-                        Clear Due Date
+                        Clear
                       </button>
                     </div>
                   )}

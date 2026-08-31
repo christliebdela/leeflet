@@ -151,11 +151,17 @@ export const Sidebar: React.FC = () => {
     let supabaseUrl = '';
     let supabaseKey = '';
     let userRole = 'member';
+    let inviterName = 'Workspace Admin';
+    let invitedName = '';
+    let invitedEmail = '';
 
     try {
       const trimmed = inviteInput.trim();
       let jsonPayload = '';
-      if (trimmed.includes('#data=')) {
+      if (trimmed.includes('#join=')) {
+        const rawBase64 = trimmed.split('#join=')[1];
+        jsonPayload = decodeURIComponent(escape(atob(rawBase64)));
+      } else if (trimmed.includes('#data=')) {
         const rawBase64 = trimmed.split('#data=')[1];
         jsonPayload = decodeURIComponent(escape(atob(rawBase64)));
       } else if (trimmed.startsWith('ey') || (!trimmed.includes('://') && !trimmed.includes('&') && trimmed.length > 20)) {
@@ -168,6 +174,9 @@ export const Sidebar: React.FC = () => {
         supabaseUrl = parsed.supabaseUrl || parsed.url || '';
         supabaseKey = parsed.supabaseAnonKey || parsed.key || '';
         userRole = parsed.role || 'member';
+        inviterName = parsed.invitedBy || inviterName;
+        invitedName = parsed.invitedName || '';
+        invitedEmail = parsed.invitedEmail || '';
       } else if (trimmed.includes('server=')) {
         const url = new URL(trimmed.replace('leeflet://', 'http://'));
         supabaseUrl = url.searchParams.get('server') || '';
@@ -191,6 +200,82 @@ export const Sidebar: React.FC = () => {
       }
       localStorage.setItem(`leeflet_workspace_role_${newWs.id}`, userRole);
       localStorage.setItem(`leeflet_is_joined_workspace_${newWs.id}`, 'true');
+
+      // Initialize team members for joined workspace
+      let myProfileName = '';
+      let myProfileEmail = '';
+      let myProfileMascot = '';
+      let myProfileAvatarUrl = '';
+      try {
+        const pRaw = localStorage.getItem('leeflet_user_profile_data') || localStorage.getItem('leaf_user_profile_data');
+        if (pRaw) {
+          const p = JSON.parse(pRaw);
+          if (p.fullName && p.fullName !== 'Alex' && p.fullName !== 'Alex Rivera' && p.fullName !== 'User') {
+            myProfileName = p.fullName;
+          }
+          if (p.email) myProfileEmail = p.email;
+          if (p.avatarMascot) myProfileMascot = p.avatarMascot;
+          if (p.avatarUrl) myProfileAvatarUrl = p.avatarUrl;
+        }
+      } catch {}
+
+      if (!myProfileName) {
+        myProfileName = invitedName || (invitedEmail ? invitedEmail.split('@')[0] : 'Team Member');
+      }
+      if (!myProfileEmail) {
+        myProfileEmail = invitedEmail || '';
+      }
+
+      // Update local profile with invited name if fresh
+      try {
+        const pRaw = localStorage.getItem('leeflet_user_profile_data');
+        if (!pRaw || pRaw.includes('Alex Rivera') || pRaw.includes('"fullName":""')) {
+          localStorage.setItem('leeflet_user_profile_data', JSON.stringify({
+            fullName: myProfileName,
+            username: myProfileName.toLowerCase().replace(/[^a-z0-9]/g, ''),
+            email: myProfileEmail,
+            title: userRole.charAt(0).toUpperCase() + userRole.slice(1),
+            avatarMascot: myProfileMascot || 'bot-spark',
+            avatarColor: 'bg-blue-600 dark:bg-blue-500',
+          }));
+        }
+      } catch {}
+
+      const { OWNER_MEMBER_UUID, saveStoredTeamMembers } = await import('../utils/team');
+      const { pushTeamMemberToCloud, pullTeamMembersFromCloud } = await import('../services/cloudSync');
+
+      const adminMember = {
+        id: OWNER_MEMBER_UUID,
+        name: inviterName,
+        email: '',
+        role: 'Admin' as const,
+        status: 'active' as const,
+        joinedAt: 'Workspace Creator',
+        avatarColor: 'bg-violet-600 dark:bg-violet-500',
+      };
+
+      const selfMember = {
+        id: crypto.randomUUID(),
+        name: myProfileName,
+        email: myProfileEmail,
+        role: (userRole.charAt(0).toUpperCase() + userRole.slice(1)) as any,
+        status: 'active' as const,
+        joinedAt: 'Joined just now',
+        avatarColor: 'bg-blue-600 dark:bg-blue-500',
+        avatarMascot: myProfileMascot || undefined,
+        avatarUrl: myProfileAvatarUrl || undefined,
+      };
+
+      saveStoredTeamMembers([adminMember, selfMember], newWs.id);
+
+      if (supabaseUrl && supabaseKey) {
+        await pushTeamMemberToCloud(newWs.id, selfMember);
+        const remoteMembers = await pullTeamMembersFromCloud(newWs.id);
+        if (remoteMembers.length > 0) {
+          saveStoredTeamMembers(remoteMembers, newWs.id);
+        }
+      }
+
       toast.success(`Joined ${teamName} (${userRole})`);
       await initialize('joining team workspace...');
     }
@@ -976,7 +1061,7 @@ export const Sidebar: React.FC = () => {
               <span className="truncate">{userProfileName}</span>
             </div>
             <span className="text-[10.5px] text-[#9ca3af] dark:text-[#71717a] font-normal shrink-0">
-              Owner
+              {workspace ? localStorage.getItem(`leeflet_workspace_role_${workspace.id}`) || (localStorage.getItem(`leeflet_is_joined_workspace_${workspace.id}`) === 'true' ? 'Member' : 'Admin') : 'Admin'}
             </span>
           </button>
         </div>

@@ -52,6 +52,7 @@ export interface InvitePayload {
   supabaseAnonKey?: string;
   role: RoleId;
   invitedEmail?: string;
+  invitedName?: string;
   invitedBy?: string;
   createdAt: number;
   token: string;
@@ -60,7 +61,8 @@ export interface InvitePayload {
 export const generateInvitePayload = (
   workspace: Workspace,
   role: RoleId,
-  invitedEmail?: string
+  invitedEmail?: string,
+  invitedName?: string
 ): InvitePayload => {
   const supabaseUrl = localStorage.getItem(`leeflet_supabase_url_${workspace.id}`) || undefined;
   const supabaseAnonKey = localStorage.getItem(`leeflet_supabase_anon_key_${workspace.id}`) || undefined;
@@ -82,6 +84,7 @@ export const generateInvitePayload = (
     supabaseAnonKey,
     role,
     invitedEmail,
+    invitedName,
     invitedBy: profileName,
     createdAt: Date.now(),
     token: Math.random().toString(36).substring(2, 10).toUpperCase(),
@@ -95,15 +98,16 @@ export const getWebOrigin = (): string => {
       return origin;
     }
   }
-  return 'https://app.leeflet.com';
+  return 'https://leeflet-cd.vercel.app';
 };
 
 export const generateInviteDeepLink = (
   workspace: Workspace,
   role: RoleId,
-  invitedEmail?: string
+  invitedEmail?: string,
+  invitedName?: string
 ): string => {
-  const payload = generateInvitePayload(workspace, role, invitedEmail);
+  const payload = generateInvitePayload(workspace, role, invitedEmail, invitedName);
   const jsonStr = JSON.stringify(payload);
   const base64Data = btoa(unescape(encodeURIComponent(jsonStr)));
   return `leeflet://join#data=${base64Data}`;
@@ -112,9 +116,10 @@ export const generateInviteDeepLink = (
 export const generateInviteWebLink = (
   workspace: Workspace,
   role: RoleId,
-  invitedEmail?: string
+  invitedEmail?: string,
+  invitedName?: string
 ): string => {
-  const payload = generateInvitePayload(workspace, role, invitedEmail);
+  const payload = generateInvitePayload(workspace, role, invitedEmail, invitedName);
   const jsonStr = JSON.stringify(payload);
   const base64Data = btoa(unescape(encodeURIComponent(jsonStr)));
   const origin = getWebOrigin();
@@ -124,9 +129,10 @@ export const generateInviteWebLink = (
 export const generateInviteCode = (
   workspace: Workspace,
   role: RoleId,
-  invitedEmail?: string
+  invitedEmail?: string,
+  invitedName?: string
 ): string => {
-  const payload = generateInvitePayload(workspace, role, invitedEmail);
+  const payload = generateInvitePayload(workspace, role, invitedEmail, invitedName);
   const jsonStr = JSON.stringify(payload);
   return btoa(unescape(encodeURIComponent(jsonStr)));
 };
@@ -136,12 +142,12 @@ export const generateInviteHtmlTemplate = (params: {
   inviterName: string;
   inviterEmail: string;
   role: RoleId;
-  roleDescription: string;
+  roleDescription?: string;
   inviteLink: string;
   desktopInviteLink?: string;
-  inviteCode: string;
+  inviteCode?: string;
 }): string => {
-  const { workspaceName, inviterName, inviterEmail, role, roleDescription, inviteLink, desktopInviteLink, inviteCode } = params;
+  const { workspaceName, inviterName, role, inviteLink } = params;
 
   return `
 <!DOCTYPE html>
@@ -151,103 +157,88 @@ export const generateInviteHtmlTemplate = (params: {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Invitation to collaborate on ${workspaceName}</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #0b0c0e; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f4f4f5;">
-  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #0b0c0e; padding: 40px 20px;">
+<body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b; -webkit-font-smoothing: antialiased;">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 48px 16px;">
     <tr>
       <td align="center">
-        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 540px; background-color: #141417; border: 1px solid #27272a; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);">
-          <!-- Header Banner -->
+        <!-- Main Card -->
+        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 480px; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);">
+          
+          <!-- Brand Header -->
           <tr>
-            <td style="padding: 32px 32px 20px 32px; border-bottom: 1px solid #222226; background: linear-gradient(180deg, #18181c 0%, #141417 100%);">
+            <td style="padding: 24px 32px 18px 32px; border-bottom: 1px solid #f1f5f9;">
               <table width="100%" border="0" cellspacing="0" cellpadding="0">
                 <tr>
                   <td>
-                    <div style="display: inline-block; padding: 6px 10px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.28); border-radius: 6px; color: #10b981; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 12px;">
-                      WORKSPACE INVITATION
-                    </div>
-                    <h1 style="margin: 0 0 6px 0; font-size: 20px; font-weight: 700; color: #ffffff; letter-spacing: -0.02em;">
-                      Join ${workspaceName} on Leeflet
-                    </h1>
-                    <p style="margin: 0; font-size: 13px; color: #a1a1aa; line-height: 1.5;">
-                      <strong>${inviterName}</strong> (${inviterEmail}) has invited you to join their local-first workspace.
-                    </p>
+                    <table border="0" cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td style="vertical-align: middle; padding-right: 8px;">
+                          <img src="https://leeflet-cd.vercel.app/leaf_logo.png" width="18" height="18" alt="leeflet logo" style="display: block; width: 18px; height: 18px; object-fit: contain;" />
+                        </td>
+                        <td style="vertical-align: middle;">
+                          <span style="font-family: Georgia, serif; font-style: italic; font-size: 19px; font-weight: 700; color: #0f172a; letter-spacing: -0.02em;">
+                            leeflet
+                          </span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                  <td align="right">
+                    <span style="display: inline-block; padding: 4px 9px; background-color: #f1f5f9; border-radius: 6px; font-size: 11px; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.04em;">
+                      ${role}
+                    </span>
                   </td>
                 </tr>
               </table>
             </td>
           </tr>
 
-          <!-- Role Details Card -->
+          <!-- Content Body -->
           <tr>
-            <td style="padding: 24px 32px;">
-              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #1a1a1e; border: 1px solid #2a2a30; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
-                <tr>
-                  <td>
-                    <div style="font-size: 11px; font-weight: 600; color: #71717a; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">
-                      ASSIGNED ROLE
-                    </div>
-                    <div style="font-size: 15px; font-weight: 700; color: #ffffff; margin-bottom: 4px;">
-                      ${role}
-                    </div>
-                    <div style="font-size: 12px; color: #a1a1aa; line-height: 1.4;">
-                      ${roleDescription}
-                    </div>
-                  </td>
-                </tr>
-              </table>
+            <td style="padding: 32px;">
+              <h1 style="margin: 0 0 12px 0; font-size: 19px; font-weight: 600; color: #0f172a; line-height: 1.35; letter-spacing: -0.01em;">
+                ${inviterName} invited you to collaborate on <strong>${workspaceName}</strong>
+              </h1>
+              
+              <p style="margin: 0 0 28px 0; font-size: 14px; color: #475569; line-height: 1.6;">
+                Join <strong>${workspaceName}</strong> on Leeflet to manage tasks, track progress, and collaborate in real-time.
+              </p>
 
-              <!-- Main Call to Action Button (Web / Universal) -->
-              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 14px;">
-                <tr>
-                  <td align="center">
-                    <a href="${inviteLink}" style="display: block; width: 100%; box-sizing: border-box; background-color: #ffffff; color: #09090b; text-decoration: none; font-size: 13px; font-weight: 700; padding: 13px 24px; border-radius: 7px; text-align: center; box-shadow: 0 4px 12px rgba(255, 255, 255, 0.15);">
-                      Accept Invitation &rarr;
-                    </a>
-                  </td>
-                </tr>
-              </table>
-
-              ${desktopInviteLink ? `
-              <!-- Desktop App Deep Link Button -->
+              <!-- CTA Button -->
               <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 24px;">
                 <tr>
-                  <td align="center">
-                    <a href="${desktopInviteLink}" style="display: inline-block; color: #a1a1aa; text-decoration: underline; font-size: 12px; font-weight: 500;">
-                      Or open directly in Leeflet Desktop App (leeflet://)
+                  <td>
+                    <a href="${inviteLink}" style="display: block; width: 100%; box-sizing: border-box; background-color: #0f172a; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; padding: 13px 24px; border-radius: 8px; text-align: center; letter-spacing: -0.005em;">
+                      Accept Invitation
                     </a>
                   </td>
                 </tr>
               </table>
-              ` : ''}
 
-              <!-- Fallback Manual Join Code -->
-              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="border-top: 1px solid #222226; padding-top: 20px;">
-                <tr>
-                  <td>
-                    <div style="font-size: 11px; font-weight: 600; color: #71717a; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">
-                      MANUAL JOIN INSTRUCTIONS
-                    </div>
-                    <div style="font-size: 12px; color: #9ca3af; line-height: 1.5; margin-bottom: 10px;">
-                      If you have the app or web version open:
-                      <ol style="margin: 6px 0 10px 0; padding-left: 20px;">
-                        <li>Open the <strong>Leeflet</strong> app.</li>
-                        <li>Click the workspace switcher in the top left &rarr; <strong>Join Shared Workspace...</strong></li>
-                        <li>Paste the Invite Code below:</li>
-                      </ol>
-                    </div>
-                    <div style="background-color: #0c0d0f; border: 1px solid #27272a; border-radius: 6px; padding: 10px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11px; color: #34d399; word-break: break-all; user-select: all;">
-                      ${inviteCode}
-                    </div>
-                  </td>
-                </tr>
-              </table>
+              <!-- Desktop App / Manual Join Box -->
+              <div style="border-top: 1px solid #f1f5f9; padding-top: 20px;">
+                <p style="margin: 0 0 8px 0; font-size: 12px; font-weight: 600; color: #334155;">
+                  Joining via the Leeflet Desktop App?
+                </p>
+                <p style="margin: 0 0 10px 0; font-size: 12px; color: #64748b; line-height: 1.5;">
+                  Open the app, select <strong>Join Team Workspace</strong> from the sidebar menu, and paste the link below:
+                </p>
+                <div style="padding: 10px 12px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11px; color: #334155; word-break: break-all; line-height: 1.45; user-select: all; -webkit-user-select: all;">
+                  ${inviteLink}
+                </div>
+              </div>
             </td>
           </tr>
 
           <!-- Footer -->
           <tr>
-            <td style="padding: 16px 32px; background-color: #0e0e11; border-top: 1px solid #222226; font-size: 11px; color: #52525b; text-align: center;">
-              Leeflet &bull; Local-First Workspace for Engineering Teams
+            <td style="padding: 20px 32px; background-color: #f8fafc; border-top: 1px solid #f1f5f9; text-align: center;">
+              <p style="margin: 0 0 4px 0; font-size: 12px; color: #94a3b8;">
+                Leeflet &bull; Local-first workspace for engineering teams
+              </p>
+              <p style="margin: 0; font-size: 11px; color: #cbd5e1;">
+                If you weren't expecting this invitation, you can safely ignore this email.
+              </p>
             </td>
           </tr>
         </table>
@@ -310,7 +301,7 @@ export const sendInviteEmail = async (
     payload: {
       to_email: recipientEmail.trim(),
       to_name: recipientName.trim() || undefined,
-      subject: `Invitation: Join ${workspace.name} on Leeflet as ${role}`,
+      subject: `${inviterName} invited you to join ${workspace.name} on Leeflet`,
       html_body: htmlBody,
     },
   });
@@ -322,20 +313,40 @@ export const sendTestEmail = async (
 ): Promise<void> => {
   const testHtml = `
 <!DOCTYPE html>
-<html>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0b0c0e; color: #ffffff; padding: 30px;">
-  <div style="max-width: 480px; margin: 0 auto; background-color: #18181b; border: 1px solid #27272a; border-radius: 8px; padding: 24px;">
-    <div style="color: #10b981; font-weight: bold; font-size: 12px; text-transform: uppercase; margin-bottom: 8px;">
-      ✓ CONNECTION VERIFIED
-    </div>
-    <h2 style="margin: 0 0 12px 0; font-size: 18px; color: #ffffff;">SMTP Connection Successful!</h2>
-    <p style="font-size: 13px; color: #a1a1aa; line-height: 1.5;">
-      Your custom SMTP mail server (<strong>${config.host}:${config.port}</strong>) is correctly configured and ready to deliver Leeflet team invitations.
-    </p>
-    <div style="font-size: 11px; color: #71717a; margin-top: 20px; border-top: 1px solid #27272a; padding-top: 12px;">
-      Dispatched via Leeflet Desktop Client
-    </div>
-  </div>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SMTP Connection Verified</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b; -webkit-font-smoothing: antialiased;">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 48px 16px;">
+    <tr>
+      <td align="center">
+        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 460px; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);">
+          <tr>
+            <td style="padding: 32px;">
+              <div style="font-family: Georgia, serif; font-style: italic; font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 20px;">
+                leeflet
+              </div>
+              <div style="display: inline-block; padding: 4px 9px; background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 6px; font-size: 11px; font-weight: 700; color: #059669; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 12px;">
+                ✓ SMTP Verified
+              </div>
+              <h1 style="margin: 0 0 10px 0; font-size: 18px; font-weight: 600; color: #0f172a;">
+                Connection successful
+              </h1>
+              <p style="margin: 0 0 20px 0; font-size: 13px; color: #475569; line-height: 1.6;">
+                Your custom SMTP mail server (<strong>${config.host}:${config.port}</strong>) is verified and ready to deliver Leeflet team invitations.
+              </p>
+              <div style="border-top: 1px solid #f1f5f9; padding-top: 16px; font-size: 11px; color: #94a3b8;">
+                Dispatched from Leeflet Desktop Client
+              </div>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>
   `.trim();

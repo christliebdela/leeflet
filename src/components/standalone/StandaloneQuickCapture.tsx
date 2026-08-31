@@ -1,38 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { dbService } from '../../services/db';
-import { Project, ItemType, Priority, ChecklistItem, TeamMember } from '../../types';
-import {
-  Folder,
-  Check,
-  CheckSquare,
-  Bug,
-  Lightbulb,
-  Sparkles,
-  BookOpen,
-  HelpCircle,
-  FileText,
-  ChevronDown,
-  X,
-  Plus,
-  Calendar as CalendarIcon,
-  User,
-} from 'lucide-react';
-import { format } from 'date-fns';
+import { ChecklistItem } from '../../types';
+import { CheckSquare, X, Plus } from 'lucide-react';
 import { broadcastSync } from '../../utils/sync';
-import { ITEM_TYPE_CONFIG, PRIORITY_CONFIG } from '../../utils/format';
-import { getStoredTeamMembers, matchesAssignee, normalizeAssigneeId } from '../../utils/team';
-import { resolveAvatarUrl } from '../../utils/avatars';
-import { Calendar } from '../ui/calendar';
-
-const TYPE_ICONS: Record<ItemType, React.FC<{ className?: string }>> = {
-  task: CheckSquare,
-  bug: Bug,
-  idea: Lightbulb,
-  improvement: Sparkles,
-  research: BookOpen,
-  question: HelpCircle,
-  note: FileText,
-};
 
 export const deriveTitleFromContent = (content: string, maxWords: number = 7): string => {
   if (!content.trim()) return 'Untitled';
@@ -45,132 +15,19 @@ export const deriveTitleFromContent = (content: string, maxWords: number = 7): s
   return words.slice(0, maxWords).join(' ') + '...';
 };
 
-export const formatDueDateLabel = (dateStr: string | null): string => {
-  if (!dateStr) return 'Due Date';
-  try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const target = new Date(dateStr + 'T00:00:00');
-    const diffDays = Math.round((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Tomorrow';
-    if (diffDays === -1) return 'Yesterday';
-    if (diffDays > 1 && diffDays < 7) {
-      return target.toLocaleDateString(undefined, { weekday: 'short' });
-    }
-    return target.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-  } catch {
-    return dateStr;
-  }
-};
-
-const getPresetDate = (preset: 'today' | 'tomorrow' | 'weekend' | 'next_week'): string => {
-  const d = new Date();
-  if (preset === 'today') {
-    return d.toISOString().slice(0, 10);
-  }
-  if (preset === 'tomorrow') {
-    d.setDate(d.getDate() + 1);
-    return d.toISOString().slice(0, 10);
-  }
-  if (preset === 'weekend') {
-    const day = d.getDay();
-    const diff = (6 - day + 7) % 7 || 7;
-    d.setDate(d.getDate() + diff);
-    return d.toISOString().slice(0, 10);
-  }
-  if (preset === 'next_week') {
-    const day = d.getDay();
-    const diff = (1 - day + 7) % 7 || 7;
-    d.setDate(d.getDate() + diff);
-    return d.toISOString().slice(0, 10);
-  }
-  return d.toISOString().slice(0, 10);
-};
-
-const getPillsWidth = (
-  projectName: string | undefined,
-  priority: Priority,
-  memberName: string | undefined,
-  dueDate: string | null,
-  type: ItemType
-): number => {
-  // 1. Project Pill: icon 14 + gaps 12 + chevron 12 + padding 16 + border 2 = 56px
-  const pName = projectName || 'No Project';
-  const projectW = 56 + Math.min(pName.length * 6.5, 80);
-
-  // 2. Priority Pill: dot 8 + gaps 12 + chevron 12 + padding 16 + border 2 = 50px
-  const priorityLabels: Record<Priority, string> = {
-    none: 'None',
-    low: 'Low',
-    medium: 'Medium',
-    high: 'High',
-    critical: 'Critical',
-  };
-  const priorityW = 50 + (priorityLabels[priority] || 'None').length * 6.5;
-
-  // 3. Assignee Pill: icon 14 + gaps 12 + chevron 12 + padding 16 + border 2 = 56px
-  const aName = memberName || 'Assignee';
-  const assigneeW = 56 + Math.min(aName.length * 6.5, 84);
-
-  // 4. Due Date Pill: icon 14 + gaps 12 + chevron 12 + padding 16 + border 2 = 56px
-  const dueLabel = formatDueDateLabel(dueDate);
-  const dueW = 56 + dueLabel.length * 6.5;
-
-  // 5. Type Pill: icon 14 + gaps 12 + chevron 12 + padding 16 + border 2 = 56px
-  const typeLabels: Record<ItemType, string> = {
-    task: 'Task',
-    bug: 'Bug',
-    idea: 'Idea',
-    improvement: 'Improvement',
-    research: 'Research',
-    question: 'Question',
-    note: 'Note',
-  };
-  const typeW = 56 + (typeLabels[type] || 'Task').length * 6.5;
-
-  // 4 gaps of 8px (32px) + modal padding px-4 left/right (32px) + border (2px) = 66px
-  return Math.round(projectW + priorityW + assigneeW + dueW + typeW + 66);
-};
-
 export const StandaloneQuickCapture: React.FC = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [projectId, setProjectId] = useState<string>('');
-  const [type, setType] = useState<ItemType>('task');
-  const [priority, setPriority] = useState<Priority>('none');
-  const [assigneeId, setAssigneeId] = useState<string | null>(null);
-  const [dueDate, setDueDate] = useState<string | null>(null);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-
   const [checklist, setChecklist] = useState<{ id: string; title: string; isCompleted: boolean }[]>([]);
   const [showChecklist, setShowChecklist] = useState(false);
   const [newChecklistText, setNewChecklistText] = useState('');
 
-  const [isTypeMenuOpen, setIsTypeMenuOpen] = useState(false);
-  const [isPriorityMenuOpen, setIsPriorityMenuOpen] = useState(false);
-  const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false);
-  const [isAssigneeMenuOpen, setIsAssigneeMenuOpen] = useState(false);
-  const [isDueDateMenuOpen, setIsDueDateMenuOpen] = useState(false);
-  const [isCreatingProject, setIsCreatingProject] = useState(false);
-  const [newProjectName, setNewProjectName] = useState('');
-
   const titleRef = useRef('');
   const descriptionRef = useRef('');
-  const newProjectNameRef = useRef('');
   const titleInputRef = useRef<HTMLInputElement>(null);
   const descTextareaRef = useRef<HTMLTextAreaElement>(null);
   const checklistInputRef = useRef<HTMLTextAreaElement>(null);
   const bodyScrollRef = useRef<HTMLDivElement>(null);
-
-  const projectRef = useRef<HTMLDivElement>(null);
-  const typeRef = useRef<HTMLDivElement>(null);
-  const priorityRef = useRef<HTMLDivElement>(null);
-  const assigneeRef = useRef<HTMLDivElement>(null);
-  const dueDateRef = useRef<HTMLDivElement>(null);
-  const newProjectInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     titleRef.current = title;
@@ -179,10 +36,6 @@ export const StandaloneQuickCapture: React.FC = () => {
   useEffect(() => {
     descriptionRef.current = description;
   }, [description]);
-
-  useEffect(() => {
-    newProjectNameRef.current = newProjectName;
-  }, [newProjectName]);
 
   const closeWindow = async () => {
     try {
@@ -202,14 +55,13 @@ export const StandaloneQuickCapture: React.FC = () => {
     } else {
       document.documentElement.classList.remove('dark');
     }
-    // Apply color theme from Settings
     const savedColorTheme = localStorage.getItem('leaf_color_theme');
     if (savedColorTheme) {
       document.documentElement.setAttribute('data-color-theme', savedColorTheme);
     }
   };
 
-  // Adjust dimensions immediately on content or pill changes
+  // Adjust window dimensions dynamically to content
   useEffect(() => {
     const adjustWindowDimensions = async () => {
       try {
@@ -223,21 +75,9 @@ export const StandaloneQuickCapture: React.FC = () => {
         if (!monitor) return;
 
         const scaleFactor = monitor.scaleFactor || 1;
+        const logicalW = 440;
+        const physicalW = Math.round(logicalW * scaleFactor);
 
-        const selectedProject = projects.find((p) => p.id === projectId);
-        const selectedMember = teamMembers.find((m) => matchesAssignee(m.id, assigneeId));
-
-        const synchronousWidth = getPillsWidth(
-          selectedProject?.name,
-          priority,
-          selectedMember?.name,
-          dueDate,
-          type
-        );
-
-        const physicalW = Math.round(synchronousWidth * scaleFactor);
-
-        // Height: natural, compact height without expanding on dropdown open
         const lines = (description || '').split('\n').length;
         const descHeight = Math.min(Math.max(lines, 2) * 20, 140);
         const checklistHeight = (showChecklist || checklist.length > 0)
@@ -248,7 +88,6 @@ export const StandaloneQuickCapture: React.FC = () => {
         const clampedH = Math.min(Math.max(logicalH, 280), 440);
         const physicalH = Math.round(clampedH * scaleFactor);
 
-        // A subtle, tight gap above taskbar (taskbar is ~48px, so 58px leaves a neat ~10px gap)
         const marginY = Math.round(58 * scaleFactor);
         const physicalX = monitor.position.x + Math.round((monitor.size.width - physicalW) / 2);
         const physicalY = monitor.position.y + monitor.size.height - physicalH - marginY;
@@ -262,139 +101,31 @@ export const StandaloneQuickCapture: React.FC = () => {
 
     adjustWindowDimensions();
   }, [
-    projectId,
-    assigneeId,
-    dueDate,
-    priority,
-    type,
     description,
     checklist.length,
     showChecklist,
-    projects,
-    teamMembers,
   ]);
 
   useEffect(() => {
     applyCurrentTheme();
 
-    // Load projects and members
-    const loadData = async () => {
-      const projs = await dbService.getProjects();
-      setProjects(projs);
-      if (projs.length > 0 && !projectId) {
-        setProjectId(projs[0].id);
-      }
-      setTeamMembers(getStoredTeamMembers());
-    };
-    loadData();
-
-    setTimeout(() => {
-      titleInputRef.current?.focus();
-    }, 60);
-
-    const handleFocus = () => {
-      applyCurrentTheme();
-      loadData();
-      titleInputRef.current?.focus();
-    };
-
-    const handleBlur = () => {
-      if (!titleRef.current.trim() && !descriptionRef.current.trim() && !newProjectNameRef.current.trim()) {
-        closeWindow();
-      }
-    };
-
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (isProjectMenuOpen || isTypeMenuOpen || isPriorityMenuOpen || isAssigneeMenuOpen || isDueDateMenuOpen) {
-          setIsProjectMenuOpen(false);
-          setIsTypeMenuOpen(false);
-          setIsPriorityMenuOpen(false);
-          setIsAssigneeMenuOpen(false);
-          setIsDueDateMenuOpen(false);
-          return;
-        }
         closeWindow();
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        handleSave();
       }
     };
 
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (projectRef.current && !projectRef.current.contains(target)) {
-        setIsProjectMenuOpen(false);
-      }
-      if (typeRef.current && !typeRef.current.contains(target)) {
-        setIsTypeMenuOpen(false);
-      }
-      if (priorityRef.current && !priorityRef.current.contains(target)) {
-        setIsPriorityMenuOpen(false);
-      }
-      if (assigneeRef.current && !assigneeRef.current.contains(target)) {
-        setIsAssigneeMenuOpen(false);
-      }
-      if (dueDateRef.current && !dueDateRef.current.contains(target)) {
-        setIsDueDateMenuOpen(false);
-      }
-    };
-
-    window.addEventListener('focus', handleFocus);
-    window.addEventListener('blur', handleBlur);
     window.addEventListener('keydown', handleKeyDown);
-    document.addEventListener('mousedown', handleClickOutside);
-
-    let unlistenFocus: (() => void) | undefined;
-    (async () => {
-      try {
-        const { getCurrentWindow } = await import('@tauri-apps/api/window');
-        const win = getCurrentWindow();
-        unlistenFocus = await win.onFocusChanged(({ payload: focused }) => {
-          if (!focused && !titleRef.current.trim() && !descriptionRef.current.trim() && !newProjectNameRef.current.trim()) {
-            closeWindow();
-          }
-        });
-      } catch {
-        // Handled by blur
-      }
-    })();
-
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-      window.removeEventListener('blur', handleBlur);
-      window.removeEventListener('keydown', handleKeyDown);
-      document.removeEventListener('mousedown', handleClickOutside);
-      if (unlistenFocus) unlistenFocus();
-    };
-  }, [projectId]);
-
-  const handleCreateProject = async () => {
-    const trimmed = newProjectName.trim();
-    if (!trimmed) return;
-    try {
-      const created = await dbService.createProject({ name: trimmed });
-      const updated = await dbService.getProjects();
-      setProjects(updated);
-      setProjectId(created.id);
-      setNewProjectName('');
-      newProjectNameRef.current = '';
-      setIsCreatingProject(false);
-      setIsProjectMenuOpen(false);
-      broadcastSync({ type: 'projects_reload' });
-      setTimeout(() => titleInputRef.current?.focus(), 50);
-    } catch (err) {
-      console.error('Failed to create project:', err);
-    }
-  };
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const toggleChecklist = () => {
-    const next = !showChecklist;
-    setShowChecklist(next);
-    if (next) {
-      setTimeout(() => {
-        checklistInputRef.current?.focus();
-        if (bodyScrollRef.current) {
-          bodyScrollRef.current.scrollTop = bodyScrollRef.current.scrollHeight;
-        }
-      }, 50);
+    setShowChecklist(!showChecklist);
+    if (!showChecklist) {
+      setTimeout(() => checklistInputRef.current?.focus(), 50);
     }
   };
 
@@ -435,17 +166,17 @@ export const StandaloneQuickCapture: React.FC = () => {
     }));
 
     const newItem = await dbService.createItem({
-      projectId,
+      projectId: '',
       title: finalTitle,
       content: finalContent,
-      type,
-      priority,
+      type: 'task',
+      priority: 'none',
       status: 'inbox',
       tags: [],
       checklist: checklistItems,
       attachments: [],
-      assigneeId: assigneeId || null,
-      dueAt: dueDate || null,
+      assigneeId: null,
+      dueAt: null,
     });
 
     broadcastSync({ type: 'item_created', item: newItem });
@@ -454,16 +185,9 @@ export const StandaloneQuickCapture: React.FC = () => {
     setChecklist([]);
     setShowChecklist(false);
     setNewChecklistText('');
-    setAssigneeId(null);
-    setDueDate(null);
     closeWindow();
   };
 
-  const selectedProject = projects.find((p) => p.id === projectId);
-  const selectedMember = teamMembers.find((m) => matchesAssignee(m.id, assigneeId));
-  const TypeIcon = TYPE_ICONS[type] || CheckSquare;
-  const typeConfig = ITEM_TYPE_CONFIG[type] || ITEM_TYPE_CONFIG.task;
-  const priorityConfig = PRIORITY_CONFIG[priority] || PRIORITY_CONFIG.none;
   const hasContent = Boolean(title.trim() || description.trim());
 
   return (
@@ -476,8 +200,8 @@ export const StandaloneQuickCapture: React.FC = () => {
             leeflet
           </span>
           <span className="text-[#9ca3af] dark:text-[#52525b]">›</span>
-          <span className="text-xs font-medium text-[#6b7280] dark:text-[#a1a1aa] capitalize">
-            New {typeConfig.label.toLowerCase()}
+          <span className="text-xs font-medium text-[#6b7280] dark:text-[#a1a1aa]">
+            New Task
           </span>
         </div>
 
@@ -568,413 +292,43 @@ export const StandaloneQuickCapture: React.FC = () => {
             )}
 
             {/* Add checklist input */}
-            <div className="flex items-center gap-1.5">
-              <textarea
-                ref={checklistInputRef}
-                rows={1}
-                value={newChecklistText}
-                onChange={(e) => {
-                  setNewChecklistText(e.target.value);
-                  e.target.style.height = 'auto';
-                  e.target.style.height = Math.min(e.target.scrollHeight, 60) + 'px';
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleAddChecklistStep();
-                  }
-                }}
-                placeholder="Add step/subtask (Press Enter)..."
-                className="flex-1 bg-[#f9fafb] dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] px-2.5 py-1 text-xs text-[#111827] dark:text-[#f4f4f5] placeholder-[#9ca3af] outline-none focus:border-[#9ca3af] resize-none leading-relaxed min-h-[28px] max-h-[60px] overflow-hidden"
-              />
-              {newChecklistText.trim() && (
+            <div className="flex items-start gap-2 pt-1">
+              <span className="w-3 h-3 mt-1.5 rounded border border-dashed border-[#9ca3af] dark:border-[#52525b] flex items-center justify-center shrink-0" />
+              <div className="flex-1 flex items-center bg-[#f9fafb] dark:bg-[#141416] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] px-2 py-1 focus-within:border-[#9ca3af] dark:focus-within:border-[#52525b] transition-colors">
+                <textarea
+                  ref={checklistInputRef}
+                  rows={1}
+                  value={newChecklistText}
+                  onChange={(e) => {
+                    setNewChecklistText(e.target.value);
+                    e.target.style.height = 'auto';
+                    e.target.style.height = `${Math.min(e.target.scrollHeight, 60)}px`;
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleAddChecklistStep();
+                    } else if (e.key === 'Escape') {
+                      if (!newChecklistText) {
+                        setShowChecklist(false);
+                      }
+                    }
+                  }}
+                  placeholder="Add a step... (Press Enter to add)"
+                  className="w-full bg-transparent text-xs text-[#111827] dark:text-[#f4f4f5] placeholder-[#9ca3af] dark:placeholder-[#52525b] outline-none focus:outline-none border-none p-0 resize-none leading-relaxed max-h-[60px] custom-scrollbar overflow-y-auto"
+                />
                 <button
                   type="button"
                   onClick={handleAddChecklistStep}
-                  className="px-2 py-1 bg-[#f3f4f6] dark:bg-[#27272a] hover:bg-[#e5e7eb] text-xs font-semibold rounded-[5px] text-[#374151] dark:text-[#d4d4d8] shrink-0 self-end"
+                  disabled={!newChecklistText.trim()}
+                  className="ml-1.5 p-1 bg-[#111827] dark:bg-white text-white dark:text-[#111827] rounded-[4px] disabled:opacity-30 transition-opacity shrink-0"
                 >
-                  Add
+                  <Plus className="w-2.5 h-2.5" />
                 </button>
-              )}
+              </div>
             </div>
           </div>
         )}
-      </div>
-
-      {/* Metadata Pills Row (Positioned outside scroll context, dropdowns drop DOWN cleanly) */}
-      <div className="px-4 py-2 relative overflow-visible shrink-0 z-30">
-        <div id="capture-pills-row" className="flex items-center gap-2 flex-nowrap min-w-max">
-          {/* 1. Project Pill */}
-          <div className="relative shrink-0" ref={projectRef}>
-            <button
-              type="button"
-              onClick={() => {
-                setIsProjectMenuOpen(!isProjectMenuOpen);
-                setIsTypeMenuOpen(false);
-                setIsPriorityMenuOpen(false);
-                setIsAssigneeMenuOpen(false);
-                setIsDueDateMenuOpen(false);
-              }}
-              className="flex items-center gap-1.5 bg-[#f9fafb] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] px-2 py-1 hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-colors shrink-0 text-xs font-medium text-[#374151] dark:text-[#f4f4f5]"
-            >
-              <Folder className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa] shrink-0" />
-              <span className="truncate max-w-[80px]">{selectedProject?.name || 'No Project'}</span>
-              <ChevronDown className="w-3 h-3 opacity-60 shrink-0" />
-            </button>
-
-            {isProjectMenuOpen && (
-              <div className="absolute left-0 bottom-full mb-1.5 w-52 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-2xl p-1 z-50 space-y-0.5 max-h-48 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-bottom-2 duration-100">
-                <div className="max-h-36 overflow-y-auto custom-scrollbar space-y-0.5">
-                  {projects.map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => {
-                        setProjectId(p.id);
-                        setIsProjectMenuOpen(false);
-                      }}
-                      className={`w-full text-left px-2 py-1.5 rounded-[4px] text-xs truncate flex items-center justify-between transition-colors ${
-                        projectId === p.id
-                          ? 'bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-[#f4f4f5] font-semibold'
-                          : 'text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a]'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 truncate">
-                        <Folder className="w-3.5 h-3.5 shrink-0 opacity-70" />
-                        <span className="truncate">{p.name}</span>
-                      </div>
-                      {projectId === p.id && <Check className="w-3.5 h-3.5 shrink-0" />}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Inline New Project Creator */}
-                <div className="pt-1 mt-1 border-t border-[#f3f4f6] dark:border-[#27272a]">
-                  {isCreatingProject ? (
-                    <div className="p-1">
-                      <div className="flex items-center gap-1">
-                        <input
-                          ref={newProjectInputRef}
-                          type="text"
-                          value={newProjectName}
-                          onChange={(e) => setNewProjectName(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleCreateProject();
-                            } else if (e.key === 'Escape') {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setIsCreatingProject(false);
-                              setNewProjectName('');
-                            }
-                          }}
-                          placeholder="Project name..."
-                          className="w-full bg-[#f9fafb] dark:bg-[#141416] border border-[#e5e7eb] dark:border-[#27272a] rounded-[4px] px-2 py-1 text-xs text-[#111827] dark:text-[#f4f4f5] focus:outline-none focus:border-[#9ca3af] dark:focus:border-[#52525b]"
-                          autoFocus
-                        />
-                        <button
-                          type="button"
-                          onClick={handleCreateProject}
-                          disabled={!newProjectName.trim()}
-                          className="px-2 py-1 bg-[#111827] text-white dark:bg-white dark:text-[#111827] rounded-[4px] text-xs font-semibold hover:opacity-90 disabled:opacity-40 transition-opacity"
-                        >
-                          <Check className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsCreatingProject(true);
-                        setTimeout(() => newProjectInputRef.current?.focus(), 50);
-                      }}
-                      className="w-full text-left px-2 py-1.5 rounded-[4px] text-xs flex items-center gap-2 text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] transition-colors"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>New Project</span>
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* 2. Priority Pill */}
-          <div className="relative shrink-0" ref={priorityRef}>
-            <button
-              type="button"
-              onClick={() => {
-                setIsPriorityMenuOpen(!isPriorityMenuOpen);
-                setIsProjectMenuOpen(false);
-                setIsTypeMenuOpen(false);
-                setIsAssigneeMenuOpen(false);
-                setIsDueDateMenuOpen(false);
-              }}
-              className="flex items-center gap-1.5 bg-[#f9fafb] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] px-2 py-1 hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-colors shrink-0 text-xs font-medium text-[#374151] dark:text-[#f4f4f5]"
-            >
-              <span className={`w-2 h-2 rounded-full shrink-0 ${priorityConfig.dotColor}`} />
-              <span className="capitalize">{priorityConfig.label}</span>
-              <ChevronDown className="w-3 h-3 opacity-60 shrink-0" />
-            </button>
-
-            {isPriorityMenuOpen && (
-              <div className="absolute left-0 bottom-full mb-1.5 w-32 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-2xl p-1 z-50 space-y-0.5 max-h-44 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-bottom-2 duration-100">
-                {(['none', 'low', 'medium', 'high', 'critical'] as Priority[]).map((p) => {
-                  const pCfg = PRIORITY_CONFIG[p];
-                  return (
-                    <button
-                      key={p}
-                      type="button"
-                      onClick={() => {
-                        setPriority(p);
-                        setIsPriorityMenuOpen(false);
-                      }}
-                      className={`w-full text-left px-2 py-1.5 rounded-[4px] text-xs capitalize flex items-center justify-between transition-colors ${
-                        priority === p
-                          ? 'bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-[#f4f4f5] font-semibold'
-                          : 'text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a]'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full shrink-0 ${pCfg.dotColor}`} />
-                        <span>{pCfg.label}</span>
-                      </div>
-                      {priority === p && <Check className="w-3.5 h-3.5 shrink-0" />}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* 3. Assignee Pill */}
-          <div className="relative shrink-0" ref={assigneeRef}>
-            <button
-              type="button"
-              onClick={() => {
-                setIsAssigneeMenuOpen(!isAssigneeMenuOpen);
-                setIsProjectMenuOpen(false);
-                setIsTypeMenuOpen(false);
-                setIsPriorityMenuOpen(false);
-                setIsDueDateMenuOpen(false);
-              }}
-              className="flex items-center gap-1.5 bg-[#f9fafb] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] px-2 py-1 hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-colors shrink-0 text-xs font-medium text-[#374151] dark:text-[#f4f4f5]"
-            >
-              {selectedMember ? (
-                <span className="w-4 h-4 rounded-full border border-[#e5e7eb] dark:border-[#323238] shrink-0 overflow-hidden">
-                  <img
-                    src={resolveAvatarUrl(selectedMember.avatarMascot || selectedMember.avatarUrl || selectedMember.avatarColor, selectedMember.name || selectedMember.id)}
-                    alt={selectedMember.name}
-                    className="w-full h-full object-cover"
-                  />
-                </span>
-              ) : (
-                <User className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa] shrink-0 opacity-80" />
-              )}
-              <span className="truncate max-w-[84px]">{selectedMember?.name || 'Assignee'}</span>
-              <ChevronDown className="w-3 h-3 opacity-60 shrink-0" />
-            </button>
-
-            {isAssigneeMenuOpen && (
-              <div className="absolute left-0 bottom-full mb-1.5 w-44 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-2xl p-1 z-50 space-y-0.5 max-h-48 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-bottom-2 duration-100">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAssigneeId(null);
-                    setIsAssigneeMenuOpen(false);
-                  }}
-                  className={`w-full text-left px-2 py-1.5 rounded-[4px] text-xs flex items-center justify-between transition-colors ${
-                    !assigneeId
-                      ? 'bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-[#f4f4f5] font-semibold'
-                      : 'text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a]'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <User className="w-3.5 h-3.5 opacity-60" />
-                    <span>Unassigned</span>
-                  </div>
-                  {!assigneeId && <Check className="w-3.5 h-3.5 shrink-0" />}
-                </button>
-
-                {teamMembers.map((member) => {
-                  const isSelected = matchesAssignee(member.id, assigneeId);
-                  return (
-                    <button
-                      key={member.id}
-                      type="button"
-                      onClick={() => {
-                        const normalizedId = normalizeAssigneeId(member.id);
-                        setAssigneeId(normalizedId);
-                        setIsAssigneeMenuOpen(false);
-                      }}
-                      className={`w-full text-left px-2 py-1.5 rounded-[4px] text-xs flex items-center justify-between transition-colors ${
-                        isSelected
-                          ? 'bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-[#f4f4f5] font-semibold'
-                          : 'text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a]'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 truncate">
-                        <span className="w-4 h-4 rounded-full border border-[#e5e7eb] dark:border-[#323238] shrink-0 overflow-hidden">
-                          <img
-                            src={resolveAvatarUrl(member.avatarMascot || member.avatarUrl || member.avatarColor, member.name || member.id)}
-                            alt={member.name}
-                            className="w-full h-full object-cover"
-                          />
-                        </span>
-                        <span className="truncate">{member.name}</span>
-                      </div>
-                      {isSelected && <Check className="w-3.5 h-3.5 shrink-0" />}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* 4. Due Date Pill */}
-          <div className="relative shrink-0" ref={dueDateRef}>
-            <button
-              type="button"
-              onClick={() => {
-                setIsDueDateMenuOpen(!isDueDateMenuOpen);
-                setIsProjectMenuOpen(false);
-                setIsTypeMenuOpen(false);
-                setIsPriorityMenuOpen(false);
-                setIsAssigneeMenuOpen(false);
-              }}
-              className="flex items-center gap-1.5 bg-[#f9fafb] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] px-2 py-1 hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-colors shrink-0 text-xs font-medium text-[#374151] dark:text-[#f4f4f5]"
-            >
-              <CalendarIcon className="w-3.5 h-3.5 opacity-70 shrink-0 text-[#6b7280] dark:text-[#a1a1aa]" />
-              <span className="truncate">{formatDueDateLabel(dueDate)}</span>
-              <ChevronDown className="w-3 h-3 opacity-60 shrink-0" />
-            </button>
-
-            {isDueDateMenuOpen && (
-              <div className="absolute left-0 bottom-full mb-1.5 w-60 bg-white dark:bg-[#18181b] border border-[#e5e7eb] dark:border-[#27272a] rounded-[10px] shadow-2xl p-2 z-50 space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-100">
-                <div className="grid grid-cols-3 gap-1 pb-1.5 border-b border-[#f3f4f6] dark:border-[#27272a]">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setDueDate(getPresetDate('today'));
-                      setIsDueDateMenuOpen(false);
-                    }}
-                    className="py-1 px-1 rounded-[5px] text-[11px] font-medium text-center text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] transition-colors"
-                  >
-                    Today
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setDueDate(getPresetDate('tomorrow'));
-                      setIsDueDateMenuOpen(false);
-                    }}
-                    className="py-1 px-1 rounded-[5px] text-[11px] font-medium text-center text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] transition-colors"
-                  >
-                    Tomorrow
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setDueDate(getPresetDate('next_week'));
-                      setIsDueDateMenuOpen(false);
-                    }}
-                    className="py-1 px-1 rounded-[5px] text-[11px] font-medium text-center text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] transition-colors"
-                  >
-                    Next Mon
-                  </button>
-                </div>
-
-                {/* Shadcn Calendar Component */}
-                <Calendar
-                  mode="single"
-                  selected={dueDate ? new Date(dueDate + 'T00:00:00') : null}
-                  onSelect={(d) => {
-                    if (d) {
-                      setDueDate(format(d, 'yyyy-MM-dd'));
-                    } else {
-                      setDueDate(null);
-                    }
-                    setIsDueDateMenuOpen(false);
-                  }}
-                  className="p-0 border-0"
-                />
-
-                {dueDate && (
-                  <div className="pt-1.5 border-t border-[#f3f4f6] dark:border-[#27272a] flex items-center justify-between">
-                    <span className="text-[10px] text-[#6b7280] dark:text-[#a1a1aa] font-mono">
-                      {dueDate}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setDueDate(null);
-                        setIsDueDateMenuOpen(false);
-                      }}
-                      className="px-2 py-0.5 rounded-[4px] text-[11px] font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
-                    >
-                      Clear Due Date
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* 5. Type Pill */}
-          <div className="relative shrink-0" ref={typeRef}>
-            <button
-              type="button"
-              onClick={() => {
-                setIsTypeMenuOpen(!isTypeMenuOpen);
-                setIsProjectMenuOpen(false);
-                setIsPriorityMenuOpen(false);
-                setIsAssigneeMenuOpen(false);
-                setIsDueDateMenuOpen(false);
-              }}
-              className="flex items-center gap-1.5 bg-[#f9fafb] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] px-2 py-1 hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-colors shrink-0 text-xs font-medium text-[#374151] dark:text-[#f4f4f5]"
-            >
-              <TypeIcon className="w-3.5 h-3.5 shrink-0 text-[#6b7280] dark:text-[#a1a1aa]" />
-              <span className="capitalize">{typeConfig.label}</span>
-              <ChevronDown className="w-3 h-3 opacity-60 shrink-0" />
-            </button>
-
-            {isTypeMenuOpen && (
-              <div className="absolute right-0 bottom-full mb-1.5 w-36 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-2xl p-1 z-50 space-y-0.5 max-h-44 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-bottom-2 duration-100">
-                {(['task', 'bug', 'idea', 'improvement', 'research', 'question', 'note'] as ItemType[]).map((t) => {
-                  const ItemIcon = TYPE_ICONS[t];
-                  const cfg = ITEM_TYPE_CONFIG[t];
-                  return (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => {
-                        setType(t);
-                        setIsTypeMenuOpen(false);
-                      }}
-                      className={`w-full text-left px-2 py-1.5 rounded-[4px] text-xs capitalize flex items-center justify-between transition-colors ${
-                        type === t
-                          ? 'bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-[#f4f4f5] font-semibold'
-                          : 'text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a]'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <ItemIcon className="w-3.5 h-3.5 shrink-0 opacity-80" />
-                        <span>{cfg.label}</span>
-                      </div>
-                      {type === t && <Check className="w-3.5 h-3.5 shrink-0" />}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
       </div>
 
       {/* Minimal Footer */}

@@ -17,7 +17,7 @@ export const OnboardingModal: React.FC = () => {
 
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [fullName, setFullName] = useState('');
-  const [jobTitle, setJobTitle] = useState('Workspace Owner');
+  const [jobTitle, setJobTitle] = useState('Workspace Admin');
   const [selectedMascotId, setSelectedMascotId] = useState('bot-spark');
   const [selectedCategory, setSelectedCategory] = useState<'All' | 'Robots' | 'Clay' | 'Critters' | 'Fun Emoji'>('All');
   const [customAvatarUrl, setCustomAvatarUrl] = useState('');
@@ -269,7 +269,7 @@ export const OnboardingModal: React.FC = () => {
                     type="text"
                     value={jobTitle}
                     onChange={(e) => setJobTitle(e.target.value)}
-                    placeholder="Role (e.g. Workspace Owner)"
+                    placeholder="Role (e.g. Workspace Admin)"
                     className="w-full px-3 py-1.5 bg-[#f9fafb] dark:bg-[#1a1a1d] border border-[#e5e7eb] dark:border-[#27272a] focus:border-[#9ca3af] dark:focus:border-[#52525b] rounded-[6px] text-xs text-[#111827] dark:text-[#f4f4f5] outline-none"
                   />
                 </div>

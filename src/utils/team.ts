@@ -1,4 +1,4 @@
-import { TeamMember } from '../types';
+import { TeamMember, RoleId } from '../types';
 
 const STORAGE_KEY = 'leeflet_team_members';
 
@@ -45,7 +45,7 @@ export const getStoredTeamMembers = (workspaceId?: string): TeamMember[] => {
   if (typeof window === 'undefined') return [];
 
   // Read current profile data
-  let profileName = 'Workspace Owner';
+  let profileName = 'Workspace Admin';
   let profileEmail = '';
   let profileMascot = '';
   let profileAvatarUrl = '';
@@ -63,6 +63,8 @@ export const getStoredTeamMembers = (workspaceId?: string): TeamMember[] => {
   } catch {}
 
   const key = workspaceId ? `${STORAGE_KEY}_${workspaceId}` : STORAGE_KEY;
+  const isJoined = workspaceId ? localStorage.getItem(`leeflet_is_joined_workspace_${workspaceId}`) === 'true' : false;
+  const myRole = workspaceId ? (localStorage.getItem(`leeflet_workspace_role_${workspaceId}`) as RoleId) || 'Member' : 'Admin';
 
   try {
     let raw = localStorage.getItem(key);
@@ -80,29 +82,65 @@ export const getStoredTeamMembers = (workspaceId?: string): TeamMember[] => {
           seen.add(m.id);
           return true;
         });
-        // Sync owner entry with latest profile data
-        const ownerEntry = unique.find(
-          (m: TeamMember) => m.role === 'Owner' || m.id === 'owner_1' || m.id === OWNER_MEMBER_UUID
-        );
-        if (ownerEntry) {
-          ownerEntry.id = OWNER_MEMBER_UUID;
-          if (profileName) ownerEntry.name = profileName;
-          if (profileEmail) ownerEntry.email = profileEmail;
-          if (profileMascot) ownerEntry.avatarMascot = profileMascot;
-          if (profileAvatarUrl) ownerEntry.avatarUrl = profileAvatarUrl;
+
+        // Migrate any legacy 'Owner' role to 'Admin'
+        unique.forEach((m: TeamMember) => {
+          if (m.role === 'Owner') m.role = 'Admin';
+        });
+
+        // If this is the creator's workspace, sync Admin entry with latest profile data
+        if (!isJoined) {
+          const adminEntry = unique.find(
+            (m: TeamMember) => m.role === 'Admin' || m.id === 'owner_1' || m.id === OWNER_MEMBER_UUID
+          );
+          if (adminEntry) {
+            adminEntry.id = OWNER_MEMBER_UUID;
+            adminEntry.role = 'Admin';
+            if (profileName) adminEntry.name = profileName;
+            if (profileEmail) adminEntry.email = profileEmail;
+            if (profileMascot) adminEntry.avatarMascot = profileMascot;
+            if (profileAvatarUrl) adminEntry.avatarUrl = profileAvatarUrl;
+          }
         }
+
         return unique;
       }
     }
   } catch {}
 
-  // Fallback / Initial: current profile or workspace creator
+  // Fallback / Initial
+  if (isJoined) {
+    const initial: TeamMember[] = [
+      {
+        id: OWNER_MEMBER_UUID,
+        name: 'Workspace Admin',
+        email: '',
+        role: 'Admin',
+        status: 'active',
+        joinedAt: 'Workspace Creator',
+        avatarColor: 'bg-violet-600 dark:bg-violet-500',
+      },
+      {
+        id: crypto.randomUUID(),
+        name: profileName || 'Member',
+        email: profileEmail,
+        role: myRole || 'Developer',
+        status: 'active',
+        joinedAt: 'Joined just now',
+        avatarColor: 'bg-blue-600 dark:bg-blue-500',
+        avatarMascot: profileMascot || undefined,
+        avatarUrl: profileAvatarUrl || undefined,
+      },
+    ];
+    return initial;
+  }
+
   const initial: TeamMember[] = [
     {
       id: OWNER_MEMBER_UUID,
       name: profileName,
       email: profileEmail,
-      role: 'Owner',
+      role: 'Admin',
       status: 'active',
       joinedAt: 'Workspace Creator',
       avatarColor: 'bg-violet-600 dark:bg-violet-500',

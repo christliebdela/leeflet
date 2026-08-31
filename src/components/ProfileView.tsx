@@ -51,7 +51,7 @@ const DEFAULT_PROFILE: ProfileData = {
   fullName: '',
   username: '',
   email: '',
-  title: 'Workspace Owner',
+  title: 'Workspace Admin',
   avatarMascot: 'bot-spark',
   avatarColor: 'bg-violet-600 dark:bg-violet-500',
   statusIcon: 'zap',
@@ -321,7 +321,7 @@ export const ProfileView: React.FC = () => {
                   {profile.fullName || 'User'}
                 </h1>
                 <span className="text-[9.5px] font-semibold text-[#6b7280] dark:text-[#a1a1aa] bg-[#f3f4f6] dark:bg-[#27272a] border border-[#e5e7eb] dark:border-[#3f3f46] px-1.5 py-0.2 rounded">
-                  Owner
+                  {workspace ? localStorage.getItem(`leeflet_workspace_role_${workspace.id}`) || (localStorage.getItem(`leeflet_is_joined_workspace_${workspace.id}`) === 'true' ? 'Member' : 'Admin') : 'Admin'}
                 </span>
               </div>
               <div className="flex items-center gap-1.5 text-[11px] text-[#6b7280] dark:text-[#a1a1aa] mt-0.5">

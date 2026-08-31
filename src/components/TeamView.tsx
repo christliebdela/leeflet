@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
+  User,
   Users,
   UserPlus,
   Mail,
@@ -17,6 +18,7 @@ import {
   PlayCircle,
   AlertTriangle,
   Send,
+  Loader2,
 } from 'lucide-react';
 import { useLeafStore } from '../store/useLeafStore';
 import { toast } from '../store/useToastStore';
@@ -63,11 +65,13 @@ export const TeamView: React.FC = () => {
   const { workspace, setViewMode } = useLeafStore();
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [showSmtpRequiredModal, setShowSmtpRequiredModal] = useState(false);
+  const [inviteName, setInviteName] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<RoleId>('Developer');
   const [isRoleMenuOpen, setIsRoleMenuOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasCopiedLink, setHasCopiedLink] = useState(false);
+  const [resendingMemberId, setResendingMemberId] = useState<string | null>(null);
 
   // Management State
   const [activeRoleMemberId, setActiveRoleMemberId] = useState<string | null>(null);
@@ -79,11 +83,39 @@ export const TeamView: React.FC = () => {
 
   const [members, setMembers] = useState<TeamMember[]>(() => getStoredTeamMembers(workspace?.id));
 
-  // Reload team members whenever workspace changes
+  // Reload team members whenever workspace changes and sync from cloud
   useEffect(() => {
-    setMembers(getStoredTeamMembers(workspace?.id));
+    const wsId = workspace?.id;
+    if (!wsId) return;
+    setMembers(getStoredTeamMembers(wsId));
     setActiveRoleMemberId(null);
     setActiveActionsMemberId(null);
+
+    import('../services/cloudSync').then(({ pullTeamMembersFromCloud }) => {
+      pullTeamMembersFromCloud(wsId).then((remote) => {
+        if (remote.length > 0) {
+          const local = getStoredTeamMembers(wsId);
+          const memberMap = new Map<string, TeamMember>();
+          for (const m of local) {
+            memberMap.set((m.email || m.name).toLowerCase(), m);
+          }
+          for (const rm of remote) {
+            const key = (rm.email || rm.name).toLowerCase();
+            const existing = memberMap.get(key);
+            if (!existing) {
+              memberMap.set(key, rm);
+            } else {
+              if (rm.status === 'active' && existing.status === 'invited') {
+                memberMap.set(key, { ...existing, status: 'active', role: rm.role });
+              }
+            }
+          }
+          const merged = Array.from(memberMap.values());
+          saveStoredTeamMembers(merged, wsId);
+          setMembers(merged);
+        }
+      });
+    });
   }, [workspace?.id]);
 
   // Click outside to close menus
@@ -104,13 +136,25 @@ export const TeamView: React.FC = () => {
 
   const persistMembers = (updated: TeamMember[]) => {
     setMembers(updated);
-    saveStoredTeamMembers(updated, workspace?.id);
+    if (workspace?.id) {
+      saveStoredTeamMembers(updated, workspace.id);
+      import('../services/cloudSync').then(({ pushTeamMemberToCloud }) => {
+        updated.forEach((m) => pushTeamMemberToCloud(workspace.id, m));
+      });
+    }
   };
 
   // Send Email Invite / Create Invite Record
   const handleSendInvite = async (e: React.FormEvent) => {
     e.preventDefault();
+    const name = inviteName.trim();
     const email = inviteEmail.trim();
+
+    if (!name) {
+      toast.error("Please enter the member's full name");
+      return;
+    }
+
     if (!email || !email.includes('@')) {
       toast.error('Please enter a valid email address');
       return;
@@ -135,12 +179,13 @@ export const TeamView: React.FC = () => {
     }
 
     const roleConfig = ROLES.find((r) => r.id === inviteRole) || ROLES[1];
+    const nameToUse = name;
 
     if (!isSmtpConfigured()) {
       // Create pending invitation anyway and offer link copy
       const newMember: TeamMember = {
         id: crypto.randomUUID(),
-        name: email.split('@')[0],
+        name: nameToUse,
         email,
         role: inviteRole,
         status: 'invited',
@@ -148,6 +193,7 @@ export const TeamView: React.FC = () => {
       };
       const updated = [...members, newMember];
       persistMembers(updated);
+      setInviteName('');
       setInviteEmail('');
       setIsInviteModalOpen(false);
       setIsRoleMenuOpen(false);
@@ -160,7 +206,7 @@ export const TeamView: React.FC = () => {
       setIsSubmitting(true);
       await sendInviteEmail(
         email,
-        email.split('@')[0],
+        nameToUse,
         workspace,
         inviteRole,
         roleConfig.description
@@ -168,7 +214,7 @@ export const TeamView: React.FC = () => {
 
       const newMember: TeamMember = {
         id: crypto.randomUUID(),
-        name: email.split('@')[0],
+        name: nameToUse,
         email,
         role: inviteRole,
         status: 'invited',
@@ -177,6 +223,7 @@ export const TeamView: React.FC = () => {
 
       const updated = [...members, newMember];
       persistMembers(updated);
+      setInviteName('');
       setInviteEmail('');
       setIsInviteModalOpen(false);
       setIsRoleMenuOpen(false);
@@ -191,7 +238,12 @@ export const TeamView: React.FC = () => {
 
   const handleCopyInviteLink = (targetRole: RoleId = inviteRole) => {
     if (!workspace) return;
-    const dynamicLink = generateInviteDeepLink(workspace, targetRole);
+    const dynamicLink = generateInviteDeepLink(
+      workspace,
+      targetRole,
+      inviteEmail.trim() || undefined,
+      inviteName.trim() || undefined
+    );
     navigator.clipboard?.writeText(dynamicLink).then(() => {
       setHasCopiedLink(true);
       toast.success(`Invite link copied with ${targetRole} role permissions`);
@@ -204,7 +256,7 @@ export const TeamView: React.FC = () => {
   // Change Role
   const handleChangeRole = (memberId: string, newRole: RoleId) => {
     const target = members.find((m) => m.id === memberId);
-    if (!target || target.role === 'Owner') return;
+    if (!target || target.role === 'Admin' || target.role === 'Owner') return;
 
     const updated = members.map((m) => (m.id === memberId ? { ...m, role: newRole } : m));
     persistMembers(updated);
@@ -215,8 +267,8 @@ export const TeamView: React.FC = () => {
 
   // Toggle Suspend / Active
   const handleToggleSuspend = (member: TeamMember) => {
-    if (member.role === 'Owner') {
-      toast.error('The workspace owner account cannot be suspended');
+    if (member.role === 'Admin' || member.role === 'Owner') {
+      toast.error('The workspace Admin account cannot be suspended');
       return;
     }
 
@@ -233,7 +285,8 @@ export const TeamView: React.FC = () => {
 
   // Resend / Copy Link for Member
   const handleResendMemberInvite = async (member: TeamMember) => {
-    if (!workspace) return;
+    if (!workspace || resendingMemberId) return;
+    setResendingMemberId(member.id);
     const roleId = (ROLES.some((r) => r.id === member.role) ? member.role : 'Developer') as RoleId;
     const dynamicLink = generateInviteDeepLink(workspace, roleId);
     
@@ -252,15 +305,21 @@ export const TeamView: React.FC = () => {
     } else {
       toast.success(`Invite link copied to clipboard`);
     }
+    setResendingMemberId(null);
     setActiveActionsMemberId(null);
   };
 
   // Confirm Remove / Revoke
   const handleConfirmRemove = () => {
-    if (!memberToDelete || memberToDelete.role === 'Owner') return;
+    if (!memberToDelete || memberToDelete.role === 'Admin' || memberToDelete.role === 'Owner') return;
     const isInvite = memberToDelete.status === 'invited';
     const updated = members.filter((m) => m.id !== memberToDelete.id);
     persistMembers(updated);
+    if (workspace?.id) {
+      import('../services/cloudSync').then(({ deleteTeamMemberFromCloud }) => {
+        deleteTeamMemberFromCloud(workspace.id, memberToDelete.id);
+      });
+    }
     setMemberToDelete(null);
     setActiveActionsMemberId(null);
     if (isInvite) {
@@ -271,6 +330,9 @@ export const TeamView: React.FC = () => {
   };
 
   const selectedRoleConfig = ROLES.find((r) => r.id === inviteRole) || ROLES[1];
+  const isJoined = workspace ? localStorage.getItem(`leeflet_is_joined_workspace_${workspace.id}`) === 'true' : false;
+  const storedRole = workspace ? localStorage.getItem(`leeflet_workspace_role_${workspace.id}`) : null;
+  const isCurrentUserAdmin = !isJoined || storedRole === 'Admin' || storedRole === 'Owner';
 
   return (
     <div className="flex-1 h-full overflow-y-auto p-3 sm:p-4 custom-scrollbar flex flex-col gap-4">
@@ -290,13 +352,15 @@ export const TeamView: React.FC = () => {
           </div>
         </div>
 
-        <button
-          onClick={() => setIsInviteModalOpen(true)}
-          className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[#f4f5f6] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#323238] text-[#374151] dark:text-[#f4f4f5] hover:bg-[#ebecee] dark:hover:bg-[#27272a] hover:border-[#d1d5db] dark:hover:border-[#3f3f46] rounded-[6px] text-xs font-medium transition-colors shrink-0 shadow-2xs active:scale-95 cursor-pointer"
-        >
-          <UserPlus className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
-          <span>Invite Member</span>
-        </button>
+        {isCurrentUserAdmin && (
+          <button
+            onClick={() => setIsInviteModalOpen(true)}
+            className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[#f4f5f6] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#323238] text-[#374151] dark:text-[#f4f4f5] hover:bg-[#ebecee] dark:hover:bg-[#27272a] hover:border-[#d1d5db] dark:hover:border-[#3f3f46] rounded-[6px] text-xs font-medium transition-colors shrink-0 shadow-2xs active:scale-95 cursor-pointer"
+          >
+            <UserPlus className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
+            <span>Invite Member</span>
+          </button>
+        )}
       </div>
 
       {/* Workspace Members Section */}
@@ -320,7 +384,7 @@ export const TeamView: React.FC = () => {
 
         <div className="divide-y divide-[#f3f4f6] dark:divide-[#27272a]">
           {members.map((member) => {
-            const isOwner = member.role === 'Owner' || member.id === 'owner_1';
+            const isMemberAdmin = member.role === 'Admin' || member.role === 'Owner' || member.id === 'owner_1' || member.id === '00000000-0000-4000-8000-000000000001';
             const isPending = member.status === 'invited';
             const isSuspended = member.status === 'suspended';
             const isRoleOpen = activeRoleMemberId === member.id;
@@ -345,48 +409,38 @@ export const TeamView: React.FC = () => {
                   </div>
 
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span
-                        className={`font-medium truncate ${
-                          isSuspended
-                            ? 'line-through text-[#9ca3af] dark:text-[#71717a]'
-                            : 'text-[#111827] dark:text-[#f4f4f5]'
-                        }`}
-                      >
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-semibold text-[#111827] dark:text-[#f4f4f5] truncate text-xs">
                         {member.name}
                       </span>
-
-                      {/* Status Badges */}
                       {isPending && (
-                        <span className="text-[10px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 px-1.5 py-0.2 rounded font-medium">
+                        <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800/60 shrink-0">
                           Pending Invite
                         </span>
                       )}
                       {isSuspended && (
-                        <span className="text-[10px] text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 px-1.5 py-0.2 rounded font-medium">
+                        <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/60 shrink-0">
                           Suspended
                         </span>
                       )}
                     </div>
-                    <div className="text-[11px] text-[#9ca3af] dark:text-[#71717a] truncate">
+                    <p className="text-[11px] text-[#6b7280] dark:text-[#a1a1aa] truncate mt-0.5">
                       {member.email || 'No email provided'}
-                    </div>
+                    </p>
                   </div>
                 </div>
 
-                {/* Right: Role Picker & Action Controls */}
+                {/* Right: Role & Actions */}
                 <div className="flex items-center gap-2 shrink-0">
-                  {/* Role Selector */}
                   <div className="relative">
-                    {isOwner ? (
+                    {isMemberAdmin ? (
                       <span className="flex items-center gap-1.5 px-2.5 py-1 text-[11.5px] font-semibold text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/30 rounded-[5px] border border-violet-200 dark:border-violet-800/40 select-none">
                         <ShieldCheck className="w-3 h-3 text-violet-600 dark:text-violet-400" />
-                        <span>Owner</span>
+                        <span>Admin</span>
                       </span>
-                    ) : isPending ? (
+                    ) : !isCurrentUserAdmin || isPending ? (
                       <span
                         className="flex items-center gap-1.5 px-2.5 py-1 text-[11.5px] font-medium text-[#6b7280] dark:text-[#a1a1aa] bg-[#f4f5f6] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#323238] rounded-[5px] opacity-75 select-none"
-                        title="Role assigned in invitation (editable once member joins)"
                       >
                         <Shield className="w-3 h-3 text-[#9ca3af]" />
                         <span>{member.role}</span>
@@ -407,8 +461,8 @@ export const TeamView: React.FC = () => {
                       </button>
                     )}
 
-                    {/* Role Popover (Only for joined members) */}
-                    {isRoleOpen && !isPending && !isOwner && (
+                    {/* Role Popover (Only for Admins managing non-admin joined members) */}
+                    {isRoleOpen && isCurrentUserAdmin && !isPending && !isMemberAdmin && (
                       <div className="absolute right-0 top-full mt-1 w-56 bg-white dark:bg-[#18181b] border border-[#e5e7eb] dark:border-[#323238] rounded-[8px] shadow-dropdown z-40 py-1 divide-y divide-[#f3f4f6] dark:divide-[#27272a] animate-in fade-in duration-100">
                         {ROLES.map((role) => (
                           <button
@@ -434,8 +488,8 @@ export const TeamView: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Actions Menu Trigger (Disabled for Owner) */}
-                  {!isOwner && (
+                  {/* Actions Menu Trigger (Only for Admins managing non-admin members) */}
+                  {isCurrentUserAdmin && !isMemberAdmin && (
                     <div className="relative">
                       <button
                         type="button"
@@ -456,7 +510,7 @@ export const TeamView: React.FC = () => {
                             <>
                               <button
                                 type="button"
-                                onClick={() => handleResendMemberInvite(member)}
+                                onClick={() => handleCopyInviteLink((ROLES.some((r) => r.id === member.role) ? member.role : 'Developer') as RoleId)}
                                 className="w-full text-left px-3 py-1.5 hover:bg-[#f3f4f6] dark:hover:bg-[#202024] flex items-center gap-2 text-[#374151] dark:text-[#d4d4d8] cursor-pointer"
                               >
                                 <Link2 className="w-3.5 h-3.5" />
@@ -464,11 +518,21 @@ export const TeamView: React.FC = () => {
                               </button>
                               <button
                                 type="button"
+                                disabled={resendingMemberId === member.id}
                                 onClick={() => handleResendMemberInvite(member)}
-                                className="w-full text-left px-3 py-1.5 hover:bg-[#f3f4f6] dark:hover:bg-[#202024] flex items-center gap-2 text-[#374151] dark:text-[#d4d4d8] cursor-pointer"
+                                className="w-full text-left px-3 py-1.5 hover:bg-[#f3f4f6] dark:hover:bg-[#202024] flex items-center gap-2 text-[#374151] dark:text-[#d4d4d8] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed transition-opacity"
                               >
-                                <Send className="w-3.5 h-3.5" />
-                                <span>Resend Invitation</span>
+                                {resendingMemberId === member.id ? (
+                                  <>
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-600 dark:text-emerald-400" />
+                                    <span>Resending...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Send className="w-3.5 h-3.5" />
+                                    <span>Resend Invitation</span>
+                                  </>
+                                )}
                               </button>
                               <div className="border-t border-[#f3f4f6] dark:border-[#27272a] my-1" />
                               <button
@@ -630,6 +694,25 @@ export const TeamView: React.FC = () => {
             </div>
 
             <form onSubmit={handleSendInvite} className="space-y-4">
+              {/* Member Full Name */}
+              <div>
+                <label className="block text-[11px] font-medium text-[#6b7280] dark:text-[#a1a1aa] mb-1.5">
+                  Full name <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative">
+                  <User className="w-3.5 h-3.5 text-[#9ca3af] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    autoFocus
+                    required
+                    value={inviteName}
+                    onChange={(e) => setInviteName(e.target.value)}
+                    placeholder="e.g. Sarah Jenkins"
+                    className="w-full pl-9 pr-3 py-2 text-xs bg-[#f9fafb] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#323238] rounded-[6px] text-[#111827] dark:text-white placeholder-[#9ca3af] focus:outline-none focus:border-[#9ca3af] dark:focus:border-[#52525b]"
+                  />
+                </div>
+              </div>
+
               {/* Email Address */}
               <div>
                 <label className="block text-[11px] font-medium text-[#6b7280] dark:text-[#a1a1aa] mb-1.5">
@@ -639,7 +722,6 @@ export const TeamView: React.FC = () => {
                   <Mail className="w-3.5 h-3.5 text-[#9ca3af] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                   <input
                     type="email"
-                    autoFocus
                     value={inviteEmail}
                     onChange={(e) => setInviteEmail(e.target.value)}
                     placeholder="colleague@company.com"
@@ -728,8 +810,8 @@ export const TeamView: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmitting}
-                  className="px-3.5 py-1.5 text-xs font-semibold bg-[#111827] dark:bg-white text-white dark:text-[#111827] rounded-[6px] hover:bg-[#1f2937] dark:hover:bg-[#e4e4e7] transition-all shadow-subtle flex items-center gap-1.5 disabled:opacity-50 active:scale-98 cursor-pointer"
+                  disabled={isSubmitting || !inviteName.trim() || !inviteEmail.trim() || !inviteEmail.includes('@')}
+                  className="px-3.5 py-1.5 text-xs font-semibold bg-[#111827] dark:bg-white text-white dark:text-[#111827] rounded-[6px] hover:bg-[#1f2937] dark:hover:bg-[#e4e4e7] transition-all shadow-subtle flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed active:scale-98 cursor-pointer"
                 >
                   {isSubmitting ? (
                     <>

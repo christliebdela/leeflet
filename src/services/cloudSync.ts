@@ -1,5 +1,5 @@
-import { Workspace, Project, Item, ChecklistItem, Attachment } from '../types';
-import { normalizeAssigneeId } from '../utils/team';
+import { Workspace, Project, Item, ChecklistItem, Attachment, TeamMember, RoleId, MemberStatus } from '../types';
+import { normalizeAssigneeId, getStoredTeamMembers, saveStoredTeamMembers } from '../utils/team';
 
 export interface CloudCredentials {
   url: string;
@@ -381,6 +381,45 @@ export async function syncWorkspaceWithCloud(
       }
     }
 
+    // 6. Merge Team Members
+    try {
+      const localMembers = getStoredTeamMembers(ws.id);
+      const remoteMembers = await pullTeamMembersFromCloud(ws.id);
+      
+      const memberMap = new Map<string, TeamMember>();
+      for (const m of localMembers) {
+        const key = (m.email || m.name).toLowerCase();
+        memberMap.set(key, m);
+      }
+
+      for (const rm of remoteMembers) {
+        const key = (rm.email || rm.name).toLowerCase();
+        const existing = memberMap.get(key);
+        if (!existing) {
+          memberMap.set(key, rm);
+        } else {
+          // If remote has active status, prefer active over invited
+          if (rm.status === 'active' && existing.status === 'invited') {
+            memberMap.set(key, { ...existing, status: 'active', role: rm.role });
+          }
+        }
+      }
+
+      const mergedMembers = Array.from(memberMap.values());
+      saveStoredTeamMembers(mergedMembers, ws.id);
+
+      // Push any active local members that were missing in remote
+      const remoteKeys = new Set(remoteMembers.map((m) => (m.email || m.name).toLowerCase()));
+      for (const lm of localMembers) {
+        const key = (lm.email || lm.name).toLowerCase();
+        if (!remoteKeys.has(key) && lm.status === 'active') {
+          await pushTeamMemberToCloud(ws.id, lm);
+        }
+      }
+    } catch {
+      // member sync error ignored
+    }
+
     return {
       projects: mergedProjects,
       items: mergedItems,
@@ -388,6 +427,100 @@ export async function syncWorkspaceWithCloud(
     };
   } catch {
     return { projects: localProjects, items: localItems, synced: false };
+  }
+}
+
+// ─── Team Members Cloud Sync ────────────────────────────────────────────────
+
+export async function pushTeamMemberToCloud(wsId: string, member: TeamMember): Promise<void> {
+  const creds = getCloudCredentials(wsId);
+  if (!creds || !isValidUuid(wsId)) return;
+
+  const roleStr = (member.role || 'developer').toLowerCase();
+  const dbRole = (roleStr === 'admin' || roleStr === 'owner') ? 'admin' : (roleStr === 'viewer' ? 'viewer' : 'developer');
+  const email = (member.email || `${member.name.toLowerCase().replace(/[^a-z0-9]/g, '')}@leeflet.local`).trim().toLowerCase();
+
+  const body: any = {
+    workspace_id: wsId,
+    email,
+    display_name: member.name || email.split('@')[0] || 'Member',
+    role: dbRole,
+    status: member.status || 'active',
+    avatar_color: member.avatarColor || 'bg-violet-600',
+    joined_at: new Date().toISOString(),
+  };
+
+  if (isValidUuid(member.id) && member.id !== '00000000-0000-4000-8000-000000000001') {
+    body.id = member.id;
+  }
+
+  try {
+    await pushWorkspaceStubIfNeeded(creds, wsId);
+    const res = await fetch(`${creds.url}/rest/v1/workspace_members?on_conflict=workspace_id,email`, {
+      method: 'POST',
+      headers: {
+        ...getAuthHeaders(creds),
+        Prefer: 'resolution=merge-duplicates,return=minimal',
+      },
+      body: JSON.stringify([body]),
+    });
+    if (!res.ok) {
+      console.warn('Failed to push team member to cloud:', await res.text());
+    }
+  } catch (err) {
+    console.warn('Error pushing team member to cloud:', err);
+  }
+}
+
+export async function deleteTeamMemberFromCloud(wsId: string, memberId: string): Promise<void> {
+  const creds = getCloudCredentials(wsId);
+  if (!creds || !isValidUuid(wsId)) return;
+
+  try {
+    await fetch(`${creds.url}/rest/v1/workspace_members?workspace_id=eq.${wsId}&id=eq.${memberId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(creds),
+    });
+  } catch {
+    // swallowed
+  }
+}
+
+export async function pullTeamMembersFromCloud(wsId: string): Promise<TeamMember[]> {
+  const creds = getCloudCredentials(wsId);
+  if (!creds || !isValidUuid(wsId)) return [];
+
+  try {
+    const res = await fetch(
+      `${creds.url}/rest/v1/workspace_members?workspace_id=eq.${wsId}&select=*`,
+      { headers: getAuthHeaders(creds) }
+    );
+    if (!res.ok) return [];
+    const rows = await res.json();
+    if (!Array.isArray(rows)) return [];
+
+    return rows.map((r: any) => {
+      const rawRole = (r.role || 'developer').toLowerCase();
+      let role: RoleId = 'Developer';
+      if (rawRole === 'admin' || rawRole === 'owner') role = 'Admin';
+      else if (rawRole === 'designer') role = 'Designer';
+      else if (rawRole === 'product manager' || rawRole === 'product_manager') role = 'Product Manager';
+      else if (rawRole === 'qa engineer' || rawRole === 'qa_engineer') role = 'QA Engineer';
+      else if (rawRole === 'member') role = 'Member';
+      else if (rawRole === 'viewer') role = 'Viewer';
+
+      return {
+        id: r.id,
+        name: r.display_name || r.email?.split('@')[0] || 'Member',
+        email: r.email || '',
+        role,
+        status: (r.status || 'active') as MemberStatus,
+        joinedAt: r.joined_at ? new Date(r.joined_at).toLocaleDateString() : undefined,
+        avatarColor: r.avatar_color || 'bg-violet-600',
+      };
+    });
+  } catch {
+    return [];
   }
 }
 

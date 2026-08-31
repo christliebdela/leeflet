@@ -56,17 +56,17 @@ export const Calendar: React.FC<CalendarProps> = ({
   };
 
   return (
-    <div className={`p-2 bg-white dark:bg-[#18181b] select-none text-xs font-sans ${className}`}>
+    <div className={`p-1.5 bg-white dark:bg-[#18181b] select-none text-xs font-sans ${className}`}>
       {/* Month Navigation Header */}
-      <div className="flex items-center justify-between pb-1.5 mb-1 border-b border-[#f3f4f6] dark:border-[#27272a]">
-        <span className="font-bold text-[11.5px] text-[#111827] dark:text-[#f4f4f5]">
+      <div className="flex items-center justify-between pb-1 mb-1 border-b border-[#f3f4f6] dark:border-[#27272a]">
+        <span className="font-bold text-[11px] text-[#111827] dark:text-[#f4f4f5]">
           {format(currentMonth, 'MMMM yyyy')}
         </span>
         <div className="flex items-center gap-0.5">
           <button
             type="button"
             onClick={prevMonth}
-            className="p-1 rounded-[4px] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white transition-colors cursor-pointer"
+            className="p-0.5 rounded-[3px] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white transition-colors cursor-pointer"
             aria-label="Previous month"
           >
             <ChevronLeft className="w-3 h-3" />
@@ -74,7 +74,7 @@ export const Calendar: React.FC<CalendarProps> = ({
           <button
             type="button"
             onClick={nextMonth}
-            className="p-1 rounded-[4px] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white transition-colors cursor-pointer"
+            className="p-0.5 rounded-[3px] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white transition-colors cursor-pointer"
             aria-label="Next month"
           >
             <ChevronRight className="w-3 h-3" />
@@ -87,7 +87,7 @@ export const Calendar: React.FC<CalendarProps> = ({
         {weekDays.map((wd) => (
           <span
             key={wd}
-            className="text-[9px] font-semibold text-[#9ca3af] dark:text-[#71717a] py-0.5"
+            className="text-[8.5px] font-semibold text-[#9ca3af] dark:text-[#71717a] py-0.5"
           >
             {wd}
           </span>
@@ -108,7 +108,7 @@ export const Calendar: React.FC<CalendarProps> = ({
               type="button"
               disabled={isDisabled}
               onClick={() => handleDateClick(day)}
-              className={`w-[25px] h-[25px] flex items-center justify-center rounded-[5px] text-[11px] font-medium transition-all relative ${
+              className={`w-[22px] h-[21px] flex items-center justify-center rounded-[4px] text-[10px] font-medium transition-all relative ${
                 isSelectedDay
                   ? 'bg-[#111827] dark:bg-white text-white dark:text-[#111827] font-bold shadow-xs'
                   : isCurrentDay

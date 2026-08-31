@@ -48,7 +48,7 @@ export interface Item {
   isPinned?: boolean;
 }
 
-export type RoleId = 'Admin' | 'Developer' | 'Member' | 'Viewer' | 'Owner';
+export type RoleId = 'Admin' | 'Developer' | 'Designer' | 'Product Manager' | 'QA Engineer' | 'Member' | 'Viewer';
 export type MemberStatus = 'active' | 'invited' | 'suspended';
 
 export interface TeamMember {
