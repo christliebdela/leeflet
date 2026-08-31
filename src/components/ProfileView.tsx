@@ -51,10 +51,10 @@ const PROFILE_STORAGE_KEY = 'leeflet_user_profile_data';
 const NOTIF_STORAGE_KEY = 'leeflet_notification_prefs';
 
 const DEFAULT_PROFILE: ProfileData = {
-  fullName: 'Christlieb Dela',
-  username: 'christlieb',
-  email: 'christlieb@leeflet.local',
-  title: 'Workspace Owner & Lead Architect',
+  fullName: '',
+  username: '',
+  email: '',
+  title: 'Workspace Owner',
   avatarColor: 'bg-violet-600 dark:bg-violet-500',
   statusIcon: 'zap',
   statusText: 'In the zone',

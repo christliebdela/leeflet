@@ -88,6 +88,16 @@ export const generateInvitePayload = (
   };
 };
 
+export const getWebOrigin = (): string => {
+  if (typeof window !== 'undefined' && window.location.origin) {
+    const origin = window.location.origin;
+    if (!origin.includes('tauri://') && !origin.includes('localhost:1420')) {
+      return origin;
+    }
+  }
+  return 'https://app.leeflet.com';
+};
+
 export const generateInviteDeepLink = (
   workspace: Workspace,
   role: RoleId,
@@ -97,6 +107,18 @@ export const generateInviteDeepLink = (
   const jsonStr = JSON.stringify(payload);
   const base64Data = btoa(unescape(encodeURIComponent(jsonStr)));
   return `leeflet://join#data=${base64Data}`;
+};
+
+export const generateInviteWebLink = (
+  workspace: Workspace,
+  role: RoleId,
+  invitedEmail?: string
+): string => {
+  const payload = generateInvitePayload(workspace, role, invitedEmail);
+  const jsonStr = JSON.stringify(payload);
+  const base64Data = btoa(unescape(encodeURIComponent(jsonStr)));
+  const origin = getWebOrigin();
+  return `${origin}/#join=${base64Data}`;
 };
 
 export const generateInviteCode = (
@@ -116,9 +138,10 @@ export const generateInviteHtmlTemplate = (params: {
   role: RoleId;
   roleDescription: string;
   inviteLink: string;
+  desktopInviteLink?: string;
   inviteCode: string;
 }): string => {
-  const { workspaceName, inviterName, inviterEmail, role, roleDescription, inviteLink, inviteCode } = params;
+  const { workspaceName, inviterName, inviterEmail, role, roleDescription, inviteLink, desktopInviteLink, inviteCode } = params;
 
   return `
 <!DOCTYPE html>
@@ -173,16 +196,29 @@ export const generateInviteHtmlTemplate = (params: {
                 </tr>
               </table>
 
-              <!-- Main Call to Action Button -->
-              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 24px;">
+              <!-- Main Call to Action Button (Web / Universal) -->
+              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 14px;">
                 <tr>
                   <td align="center">
                     <a href="${inviteLink}" style="display: block; width: 100%; box-sizing: border-box; background-color: #ffffff; color: #09090b; text-decoration: none; font-size: 13px; font-weight: 700; padding: 13px 24px; border-radius: 7px; text-align: center; box-shadow: 0 4px 12px rgba(255, 255, 255, 0.15);">
-                      Accept Invite & Open in Leeflet &rarr;
+                      Accept Invitation &rarr;
                     </a>
                   </td>
                 </tr>
               </table>
+
+              ${desktopInviteLink ? `
+              <!-- Desktop App Deep Link Button -->
+              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 24px;">
+                <tr>
+                  <td align="center">
+                    <a href="${desktopInviteLink}" style="display: inline-block; color: #a1a1aa; text-decoration: underline; font-size: 12px; font-weight: 500;">
+                      Or open directly in Leeflet Desktop App (leeflet://)
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              ` : ''}
 
               <!-- Fallback Manual Join Code -->
               <table width="100%" border="0" cellspacing="0" cellpadding="0" style="border-top: 1px solid #222226; padding-top: 20px;">
@@ -192,9 +228,9 @@ export const generateInviteHtmlTemplate = (params: {
                       MANUAL JOIN INSTRUCTIONS
                     </div>
                     <div style="font-size: 12px; color: #9ca3af; line-height: 1.5; margin-bottom: 10px;">
-                      If the button above does not open Leeflet automatically:
+                      If you have the app or web version open:
                       <ol style="margin: 6px 0 10px 0; padding-left: 20px;">
-                        <li>Open the <strong>Leeflet</strong> desktop application.</li>
+                        <li>Open the <strong>Leeflet</strong> app.</li>
                         <li>Click the workspace switcher in the top left &rarr; <strong>Join Shared Workspace...</strong></li>
                         <li>Paste the Invite Code below:</li>
                       </ol>
@@ -246,7 +282,8 @@ export const sendInviteEmail = async (
     }
   } catch {}
 
-  const inviteLink = generateInviteDeepLink(workspace, role, recipientEmail);
+  const webInviteLink = generateInviteWebLink(workspace, role, recipientEmail);
+  const desktopInviteLink = generateInviteDeepLink(workspace, role, recipientEmail);
   const inviteCode = generateInviteCode(workspace, role, recipientEmail);
 
   const htmlBody = generateInviteHtmlTemplate({
@@ -255,7 +292,8 @@ export const sendInviteEmail = async (
     inviterEmail,
     role,
     roleDescription,
-    inviteLink,
+    inviteLink: webInviteLink,
+    desktopInviteLink,
     inviteCode,
   });
 

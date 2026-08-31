@@ -34,8 +34,8 @@ export const getStoredTeamMembers = (): TeamMember[] => {
   } catch {}
 
   // Fallback / Initial: current profile or workspace creator
-  let profileName = 'Christlieb Dela';
-  let profileEmail = 'christlieb@leeflet.local';
+  let profileName = 'Workspace Owner';
+  let profileEmail = '';
   try {
     const pRaw =
       localStorage.getItem('leeflet_user_profile_data') ||

@@ -69,6 +69,49 @@ export const App: React.FC = () => {
     warmJokePool();
   }, [initialize]);
 
+  // Web / Browser URL hash invite link listener
+  useEffect(() => {
+    const handleHashJoin = async () => {
+      if (typeof window === 'undefined') return;
+      const hash = window.location.hash;
+      if (hash && (hash.includes('join=') || hash.includes('data='))) {
+        try {
+          const raw = hash.includes('join=') ? hash.split('join=')[1] : hash.split('data=')[1];
+          const cleanRaw = raw.split('&')[0];
+          const jsonStr = decodeURIComponent(escape(atob(cleanRaw)));
+          const payload = JSON.parse(jsonStr);
+
+          if (payload.workspaceName || payload.wsName) {
+            const teamName = payload.workspaceName || payload.wsName;
+            const supabaseUrl = payload.supabaseUrl || payload.url;
+            const supabaseKey = payload.supabaseAnonKey || payload.key;
+            const userRole = payload.role || 'member';
+
+            const defaultPath = `leeflet://workspaces/team-${Date.now()}`;
+            const newWs = await useLeafStore.getState().createWorkspace(teamName, defaultPath);
+            if (newWs && newWs.id) {
+              if (supabaseUrl && supabaseKey) {
+                localStorage.setItem(`leeflet_supabase_url_${newWs.id}`, supabaseUrl);
+                localStorage.setItem(`leeflet_supabase_anon_key_${newWs.id}`, supabaseKey);
+                localStorage.setItem(`leeflet_sync_mode_${newWs.id}`, 'cloud');
+              }
+              localStorage.setItem(`leeflet_workspace_role_${newWs.id}`, userRole);
+              localStorage.setItem(`leeflet_is_joined_workspace_${newWs.id}`, 'true');
+              window.location.hash = '';
+              await useLeafStore.getState().initialize('joining team workspace...');
+            }
+          }
+        } catch (err) {
+          console.warn('Could not parse web invite hash:', err);
+        }
+      }
+    };
+
+    handleHashJoin();
+    window.addEventListener('hashchange', handleHashJoin);
+    return () => window.removeEventListener('hashchange', handleHashJoin);
+  }, []);
+
   // Global & In-App Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
