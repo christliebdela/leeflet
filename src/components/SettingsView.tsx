@@ -245,15 +245,40 @@ export const SettingsView: React.FC = () => {
   });
   const [showAnonKey, setShowAnonKey] = useState(false);
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
-  const [testMessage, setTestMessage] = useState('');
   const [inviteCopied, setInviteCopied] = useState(false);
 
-  const storedDbUrl = wsId ? localStorage.getItem(`leeflet_supabase_url_${wsId}`) || '' : '';
-  const storedDbAnonKey = wsId ? localStorage.getItem(`leeflet_supabase_anon_key_${wsId}`) || '' : '';
+  const [savedDbUrl, setSavedDbUrl] = useState(() => wsId ? localStorage.getItem(`leeflet_supabase_url_${wsId}`) || '' : '');
+  const [savedDbAnonKey, setSavedDbAnonKey] = useState(() => wsId ? localStorage.getItem(`leeflet_supabase_anon_key_${wsId}`) || '' : '');
+
+  // Keep saved state in sync if workspace changes
+  useEffect(() => {
+    if (wsId) {
+      const url = localStorage.getItem(`leeflet_supabase_url_${wsId}`) || '';
+      const key = localStorage.getItem(`leeflet_supabase_anon_key_${wsId}`) || '';
+      setSavedDbUrl(url);
+      setSavedDbAnonKey(key);
+      setSupabaseUrl(url);
+      setSupabaseAnonKey(key);
+    }
+  }, [wsId]);
+
   const hasDbChanges =
-    supabaseUrl.trim().replace(/\/$/, '') !== storedDbUrl.trim().replace(/\/$/, '') ||
-    supabaseAnonKey.trim() !== storedDbAnonKey.trim();
+    supabaseUrl.trim().replace(/\/$/, '') !== savedDbUrl.trim().replace(/\/$/, '') ||
+    supabaseAnonKey.trim() !== savedDbAnonKey.trim();
   const canSaveDb = hasDbChanges && Boolean(supabaseUrl.trim()) && Boolean(supabaseAnonKey.trim());
+
+  const terminalLog = async (level: 'info' | 'warn' | 'error' | 'success', message: string) => {
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      await invoke('log_to_terminal', { level, message });
+    } catch {
+      // Browser or dev mode fallback
+    }
+    const tag = `[${level.toUpperCase()}]`;
+    if (level === 'error') console.error(tag, message);
+    else if (level === 'warn') console.warn(tag, message);
+    else console.log(tag, message);
+  };
 
   const handleTestConnection = async () => {
     const url = supabaseUrl.trim().replace(/\/$/, '');
@@ -261,45 +286,110 @@ export const SettingsView: React.FC = () => {
 
     if (!url || !key) {
       setTestStatus('error');
-      setTestMessage('Please enter both Supabase Project URL and Anon Key');
+      toast.error('Please enter both Supabase Project URL and Anon Key');
       return;
     }
 
     if (!url.startsWith('https://') || !url.includes('.supabase.co')) {
       setTestStatus('error');
-      setTestMessage('Invalid Supabase URL. Must start with https:// and end with .supabase.co');
+      toast.error('Invalid Supabase URL. Must start with https:// and end with .supabase.co');
       return;
     }
 
     setTestStatus('testing');
-    setTestMessage('Pinging Supabase REST endpoint...');
+
+    await terminalLog('info', `Testing Supabase connection to: ${url}`);
+
+    const isJwt = key.includes('.') && key.split('.').length === 3;
+    if (isJwt) {
+      try {
+        const rawPayload = atob(key.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'));
+        const jwtPayload = JSON.parse(rawPayload);
+        await terminalLog('info', `JWT Payload: role=${jwtPayload.role}, ref=${jwtPayload.ref}, iss=${jwtPayload.iss}`);
+
+        const urlRef = url.replace('https://', '').split('.')[0];
+        if (jwtPayload.ref && jwtPayload.ref !== urlRef) {
+          await terminalLog('warn', `Project ref mismatch! JWT ref is "${jwtPayload.ref}" but URL host is "${urlRef}".`);
+        }
+      } catch (e) {
+        await terminalLog('warn', `Could not decode JWT payload: ${e}`);
+      }
+    } else {
+      await terminalLog('info', `Using non-JWT API key format (length: ${key.length})`);
+    }
+
+    const headers: Record<string, string> = {
+      apikey: key,
+    };
+    if (isJwt) {
+      headers['Authorization'] = `Bearer ${key}`;
+    }
 
     try {
-      const res = await fetch(`${url}/rest/v1/`, {
+      // 1. First probe REST table query (workspaces or items)
+      await terminalLog('info', `Probing REST endpoint: ${url}/rest/v1/workspaces?select=count`);
+      const restRes = await fetch(`${url}/rest/v1/workspaces?select=count`, {
         method: 'GET',
-        headers: {
-          apikey: key,
-          Authorization: `Bearer ${key}`,
-        },
+        headers,
       });
 
-      if (res.ok || res.status === 200 || res.status === 404) {
+      const restText = await restRes.text().catch(() => '');
+      await terminalLog('info', `REST response: HTTP ${restRes.status} -> ${restText}`);
+
+      if (restRes.ok || restRes.status === 200) {
         setTestStatus('success');
-        setTestMessage('Connected successfully! Database is ready for team sync.');
-        toast.success('Database connection verified');
-      } else {
-        setTestStatus('error');
-        setTestMessage(`Connection returned status ${res.status}: ${res.statusText}`);
-        toast.error('Could not connect to database');
+        toast.success('Database connected! Tables ready for team sync.');
+        await terminalLog('success', `Database connection verified successfully! Tables are ready.`);
+        return;
       }
+
+      // If relation does not exist yet (404 or Postgres error 42P01), connection is valid but tables need schema
+      if (
+        restRes.status === 404 ||
+        restText.includes('42P01') ||
+        restText.includes('relation') ||
+        restText.includes('does not exist')
+      ) {
+        setTestStatus('success');
+        toast.success('Connected to Supabase! Run the Schema SQL (Step 2) to initialize tables.');
+        await terminalLog('success', `Connected to Supabase. Workspace tables not yet created (Run Schema SQL).`);
+        return;
+      }
+
+      // 2. If table probe returned an error, verify if Auth health endpoint responds
+      await terminalLog('info', `Probing Auth health endpoint: ${url}/auth/v1/health`);
+      const healthRes = await fetch(`${url}/auth/v1/health`, {
+        method: 'GET',
+        headers,
+      });
+      const healthText = await healthRes.text().catch(() => '');
+      await terminalLog('info', `Auth health response: HTTP ${healthRes.status} -> ${healthText}`);
+
+      if (healthRes.ok || healthRes.status === 200) {
+        setTestStatus('success');
+        toast.success('Database reachable! Run Schema SQL to initialize tables.');
+        await terminalLog('success', `Supabase instance reachable. Schema initialization needed.`);
+        return;
+      }
+
+      // If both failed with 401 / error
+      let errorJson: any = null;
+      try {
+        errorJson = JSON.parse(restText);
+      } catch {}
+      const detailMsg = errorJson?.message || restRes.statusText || 'Access denied';
+
+      setTestStatus('error');
+      toast.error(`Invalid API Key (HTTP ${restRes.status} - ${detailMsg})`);
+      await terminalLog('error', `Connection failed with HTTP ${restRes.status}: ${restText}`);
     } catch (err: any) {
       setTestStatus('error');
-      setTestMessage(err?.message || 'Network error connecting to Supabase instance');
-      toast.error('Connection failed');
+      toast.error(err?.message || 'Network error connecting to Supabase instance');
+      await terminalLog('error', `Network error testing Supabase connection: ${err?.message || err}`);
     }
   };
 
-  const handleSaveConnection = () => {
+  const handleSaveConnection = async () => {
     const url = supabaseUrl.trim().replace(/\/$/, '');
     const key = supabaseAnonKey.trim();
 
@@ -313,8 +403,17 @@ export const SettingsView: React.FC = () => {
       localStorage.setItem(`leeflet_supabase_anon_key_${wsId}`, key);
       localStorage.setItem(`leeflet_sync_mode_${wsId}`, 'cloud');
     }
+    setSavedDbUrl(url);
+    setSavedDbAnonKey(key);
     setSyncMode('cloud');
-    toast.success('Database configuration saved. Cloud Sync enabled.');
+    toast.success('Database connected. Syncing workspace data to Supabase...');
+
+    // Immediately push existing projects & items to Supabase
+    try {
+      await useLeafStore.getState().syncCloudData(false);
+    } catch {
+      // handled
+    }
   };
 
   const handleDisconnect = () => {
@@ -323,11 +422,12 @@ export const SettingsView: React.FC = () => {
       localStorage.removeItem(`leeflet_supabase_anon_key_${wsId}`);
       localStorage.setItem(`leeflet_sync_mode_${wsId}`, 'local');
     }
+    setSavedDbUrl('');
+    setSavedDbAnonKey('');
     setSupabaseUrl('');
     setSupabaseAnonKey('');
     setSyncMode('local');
     setTestStatus('idle');
-    setTestMessage('');
     toast.info('Disconnected cloud database. Workspace is now local-only.');
   };
 
@@ -383,15 +483,16 @@ export const SettingsView: React.FC = () => {
   const [showTestEmailModal, setShowTestEmailModal] = useState(false);
   const [selectedGuideTab, setSelectedGuideTab] = useState<'resend' | 'gmail' | 'sendgrid' | 'postmark' | 'custom'>('resend');
 
-  const storedSmtp = getStoredSmtpConfig();
+  const [savedSmtp, setSavedSmtp] = useState(() => getStoredSmtpConfig());
+
   const hasSmtpChanges =
-    smtpHost.trim() !== (storedSmtp?.host || '') ||
-    smtpPort.trim() !== (storedSmtp?.port ? String(storedSmtp.port) : '587') ||
-    smtpEncryption !== (storedSmtp?.encryption || 'tls') ||
-    smtpUser.trim() !== (storedSmtp?.username || '') ||
-    smtpPass.trim() !== (storedSmtp?.password || '') ||
-    smtpFromEmail.trim() !== (storedSmtp?.fromEmail || '') ||
-    smtpFromName.trim() !== (storedSmtp?.fromName || 'Leeflet Workspaces');
+    smtpHost.trim() !== (savedSmtp?.host || '') ||
+    smtpPort.trim() !== (savedSmtp?.port ? String(savedSmtp.port) : '587') ||
+    smtpEncryption !== (savedSmtp?.encryption || 'tls') ||
+    smtpUser.trim() !== (savedSmtp?.username || '') ||
+    smtpPass.trim() !== (savedSmtp?.password || '') ||
+    smtpFromEmail.trim() !== (savedSmtp?.fromEmail || '') ||
+    smtpFromName.trim() !== (savedSmtp?.fromName || 'Leeflet Workspaces');
 
   const canSaveSmtp =
     hasSmtpChanges &&
@@ -411,7 +512,7 @@ export const SettingsView: React.FC = () => {
       toast.error('Please enter a valid port number (e.g. 587, 465, 2525)');
       return;
     }
-    saveStoredSmtpConfig({
+    const configToSave = {
       host: smtpHost.trim(),
       port: portNum,
       encryption: smtpEncryption,
@@ -419,12 +520,15 @@ export const SettingsView: React.FC = () => {
       password: smtpPass.trim(),
       fromEmail: smtpFromEmail.trim(),
       fromName: smtpFromName.trim(),
-    });
+    };
+    saveStoredSmtpConfig(configToSave);
+    setSavedSmtp(configToSave);
     toast.success('SMTP configuration saved successfully');
   };
 
   const handleClearSmtp = () => {
     localStorage.removeItem('leeflet_custom_smtp_config');
+    setSavedSmtp(null);
     setSmtpHost('');
     setSmtpPort('587');
     setSmtpEncryption('tls');
@@ -1393,7 +1497,6 @@ export const SettingsView: React.FC = () => {
                       onChange={(e) => {
                         setSupabaseUrl(e.target.value);
                         setTestStatus('idle');
-                        setTestMessage('');
                       }}
                       placeholder="https://your-project-id.supabase.co"
                       className="w-full pl-9 pr-3 py-2 text-xs bg-[#f9fafb] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] text-[#111827] dark:text-white placeholder-[#9ca3af] focus:outline-none focus:border-[#9ca3af] dark:focus:border-[#52525b] font-mono"
@@ -1404,10 +1507,10 @@ export const SettingsView: React.FC = () => {
                   </p>
                 </div>
 
-                {/* Publishable API Key Field */}
+                {/* Publishable / Anon API Key Field */}
                 <div>
                   <label className="block text-xs font-medium text-[#374151] dark:text-[#d4d4d8] mb-1">
-                    Publishable API Key (Client-Safe)
+                    Publishable / Anon API Key (Client-Safe)
                   </label>
                   <div className="relative">
                     <Key className="w-3.5 h-3.5 text-[#9ca3af] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -1417,7 +1520,6 @@ export const SettingsView: React.FC = () => {
                       onChange={(e) => {
                         setSupabaseAnonKey(e.target.value);
                         setTestStatus('idle');
-                        setTestMessage('');
                       }}
                       placeholder="sb_publishable_... or eyJhbGci..."
                       className="w-full pl-9 pr-9 py-2 text-xs bg-[#f9fafb] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] text-[#111827] dark:text-white placeholder-[#9ca3af] focus:outline-none focus:border-[#9ca3af] dark:focus:border-[#52525b] font-mono"
@@ -1425,38 +1527,15 @@ export const SettingsView: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setShowAnonKey(!showAnonKey)}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#9ca3af] hover:text-[#111827] dark:hover:text-white transition-colors p-1"
-                      title={showAnonKey ? 'Hide key' : 'Show key'}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9ca3af] hover:text-[#111827] dark:hover:text-white cursor-pointer"
                     >
                       {showAnonKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                     </button>
                   </div>
                   <p className="text-[10.5px] text-[#9ca3af] dark:text-[#71717a] mt-1">
-                    Supports new <code className="px-1 py-0.2 rounded bg-[#f3f4f6] dark:bg-[#27272a] font-mono text-[10px]">sb_publishable_</code> and legacy <code className="px-1 py-0.2 rounded bg-[#f3f4f6] dark:bg-[#27272a] font-mono text-[10px]">anon</code> keys. Row-Level Security (RLS) protects your tables. Never use a secret key.
+                    Supports both new <code className="font-mono text-[10px]">sb_publishable_</code> and legacy <code className="font-mono text-[10px]">anon</code> keys. Row-Level Security (RLS) protects your tables. Never use a secret key.
                   </p>
                 </div>
-
-                {/* Test Feedback Message */}
-                {testMessage && (
-                  <div
-                    className={`p-3 rounded-[6px] text-xs flex items-start gap-2 border ${
-                      testStatus === 'success'
-                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-300'
-                        : testStatus === 'error'
-                        ? 'bg-rose-500/10 border-rose-500/20 text-rose-700 dark:text-rose-300'
-                        : 'bg-blue-500/10 border-blue-500/20 text-blue-700 dark:text-blue-300'
-                    }`}
-                  >
-                    {testStatus === 'success' ? (
-                      <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-emerald-600 dark:text-emerald-400" />
-                    ) : testStatus === 'error' ? (
-                      <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600 dark:text-rose-400" />
-                    ) : (
-                      <RefreshCw className="w-4 h-4 shrink-0 mt-0.5 animate-spin text-blue-600 dark:text-blue-400" />
-                    )}
-                    <span className="leading-snug">{testMessage}</span>
-                  </div>
-                )}
 
                 {/* Form Action Buttons */}
                 <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#f3f4f6] dark:border-[#27272a]">
@@ -1612,7 +1691,7 @@ export const SettingsView: React.FC = () => {
                         Connect Credentials
                       </div>
                       <div className="text-[11px] text-[#6b7280] dark:text-[#a1a1aa] mt-0.5">
-                        Copy your Project URL and Publishable API key from Project Settings &gt; API into the form above.
+                        Copy your Project URL and Publishable / Anon API key (starts with <code className="font-mono text-[10px]">sb_publishable_</code> or <code className="font-mono text-[10px]">eyJ...</code>) from Project Settings &gt; API into the form above.
                       </div>
                     </div>
                   </div>

@@ -818,7 +818,7 @@ export const StandaloneQueueWidget: React.FC = () => {
           <img
             src="/logo_alpha.png"
             alt="leeflet"
-            className="w-10 h-10 object-contain animate-pulse"
+            className="w-10 h-10 object-contain animate-pulse invert dark:invert-0"
             data-tauri-drag-region
           />
           <span className={`font-brand text-2xl font-normal tracking-tight ${currentTheme.text}`} data-tauri-drag-region>
@@ -857,7 +857,7 @@ export const StandaloneQueueWidget: React.FC = () => {
             <img
               src="/leaf_logo.png"
               alt="leeflet"
-              className="w-4 h-4 object-contain"
+              className="w-4 h-4 object-contain invert dark:invert-0"
               data-tauri-drag-region
             />
             <span

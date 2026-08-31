@@ -7,7 +7,6 @@ import {
   SquarePen,
   Check,
   RotateCcw,
-  RefreshCw,
   CheckSquare,
   Bug,
   Lightbulb,
@@ -15,9 +14,9 @@ import {
   BookOpen,
   HelpCircle,
   FileText,
-  Wifi,
-  WifiOff,
-  CheckCircle2,
+  Cloud,
+  CloudOff,
+  Loader2,
 } from 'lucide-react';
 import { ItemType, Priority, Project, Item } from '../types';
 import { ITEM_TYPE_CONFIG, PRIORITY_CONFIG } from '../utils/format';
@@ -44,6 +43,9 @@ export const HeaderBar: React.FC = () => {
     filterOptions,
     loadItems,
     loadProjects,
+    syncCloudData,
+    startRealtime,
+    stopRealtime,
     toggleSidebar,
     setSearchQuery,
     setFilterOptions,
@@ -57,7 +59,6 @@ export const HeaderBar: React.FC = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [syncState, setSyncState] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle');
-  const syncIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const filterDropdownRef = useRef<HTMLDivElement>(null);
   const sortDropdownRef = useRef<HTMLDivElement>(null);
@@ -70,14 +71,18 @@ export const HeaderBar: React.FC = () => {
     setIsRefreshing(true);
     setSyncState('syncing');
     try {
-      await Promise.all([loadItems(), loadProjects()]);
+      if (isCloudSync && workspace) {
+        await syncCloudData(silent);
+      } else {
+        await Promise.all([loadItems(), loadProjects()]);
+        if (!silent) toast.success('Workspace refreshed');
+      }
       setSyncState('synced');
-      if (!silent) toast.success(isCloudSync ? 'Synced with live database' : 'Workspace refreshed');
       // Reset synced indicator after 4s
       setTimeout(() => setSyncState('idle'), 4000);
     } catch {
       setSyncState('error');
-      if (!silent) toast.error('Failed to refresh data');
+      if (!silent) toast.error('Failed to sync data');
       setTimeout(() => setSyncState('idle'), 3000);
     } finally {
       setTimeout(() => setIsRefreshing(false), 450);
@@ -96,15 +101,18 @@ export const HeaderBar: React.FC = () => {
     };
   }, []);
 
-  // Auto-sync every 30s when cloud-connected and online
+  // Manage Realtime WebSocket subscription
+  // - When cloud-connected & online: open subscription (zero egress when idle)
+  // - When offline or disconnected: tear down subscription
+  // - On workspace change: re-subscribe to the new workspace channel
   useEffect(() => {
-    if (syncIntervalRef.current) clearInterval(syncIntervalRef.current);
-    if (isCloudSync && isOnline) {
-      // initial silent sync on connect
-      handleRefresh(true);
-      syncIntervalRef.current = setInterval(() => handleRefresh(true), 30_000);
+    if (isCloudSync && isOnline && workspace?.id) {
+      // Do an initial full sync to catch anything we missed, then open Realtime
+      syncCloudData(true).catch(() => {}).finally(() => startRealtime());
+    } else {
+      stopRealtime();
     }
-    return () => { if (syncIntervalRef.current) clearInterval(syncIntervalRef.current); };
+    return () => { stopRealtime(); };
   }, [isCloudSync, isOnline, workspace?.id]);
 
   // Keyboard shortcut: Ctrl+R / F5 → silent refresh, Ctrl+B → toggle sidebar
@@ -539,22 +547,43 @@ export const HeaderBar: React.FC = () => {
       </>
     )}
 
-        {/* Sync status indicator — only visible when cloud-connected */}
+        {/* Cloud Sync button — only visible when cloud-connected */}
         {isCloudSync && (
-          <div
-            title={isOnline ? (syncState === 'syncing' ? 'Syncing…' : syncState === 'synced' ? 'Synced' : 'Cloud sync active') : 'Offline'}
-            className="flex items-center justify-center w-7 h-7 shrink-0"
+          <button
+            type="button"
+            onClick={() => handleRefresh(false)}
+            title={
+              isOnline
+                ? syncState === 'syncing'
+                  ? 'Syncing with Supabase...'
+                  : syncState === 'synced'
+                  ? 'Synced — click to sync again'
+                  : 'Cloud sync active — click to sync'
+                : 'Offline — reconnect to sync'
+            }
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] border text-xs font-medium shrink-0 whitespace-nowrap transition-colors cursor-pointer select-none ${
+              !isOnline
+                ? 'bg-[#f4f5f6] dark:bg-[#1c1c1f] border-[#e5e7eb] dark:border-[#27272a] text-[#9ca3af] dark:text-[#52525b]'
+                : 'bg-[#f4f5f6] dark:bg-[#1c1c1f] border-[#e5e7eb] dark:border-[#27272a] text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#27272a]'
+            }`}
           >
             {!isOnline ? (
-              <WifiOff className="w-3.5 h-3.5 text-[#9ca3af] dark:text-[#71717a]" />
+              <CloudOff className="w-3.5 h-3.5" />
             ) : syncState === 'syncing' ? (
-              <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-500" />
-            ) : syncState === 'synced' ? (
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
             ) : (
-              <Wifi className="w-3 h-3 text-emerald-500 opacity-70" />
+              <Cloud className="w-3.5 h-3.5" />
             )}
-          </div>
+            <span>
+              {!isOnline
+                ? 'Offline'
+                : syncState === 'syncing'
+                ? 'Syncing'
+                : syncState === 'synced'
+                ? 'Synced'
+                : 'Cloud'}
+            </span>
+          </button>
         )}
 
         {/* + New Button */}

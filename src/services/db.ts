@@ -1,4 +1,12 @@
 import { Item, Project, Workspace, FilterOptions, ChecklistItem, Attachment } from '../types';
+import {
+  pushWorkspaceToCloud,
+  pushProjectToCloud,
+  deleteProjectFromCloud,
+  pushItemToCloud,
+  deleteItemFromCloud,
+  syncWorkspaceWithCloud,
+} from './cloudSync';
 
 const STORAGE_KEY_PREFIX = 'leaf_ws_';
 const ACTIVE_WS_KEY = 'leaf_active_workspace';
@@ -59,6 +67,16 @@ export class DatabaseService {
         localStorage.setItem(`${STORAGE_KEY_PREFIX}${ws.id}`, JSON.stringify(ws));
       }
       return ws;
+    } catch {
+      return null;
+    }
+  }
+
+  public async getWorkspace(id: string): Promise<Workspace | null> {
+    const wsJson = localStorage.getItem(`${STORAGE_KEY_PREFIX}${id}`);
+    if (!wsJson) return null;
+    try {
+      return JSON.parse(wsJson) as Workspace;
     } catch {
       return null;
     }
@@ -171,12 +189,16 @@ export class DatabaseService {
     this.saveWorkspaceProjects(id, []);
     this.saveWorkspaceItems(id, []);
 
+    // Async push to cloud if configured
+    pushWorkspaceToCloud(workspace).catch(() => {});
+
     return workspace;
   }
 
   public async updateWorkspace(workspace: Workspace): Promise<void> {
     workspace.updatedAt = new Date().toISOString();
     localStorage.setItem(`${STORAGE_KEY_PREFIX}${workspace.id}`, JSON.stringify(workspace));
+    pushWorkspaceToCloud(workspace).catch(() => {});
   }
 
   // --- Projects ---
@@ -213,6 +235,10 @@ export class DatabaseService {
 
     projects.push(newProject);
     this.saveWorkspaceProjects(wsId, projects);
+
+    // Async push to cloud
+    pushProjectToCloud(wsId, newProject).catch(() => {});
+
     return newProject;
   }
 
@@ -223,8 +249,12 @@ export class DatabaseService {
     const projects = await this.getProjects();
     const index = projects.findIndex(p => p.id === project.id);
     if (index !== -1) {
-      projects[index] = { ...project, updatedAt: new Date().toISOString() };
+      const updated = { ...project, updatedAt: new Date().toISOString() };
+      projects[index] = updated;
       this.saveWorkspaceProjects(wsId, projects);
+
+      // Async push to cloud
+      pushProjectToCloud(wsId, updated).catch(() => {});
     }
   }
 
@@ -238,6 +268,9 @@ export class DatabaseService {
     // Also remove items or orphan them
     const items = (await this.getItems()).filter(i => i.projectId !== projectId);
     this.saveWorkspaceItems(wsId, items);
+
+    // Async delete from cloud
+    deleteProjectFromCloud(wsId, projectId).catch(() => {});
   }
 
   // --- Items ---
@@ -368,6 +401,10 @@ export class DatabaseService {
 
     items.unshift(newItem);
     this.saveWorkspaceItems(wsId, items);
+
+    // Async push to cloud
+    pushItemToCloud(wsId, newItem).catch(() => {});
+
     return newItem;
   }
 
@@ -386,6 +423,9 @@ export class DatabaseService {
       };
       items[index] = updated;
       this.saveWorkspaceItems(wsId, items);
+
+      // Async push to cloud
+      pushItemToCloud(wsId, updated).catch(() => {});
     }
   }
 
@@ -395,6 +435,26 @@ export class DatabaseService {
 
     const items = (await this.getItems()).filter(i => i.id !== id);
     this.saveWorkspaceItems(wsId, items);
+
+    // Async delete from cloud
+    deleteItemFromCloud(wsId, id).catch(() => {});
+  }
+
+  // --- Cloud Sync ---
+
+  public async syncWithCloud(workspaceId?: string): Promise<{ projects: Project[]; items: Item[]; synced: boolean }> {
+    const ws = workspaceId ? await this.getWorkspace(workspaceId) : await this.getActiveWorkspace();
+    if (!ws) return { projects: [], items: [], synced: false };
+
+    const localProjects = await this.getProjects();
+    const localItems = await this.getItems();
+
+    const res = await syncWorkspaceWithCloud(ws, localProjects, localItems);
+    if (res.synced) {
+      this.saveWorkspaceProjects(ws.id, res.projects);
+      this.saveWorkspaceItems(ws.id, res.items);
+    }
+    return res;
   }
 
   // --- Export & Backup ---

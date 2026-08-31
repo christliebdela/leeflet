@@ -186,7 +186,7 @@ export const OnboardingModal: React.FC = () => {
                 <img
                   src="/leaf_logo.png"
                   alt="leeflet"
-                  className="w-6 h-6 object-contain"
+                  className="w-6 h-6 object-contain invert dark:invert-0"
                 />
               </div>
               <div>

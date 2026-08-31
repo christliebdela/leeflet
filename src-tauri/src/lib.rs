@@ -92,22 +92,23 @@ fn send_smtp_email(config: SmtpConfig, payload: EmailPayload) -> Result<(), Stri
         .map_err(|e| format!("Failed to create email message: {}", e))?;
 
     let creds = Credentials::new(config.username.trim().to_string(), config.password.trim().to_string());
+    let host = config.host.trim();
 
     let mailer = if config.port == 465 || config.encryption == "ssl" {
-        SmtpTransport::relay(config.host.trim())
-            .map_err(|e| format!("Could not connect to SMTP host {}: {}", config.host, e))?
+        SmtpTransport::relay(host)
+            .map_err(|e| format!("Could not connect to SMTP host {}: {}", host, e))?
             .port(config.port)
             .credentials(creds)
             .build()
     } else if config.encryption == "none" {
-        SmtpTransport::builder_dangerous(config.host.trim())
+        SmtpTransport::builder_dangerous(host)
             .port(config.port)
             .credentials(creds)
             .build()
     } else {
         // Standard TLS / STARTTLS (587, 2525)
-        SmtpTransport::starttls_relay(config.host.trim())
-            .map_err(|e| format!("Could not connect via STARTTLS to {}: {}", config.host, e))?
+        SmtpTransport::starttls_relay(host)
+            .map_err(|e| format!("Could not connect via STARTTLS to {}: {}", host, e))?
             .port(config.port)
             .credentials(creds)
             .build()
@@ -149,9 +150,9 @@ pub fn run() {
                 let _ = app.global_shortcut().register(shortcut);
             }
 
-            let open_item = MenuItem::with_id(app, "open", "Open leeflet", true, None::<&str>)?;
-            let capture_item = MenuItem::with_id(app, "capture", "Quick Capture (Alt+L)", true, None::<&str>)?;
-            let quit_item = MenuItem::with_id(app, "quit", "Quit leeflet", true, None::<&str>)?;
+            let open_item = MenuItem::with_id(app, "open", "Open leeflet", true, None::<String>)?;
+            let capture_item = MenuItem::with_id(app, "capture", "Quick Capture (Alt+L)", true, None::<String>)?;
+            let quit_item = MenuItem::with_id(app, "quit", "Quit leeflet", true, None::<String>)?;
             let menu = Menu::with_items(app, &[&open_item, &capture_item, &quit_item])?;
 
             if let Some(icon) = app.default_window_icon() {

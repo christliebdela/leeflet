@@ -299,7 +299,7 @@ export const Sidebar: React.FC = () => {
                 <img
                   src="/leaf_logo.png"
                   alt="leeflet"
-                  className="w-5 h-5 object-contain group-hover/rail:opacity-0 transition-opacity"
+                  className="w-5 h-5 object-contain group-hover/rail:opacity-0 transition-opacity invert dark:invert-0"
                 />
                 <PanelLeftOpen className="w-4 h-4 text-[#111827] dark:text-white absolute opacity-0 group-hover/rail:opacity-100 transition-opacity" />
               </button>
@@ -378,14 +378,15 @@ export const Sidebar: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setViewMode({ type: 'project', projectId: project.id })}
-                        className={`w-8 h-8 flex items-center justify-center rounded-[6px] transition-colors cursor-pointer text-xs font-semibold ${
+                        className={`w-9 h-9 flex items-center justify-center rounded-[6px] transition-colors cursor-pointer relative ${
                           isActive
                             ? 'bg-[#e5e7eb] dark:bg-[#27272a] text-[#111827] dark:text-white'
                             : 'text-[#6b7280] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white'
                         }`}
                       >
+                        <Folder className="w-4 h-4" />
                         <span
-                          className="w-2.5 h-2.5 rounded-full"
+                          className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full"
                           style={{ backgroundColor: project.color || '#10b981' }}
                         />
                       </button>
@@ -485,7 +486,7 @@ export const Sidebar: React.FC = () => {
                 <img
                   src="/leaf_logo.png"
                   alt="leeflet"
-                  className="w-5 h-5 object-contain"
+                  className="w-5 h-5 object-contain invert dark:invert-0"
                 />
               </div>
               <span className="font-semibold text-xs text-[#111827] dark:text-[#f4f4f5] truncate tracking-tight">

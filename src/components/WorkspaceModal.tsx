@@ -256,7 +256,7 @@ export const WorkspaceModal: React.FC = () => {
                 <img
                   src="/leaf_logo.png"
                   alt="Leeflet"
-                  className="w-3.5 h-3.5 object-contain"
+                  className="w-3.5 h-3.5 object-contain invert dark:invert-0"
                 />
               </div>
               <h2 className="text-xs font-bold text-[#111827] dark:text-[#f4f4f5] tracking-tight">

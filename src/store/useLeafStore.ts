@@ -4,6 +4,7 @@ import { dbService } from '../services/db';
 import { broadcastSync, subscribeToSync } from '../utils/sync';
 import { toast } from './useToastStore';
 import { soundService } from '../utils/audio';
+import { subscribeToWorkspace, unsubscribe as realtimeUnsubscribe } from '../services/realtimeSync';
 
 interface LeafState {
   workspace: Workspace | null;
@@ -82,6 +83,9 @@ interface LeafState {
   setProjectModalOpen: (open: boolean, project?: Project | null) => void;
   setStickyNoteItemId: (id: string | null) => void;
   setItemToDelete: (item: Item | null) => void;
+  syncCloudData: (silent?: boolean) => Promise<void>;
+  startRealtime: () => void;
+  stopRealtime: () => void;
 }
 
 const getInitialTheme = (): 'light' | 'dark' => {
@@ -279,6 +283,7 @@ export const useLeafStore = create<LeafState>((set, get) => ({
       await get().loadWorkspaces();
       await get().loadProjects();
       await get().loadItems();
+      get().syncCloudData(true).catch(() => {});
     } finally {
       const elapsed = Date.now() - startTime;
       if (elapsed < 1000) {
@@ -495,4 +500,101 @@ export const useLeafStore = create<LeafState>((set, get) => ({
   setProjectModalOpen: (open, project = null) => set({ isProjectModalOpen: open, editingProject: project }),
   setStickyNoteItemId: (id) => set({ stickyNoteItemId: id }),
   setItemToDelete: (item) => set({ itemToDelete: item }),
+
+  syncCloudData: async (silent = true) => {
+    const ws = get().workspace;
+    if (!ws) return;
+    try {
+      const res = await dbService.syncWithCloud(ws.id);
+      if (res.synced) {
+        set({ projects: res.projects, items: res.items });
+        if (!silent) toast.success('Synced with live database');
+      }
+    } catch {
+      if (!silent) toast.error('Cloud sync failed');
+    }
+  },
+
+  startRealtime: () => {
+    const ws = get().workspace;
+    if (!ws) return;
+
+    subscribeToWorkspace(ws.id, {
+      // ── Item events ──────────────────────────────────────────────────────
+      onItemUpsert: (incoming) => {
+        const current = get().items;
+        const idx = current.findIndex((i) => i.id === incoming.id);
+        if (idx === -1) {
+          // Brand-new item from a teammate
+          set({ items: [...current, incoming as Item] });
+        } else {
+          const existing = current[idx];
+          // Only apply if the remote is newer (LWW)
+          if (!existing.updatedAt || new Date(incoming.updatedAt ?? 0) >= new Date(existing.updatedAt)) {
+            const merged: Item = { ...existing, ...incoming };
+            const updated = [...current];
+            updated[idx] = merged;
+            set({ items: updated });
+          }
+        }
+      },
+      onItemDelete: (itemId) => {
+        set({ items: get().items.filter((i) => i.id !== itemId) });
+      },
+
+      // ── Project events ───────────────────────────────────────────────────
+      onProjectUpsert: (incoming) => {
+        const current = get().projects;
+        const idx = current.findIndex((p) => p.id === incoming.id);
+        if (idx === -1) {
+          set({ projects: [...current, incoming as Project] });
+        } else {
+          const existing = current[idx];
+          if (!existing.updatedAt || new Date(incoming.updatedAt ?? 0) >= new Date(existing.updatedAt)) {
+            const updated = [...current];
+            updated[idx] = { ...existing, ...incoming };
+            set({ projects: updated });
+          }
+        }
+      },
+      onProjectDelete: (projectId) => {
+        set({ projects: get().projects.filter((p) => p.id !== projectId) });
+      },
+
+      // ── Checklist events ─────────────────────────────────────────────────
+      onChecklistUpsert: (incoming) => {
+        const items = get().items;
+        const itemIdx = items.findIndex((i) => i.id === incoming.itemId);
+        if (itemIdx === -1) return;
+        const item = items[itemIdx];
+        const clIdx = item.checklist.findIndex((c) => c.id === incoming.id);
+        let newChecklist: ChecklistItem[];
+        if (clIdx === -1) {
+          newChecklist = [...item.checklist, incoming as ChecklistItem];
+        } else {
+          newChecklist = [...item.checklist];
+          newChecklist[clIdx] = { ...newChecklist[clIdx], ...incoming };
+        }
+        const updated = [...items];
+        updated[itemIdx] = { ...item, checklist: newChecklist };
+        set({ items: updated });
+      },
+      onChecklistDelete: (checklistId) => {
+        const items = get().items.map((item) => ({
+          ...item,
+          checklist: item.checklist.filter((c) => c.id !== checklistId),
+        }));
+        set({ items });
+      },
+
+      // ── Reconnect — do a full sync to fill any gaps ──────────────────────
+      onReconnect: () => {
+        get().syncCloudData(true).catch(() => {});
+      },
+    });
+  },
+
+  stopRealtime: () => {
+    realtimeUnsubscribe();
+  },
 }));

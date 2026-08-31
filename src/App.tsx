@@ -284,7 +284,7 @@ export const App: React.FC = () => {
           <img
             src="/leaf_logo.png"
             alt="leeflet"
-            className="w-12 h-12 object-contain animate-pulse"
+            className="w-12 h-12 object-contain animate-pulse invert dark:invert-0"
           />
           <div className="flex flex-col items-center gap-0.5">
             <span className="font-brand text-3xl font-normal text-[#111827] dark:text-[#f4f4f5] tracking-tight">
@@ -306,7 +306,7 @@ export const App: React.FC = () => {
           <img
             src="/logo_alpha.png"
             alt="leeflet"
-            className="w-14 h-14 object-contain animate-pulse"
+            className="w-14 h-14 object-contain animate-pulse invert dark:invert-0"
           />
           <span className="font-brand text-4xl font-normal text-[#111827] dark:text-[#f4f4f5] tracking-tight">
             leeflet

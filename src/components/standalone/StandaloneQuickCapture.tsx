@@ -464,7 +464,7 @@ export const StandaloneQuickCapture: React.FC = () => {
       {/* Top Breadcrumb Header */}
       <div className="flex items-center justify-between px-4 pt-3 pb-2.5 border-b border-[#f3f4f6] dark:border-[#27272a] rounded-t-[18px] shrink-0">
         <div className="flex items-center gap-2 text-xs">
-          <img src="/leaf_logo.png" alt="leeflet" className="w-4 h-4 object-contain shrink-0" />
+          <img src="/leaf_logo.png" alt="leeflet" className="w-4 h-4 object-contain shrink-0 invert dark:invert-0" />
           <span className="font-brand text-[15px] italic text-[#111827] dark:text-[#f4f4f5] tracking-tight leading-none select-none">
             leeflet
           </span>

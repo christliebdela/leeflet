@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useToastStore, ToastItem } from '../../store/useToastStore';
-import { X } from 'lucide-react';
+import { X, CheckCircle2, AlertCircle, Info } from 'lucide-react';
 
 const SPRING   = 'cubic-bezier(0.34, 1.56, 0.64, 1)'; // enter spring
 const EXIT_CB  = 'cubic-bezier(0.4, 0, 1, 1)';         // snappy exit
@@ -49,6 +49,16 @@ const Card: React.FC<{ item: DisplayItem; onClose: (id: string) => void }> = ({
       aria-live="polite"
     >
       <div className="flex items-start gap-2.5 rounded-[10px] bg-[#18181b] border border-white/10 px-3.5 py-3 shadow-2xl">
+        {toast.type === 'success' && (
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+        )}
+        {toast.type === 'error' && (
+          <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+        )}
+        {toast.type === 'info' && (
+          <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+        )}
+
         <div className="flex-1 grid gap-0.5 min-w-0">
           {toast.title && (
             <p className="text-[12.5px] font-semibold text-white leading-snug">
