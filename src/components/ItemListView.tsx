@@ -20,10 +20,9 @@ import {
   Calendar,
 } from 'lucide-react';
 import { Item, ChecklistItem, Project } from '../types';
-import { formatDate, formatDueDateLabel, ITEM_TYPE_CONFIG } from '../utils/format';
+import { formatDate, formatDueDateLabel } from '../utils/format';
 import { getStoredTeamMembers } from '../utils/team';
 import { resolveAvatarUrl } from '../utils/avatars';
-import { MiddleTruncate } from './ui/MiddleTruncate';
 
 const LinearPriorityIcon: React.FC<{ priority: string }> = ({ priority }) => {
   switch (priority) {
@@ -360,7 +359,6 @@ export const ItemListView: React.FC = () => {
             const isDragged = draggedItemId === item.id;
             const isDragOverBefore = dragOverInfo?.id === item.id && dragOverInfo.position === 'before';
             const isDragOverAfter = dragOverInfo?.id === item.id && dragOverInfo.position === 'after';
-            const typeConfig = ITEM_TYPE_CONFIG[item.type] || ITEM_TYPE_CONFIG.task;
             const project = projects.find((p: Project) => p.id === item.projectId);
 
             return (
@@ -437,7 +435,7 @@ export const ItemListView: React.FC = () => {
 
                   {/* Non-task item type indicator (subtle icon only for bug/idea/improvement) */}
                   {item.type !== 'task' && (
-                    <span title={`Type: ${typeConfig.label}`} className="shrink-0 flex items-center">
+                    <span className="shrink-0 flex items-center">
                       {item.type === 'bug' && <Bug className="w-3.5 h-3.5 text-rose-500" />}
                       {item.type === 'idea' && <Lightbulb className="w-3.5 h-3.5 text-amber-500" />}
                       {item.type === 'improvement' && <Sparkles className="w-3.5 h-3.5 text-purple-500" />}
@@ -447,16 +445,17 @@ export const ItemListView: React.FC = () => {
                     </span>
                   )}
 
-                  {/* Title with MiddleTruncate */}
+                  {/* Title */}
                   <div className="min-w-0 flex-1 overflow-hidden">
-                    <MiddleTruncate
-                      value={item.title}
-                      className={`text-xs font-semibold ${
+                    <span
+                      className={`text-xs font-semibold truncate block ${
                         item.status === 'done'
                           ? 'line-through text-[#6b7280] dark:text-[#a1a1aa]'
                           : 'text-[#111827] dark:text-[#f4f4f5]'
                       }`}
-                    />
+                    >
+                      {item.title}
+                    </span>
                   </div>
 
                   {/* Checklist count badge */}
@@ -473,7 +472,6 @@ export const ItemListView: React.FC = () => {
                   {/* Due Date Indicator */}
                   {item.dueAt && (
                     <span
-                      title={`Due: ${formatDueDateLabel(item.dueAt)}`}
                       className="hidden sm:inline-flex items-center gap-1 text-[10.5px] text-[#6b7280] dark:text-[#a1a1aa] font-medium bg-[#f4f5f6] dark:bg-[#202024] px-1.5 py-0.5 rounded border border-[#e5e7eb] dark:border-[#27272a] shrink-0"
                     >
                       <Calendar className="w-3 h-3 text-indigo-500 shrink-0" />
@@ -486,7 +484,6 @@ export const ItemListView: React.FC = () => {
                     const assignedMember = getStoredTeamMembers().find(m => m.id === item.assigneeId);
                     return (
                       <span
-                        title={assignedMember?.name || 'Assigned'}
                         className="w-4 h-4 rounded-full border border-[#e5e7eb] dark:border-[#323238] shrink-0 overflow-hidden shadow-2xs"
                       >
                         <img
@@ -502,7 +499,6 @@ export const ItemListView: React.FC = () => {
                   {viewMode.type !== 'project' && (
                     <div className={isPaneOpen ? 'max-w-[90px] shrink-0' : 'w-[100px] sm:w-[120px] flex items-center justify-start shrink-0'}>
                       <span
-                        title={project?.name || 'No Project'}
                         className="inline-flex items-center gap-1.5 text-[11px] text-[#6b7280] dark:text-[#a1a1aa] font-medium truncate"
                       >
                         <span
