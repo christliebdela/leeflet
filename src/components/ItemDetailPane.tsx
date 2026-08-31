@@ -28,9 +28,10 @@ import {
   Save,
   Undo2,
   Redo2,
-  Calendar,
+  Calendar as CalendarIcon,
   User,
 } from 'lucide-react';
+import { format } from 'date-fns';
 import { Item, ItemType, Priority, Status, ChecklistItem, Attachment, TeamMember } from '../types';
 import {
   formatFullDate,
@@ -44,6 +45,7 @@ import { getStoredTeamMembers, matchesAssignee, normalizeAssigneeId } from '../u
 import { resolveAvatarUrl } from '../utils/avatars';
 import { Checkbox } from './ui/Checkbox';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { Calendar } from './ui/calendar';
 import { markdownToHtml, htmlToMarkdown, autoLinkHtml } from '../utils/markdown';
 import { soundService } from '../utils/audio';
 
@@ -1119,15 +1121,15 @@ export const ItemDetailPane: React.FC = () => {
                 }`}
               >
                 <div className="flex items-center gap-1.5 truncate">
-                  <Calendar className="w-3.5 h-3.5 opacity-70 shrink-0" />
+                  <CalendarIcon className="w-3.5 h-3.5 opacity-70 shrink-0" />
                   <span className="truncate">{formatDueDateLabel(dueAt)}</span>
                 </div>
                 <ChevronDown className="w-3 h-3 opacity-60 shrink-0" />
               </button>
 
               {openMenu === 'dueDate' && (
-                <div className="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] shadow-modal p-1.5 z-50 space-y-1">
-                  <div className="space-y-0.5">
+                <div className="absolute right-0 top-full mt-1.5 w-60 bg-white dark:bg-[#18181b] border border-[#e5e7eb] dark:border-[#27272a] rounded-[10px] shadow-2xl p-2 z-50 space-y-2 animate-in fade-in zoom-in-95 duration-100">
+                  <div className="grid grid-cols-3 gap-1 pb-1.5 border-b border-[#f3f4f6] dark:border-[#27272a]">
                     <button
                       type="button"
                       onClick={() => {
@@ -1136,12 +1138,9 @@ export const ItemDetailPane: React.FC = () => {
                         handleFieldChange('dueAt', d);
                         setOpenMenu(null);
                       }}
-                      className="w-full text-left px-2 py-1 rounded-[4px] text-xs text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] flex items-center justify-between"
+                      className="py-1 px-1 rounded-[5px] text-[11px] font-medium text-center text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] transition-colors"
                     >
-                      <span>Today</span>
-                      <span className="text-[10px] text-[#9ca3af] dark:text-[#71717a]">
-                        {new Date().toLocaleDateString(undefined, { weekday: 'short' })}
-                      </span>
+                      Today
                     </button>
 
                     <button
@@ -1154,9 +1153,9 @@ export const ItemDetailPane: React.FC = () => {
                         handleFieldChange('dueAt', str);
                         setOpenMenu(null);
                       }}
-                      className="w-full text-left px-2 py-1 rounded-[4px] text-xs text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] flex items-center justify-between"
+                      className="py-1 px-1 rounded-[5px] text-[11px] font-medium text-center text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] transition-colors"
                     >
-                      <span>Tomorrow</span>
+                      Tomorrow
                     </button>
 
                     <button
@@ -1170,41 +1169,47 @@ export const ItemDetailPane: React.FC = () => {
                         handleFieldChange('dueAt', str);
                         setOpenMenu(null);
                       }}
-                      className="w-full text-left px-2 py-1 rounded-[4px] text-xs text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] flex items-center justify-between"
+                      className="py-1 px-1 rounded-[5px] text-[11px] font-medium text-center text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] transition-colors"
                     >
-                      <span>Next Monday</span>
+                      Next Mon
                     </button>
                   </div>
 
-                  <div className="pt-1 border-t border-[#f3f4f6] dark:border-[#27272a]">
-                    <label className="block text-[10px] font-medium text-[#9ca3af] dark:text-[#71717a] mb-1 px-1">
-                      Pick Date
-                    </label>
-                    <input
-                      type="date"
-                      value={dueAt || ''}
-                      onChange={(e) => {
-                        const val = e.target.value || null;
+                  {/* Shadcn Calendar Component */}
+                  <Calendar
+                    mode="single"
+                    selected={dueAt ? new Date(dueAt + 'T00:00:00') : null}
+                    onSelect={(d) => {
+                      if (d) {
+                        const val = format(d, 'yyyy-MM-dd');
                         setDueAt(val);
                         handleFieldChange('dueAt', val);
-                        setOpenMenu(null);
-                      }}
-                      className="w-full text-xs px-2 py-1 bg-[#f9fafb] dark:bg-[#141416] border border-[#e5e7eb] dark:border-[#27272a] rounded-[4px] text-[#111827] dark:text-white outline-none focus:border-[#9ca3af]"
-                    />
-                  </div>
-
-                  {dueAt && (
-                    <button
-                      type="button"
-                      onClick={() => {
+                      } else {
                         setDueAt(null);
                         handleFieldChange('dueAt', null);
-                        setOpenMenu(null);
-                      }}
-                      className="w-full text-left px-2 py-1 rounded-[4px] text-xs text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors"
-                    >
-                      Clear Due Date
-                    </button>
+                      }
+                      setOpenMenu(null);
+                    }}
+                    className="p-0 border-0"
+                  />
+
+                  {dueAt && (
+                    <div className="pt-1.5 border-t border-[#f3f4f6] dark:border-[#27272a] flex items-center justify-between">
+                      <span className="text-[10px] text-[#6b7280] dark:text-[#a1a1aa] font-mono">
+                        {dueAt}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDueAt(null);
+                          handleFieldChange('dueAt', null);
+                          setOpenMenu(null);
+                        }}
+                        className="px-2 py-0.5 rounded-[4px] text-[11px] font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
+                      >
+                        Clear Due Date
+                      </button>
+                    </div>
                   )}
                 </div>
               )}

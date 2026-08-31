@@ -1,22 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useLeafStore } from '../store/useLeafStore';
-import { X, Folder, Trash2, Check, Pipette } from 'lucide-react';
-import { Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
+import { X, Folder, Trash2 } from 'lucide-react';
+import { ColorPicker, MODERN_COLOR_PRESETS } from './ui/ColorPicker';
 
-export const PROJECT_COLOR_PRESETS = [
-  { name: 'Emerald', value: '#10b981' },
-  { name: 'Blue', value: '#3b82f6' },
-  { name: 'Violet', value: '#8b5cf6' },
-  { name: 'Amber', value: '#f59e0b' },
-  { name: 'Rose', value: '#f43f5e' },
-  { name: 'Cyan', value: '#06b6d4' },
-  { name: 'Pink', value: '#ec4899' },
-  { name: 'Lime', value: '#84cc16' },
-  { name: 'Indigo', value: '#6366f1' },
-  { name: 'Orange', value: '#f97316' },
-  { name: 'Teal', value: '#14b8a6' },
-  { name: 'Sky', value: '#0284c7' },
-];
+export const PROJECT_COLOR_PRESETS = MODERN_COLOR_PRESETS;
 
 export const ProjectModal: React.FC = () => {
   const {
@@ -36,10 +23,10 @@ export const ProjectModal: React.FC = () => {
   const [color, setColor] = useState('#10b981');
 
   // Set of colors already assigned to other projects
-  const assignedColors = new Set(
+  const assignedColors = new Set<string>(
     projects
-      .filter((p) => p.id !== editingProject?.id && p.color)
-      .map((p) => p.color?.toLowerCase())
+      .filter((p): p is typeof p & { color: string } => Boolean(p.id !== editingProject?.id && p.color))
+      .map((p) => p.color.toLowerCase())
   );
 
   // Global window Escape key listener
@@ -160,71 +147,11 @@ export const ProjectModal: React.FC = () => {
               </span>
             </div>
 
-            <div className="flex items-center gap-2 flex-wrap p-2 rounded-[8px] bg-[#f9fafb] dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a]">
-              {PROJECT_COLOR_PRESETS.map((preset) => {
-                const isAssigned = assignedColors.has(preset.value.toLowerCase());
-                const isSelected = color.toLowerCase() === preset.value.toLowerCase();
-
-                return (
-                  <Tooltip key={preset.value}>
-                    <TooltipTrigger asChild>
-                      <button
-                        type="button"
-                        disabled={isAssigned && !isSelected}
-                        onClick={() => setColor(preset.value)}
-                        className={`w-6 h-6 rounded-full flex items-center justify-center transition-all relative ${
-                          isSelected
-                            ? 'ring-2 ring-offset-2 ring-offset-white dark:ring-offset-[#1c1c1f] ring-[#111827] dark:ring-white scale-110 shadow-xs'
-                            : isAssigned
-                            ? 'opacity-25 cursor-not-allowed grayscale-[60%]'
-                            : 'hover:scale-110 cursor-pointer shadow-2xs'
-                        }`}
-                        style={{ backgroundColor: preset.value }}
-                      >
-                        {isSelected && <Check className="w-3.5 h-3.5 text-white drop-shadow-md stroke-[2.5]" />}
-                        {isAssigned && !isSelected && (
-                          <span className="w-full h-[1.5px] bg-white/80 rotate-45 absolute" />
-                        )}
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top">
-                      {preset.name} {isAssigned && !isSelected ? '(Already in use)' : ''}
-                    </TooltipContent>
-                  </Tooltip>
-                );
-              })}
-
-              {/* Custom Color Picker Swatch */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <label
-                    className={`w-6 h-6 rounded-full flex items-center justify-center border border-[#d1d5db] dark:border-[#3f3f46] transition-all cursor-pointer relative overflow-hidden ${
-                      !activePresetMatch
-                        ? 'ring-2 ring-offset-2 ring-offset-white dark:ring-offset-[#1c1c1f] ring-[#111827] dark:ring-white scale-110 shadow-xs'
-                        : 'hover:scale-110 bg-[#ebecee] dark:bg-[#27272a]'
-                    }`}
-                    style={{
-                      backgroundColor: !activePresetMatch ? color : undefined,
-                    }}
-                  >
-                    <input
-                      type="color"
-                      value={color}
-                      onChange={(e) => setColor(e.target.value)}
-                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                    />
-                    {!activePresetMatch ? (
-                      <Check className="w-3.5 h-3.5 text-white drop-shadow-md stroke-[2.5]" />
-                    ) : (
-                      <Pipette className="w-3 h-3 text-[#6b7280] dark:text-[#a1a1aa]" />
-                    )}
-                  </label>
-                </TooltipTrigger>
-                <TooltipContent side="top">
-                  Custom Color {!activePresetMatch ? `(${color})` : ''}
-                </TooltipContent>
-              </Tooltip>
-            </div>
+            <ColorPicker
+              value={color}
+              onChange={setColor}
+              assignedColors={assignedColors}
+            />
           </div>
 
           <div>
