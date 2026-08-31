@@ -330,6 +330,12 @@ export async function syncWorkspaceWithCloud(
     if (raw) deletedItemIds = new Set(JSON.parse(raw));
   } catch {}
 
+  const isWsJoined = localStorage.getItem(`leeflet_is_joined_workspace_${ws.id}`) === 'true';
+  const wsRole = localStorage.getItem(`leeflet_workspace_role_${ws.id}`);
+  const isWorkspaceAdmin = !isWsJoined || wsRole === 'Admin' || wsRole === 'Owner' || wsRole === 'admin' || wsRole === 'owner';
+
+  const localProjIdSet = new Set(localProjects.map((p) => p.id));
+
   try {
     // 1. Ensure Workspace exists in Cloud
     await pushWorkspaceToCloud(ws);
@@ -343,8 +349,14 @@ export async function syncWorkspaceWithCloud(
     let remoteProjects: any[] = [];
     if (projRes.ok) {
       const rawProjs = await projRes.json();
-      // Filter out deleted projects
-      remoteProjects = rawProjs.filter((p: any) => !deletedProjIds.has(p.id));
+      for (const rp of rawProjs) {
+        // If current user is Admin and project is missing from local (or tombstoned), purge from cloud
+        if (isWorkspaceAdmin && (!localProjIdSet.has(rp.id) || deletedProjIds.has(rp.id))) {
+          deleteProjectFromCloud(ws.id, rp.id);
+        } else if (!deletedProjIds.has(rp.id)) {
+          remoteProjects.push(rp);
+        }
+      }
     }
 
     // 3. Fetch remote items with checklist items and attachments
@@ -359,8 +371,14 @@ export async function syncWorkspaceWithCloud(
     let remoteItems: any[] = [];
     if (itemsRes.ok) {
       const rawItems = await itemsRes.json();
-      // Filter out deleted items and items in deleted projects
-      remoteItems = rawItems.filter((i: any) => !deletedItemIds.has(i.id) && !deletedProjIds.has(i.project_id));
+      for (const ri of rawItems) {
+        // If parent project no longer exists or item was deleted, purge from cloud
+        if (deletedItemIds.has(ri.id) || deletedProjIds.has(ri.project_id) || (ri.project_id && !localProjIdSet.has(ri.project_id) && isWorkspaceAdmin)) {
+          deleteItemFromCloud(ws.id, ri.id);
+        } else if (!deletedItemIds.has(ri.id)) {
+          remoteItems.push(ri);
+        }
+      }
     }
 
     // 4. Merge Projects
