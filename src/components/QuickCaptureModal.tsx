@@ -607,7 +607,7 @@ export const QuickCaptureModal: React.FC = () => {
                 </button>
 
                 {isProjectMenuOpen && (
-                  <div className="absolute left-0 top-full mt-1.5 w-52 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-2xl p-1 z-50 space-y-0.5 max-h-48 overflow-y-auto custom-scrollbar animate-in fade-in zoom-in-95 duration-100">
+                  <div className="absolute left-0 bottom-full mb-1.5 w-52 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-2xl p-1 z-50 space-y-0.5 max-h-48 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-bottom-2 duration-100">
                     <div className="max-h-36 overflow-y-auto custom-scrollbar space-y-0.5">
                       {projects.map((p) => (
                         <button
@@ -706,7 +706,7 @@ export const QuickCaptureModal: React.FC = () => {
               </button>
 
               {isPriorityMenuOpen && (
-                <div className="absolute left-0 top-full mt-1.5 w-32 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-2xl p-1 z-50 space-y-0.5 max-h-44 overflow-y-auto custom-scrollbar animate-in fade-in zoom-in-95 duration-100">
+                <div className="absolute left-0 bottom-full mb-1.5 w-32 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-2xl p-1 z-50 space-y-0.5 max-h-44 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-bottom-2 duration-100">
                   {(['none', 'low', 'medium', 'high', 'critical'] as Priority[]).map((p) => {
                     const pCfg = PRIORITY_CONFIG[p];
                     return (
@@ -764,7 +764,7 @@ export const QuickCaptureModal: React.FC = () => {
               </button>
 
               {isAssigneeMenuOpen && (
-                <div className="absolute left-0 top-full mt-1.5 w-44 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-2xl p-1 z-50 space-y-0.5 max-h-48 overflow-y-auto custom-scrollbar animate-in fade-in zoom-in-95 duration-100">
+                <div className="absolute left-0 bottom-full mb-1.5 w-44 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-2xl p-1 z-50 space-y-0.5 max-h-48 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-bottom-2 duration-100">
                   <button
                     type="button"
                     onClick={() => {
@@ -838,7 +838,7 @@ export const QuickCaptureModal: React.FC = () => {
               </button>
 
               {isDueDateMenuOpen && (
-                <div className="absolute left-0 top-full mt-1.5 w-60 bg-white dark:bg-[#18181b] border border-[#e5e7eb] dark:border-[#27272a] rounded-[10px] shadow-2xl p-2 z-50 space-y-2 animate-in fade-in zoom-in-95 duration-100">
+                <div className="absolute left-0 bottom-full mb-1.5 w-60 bg-white dark:bg-[#18181b] border border-[#e5e7eb] dark:border-[#27272a] rounded-[10px] shadow-2xl p-2 z-50 space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-100">
                   <div className="grid grid-cols-3 gap-1 pb-1.5 border-b border-[#f3f4f6] dark:border-[#27272a]">
                     <button
                       type="button"
@@ -929,7 +929,7 @@ export const QuickCaptureModal: React.FC = () => {
               </button>
 
               {isTypeMenuOpen && (
-                <div className="absolute right-0 top-full mt-1.5 w-36 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-2xl p-1 z-50 space-y-0.5 max-h-44 overflow-y-auto custom-scrollbar animate-in fade-in zoom-in-95 duration-100">
+                <div className="absolute right-0 bottom-full mb-1.5 w-36 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-2xl p-1 z-50 space-y-0.5 max-h-44 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-bottom-2 duration-100">
                   {(['task', 'bug', 'idea', 'improvement', 'research', 'question', 'note'] as ItemType[]).map((t) => {
                     const ItemIcon = TYPE_ICONS[t];
                     const cfg = ITEM_TYPE_CONFIG[t];
