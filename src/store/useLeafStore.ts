@@ -533,12 +533,38 @@ export const useLeafStore = create<LeafState>((set, get) => ({
         const idx = current.findIndex((i) => i.id === incoming.id);
         if (idx === -1) {
           // Brand-new item from a teammate
-          set({ items: [...current, incoming as Item] });
+          set({
+            items: [
+              ...current,
+              {
+                checklist: [],
+                attachments: [],
+                ...incoming,
+              } as Item,
+            ],
+          });
         } else {
           const existing = current[idx];
           // Only apply if the remote is newer (LWW)
           if (!existing.updatedAt || new Date(incoming.updatedAt ?? 0) >= new Date(existing.updatedAt)) {
-            const merged: Item = { ...existing, ...incoming };
+            const merged: Item = {
+              ...existing,
+              ...incoming,
+              // Always preserve local attachments and checklist if incoming doesn't supply them
+              attachments:
+                incoming.attachments !== undefined && incoming.attachments.length > 0
+                  ? incoming.attachments
+                  : existing.attachments || [],
+              checklist:
+                incoming.checklist !== undefined && incoming.checklist.length > 0
+                  ? incoming.checklist
+                  : existing.checklist || [],
+              // Preserve local assignee if incoming is null/undefined but local has one
+              assigneeId:
+                incoming.assigneeId !== undefined && incoming.assigneeId !== null
+                  ? incoming.assigneeId
+                  : existing.assigneeId || null,
+            };
             const updated = [...current];
             updated[idx] = merged;
             set({ items: updated });
@@ -590,6 +616,34 @@ export const useLeafStore = create<LeafState>((set, get) => ({
         const items = get().items.map((item) => ({
           ...item,
           checklist: item.checklist.filter((c) => c.id !== checklistId),
+        }));
+        set({ items });
+      },
+
+      // ── Attachment events ────────────────────────────────────────────────
+      onAttachmentUpsert: (incoming) => {
+        if (!incoming.itemId) return;
+        const items = get().items;
+        const itemIdx = items.findIndex((i) => i.id === incoming.itemId);
+        if (itemIdx === -1) return;
+        const item = items[itemIdx];
+        const attList = item.attachments || [];
+        const attIdx = attList.findIndex((a) => a.id === incoming.id);
+        let newAttachments: Attachment[];
+        if (attIdx === -1) {
+          newAttachments = [...attList, incoming];
+        } else {
+          newAttachments = [...attList];
+          newAttachments[attIdx] = incoming;
+        }
+        const updated = [...items];
+        updated[itemIdx] = { ...item, attachments: newAttachments };
+        set({ items: updated });
+      },
+      onAttachmentDelete: (attId) => {
+        const items = get().items.map((item) => ({
+          ...item,
+          attachments: (item.attachments || []).filter((a) => a.id !== attId),
         }));
         set({ items });
       },

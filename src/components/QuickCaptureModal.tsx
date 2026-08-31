@@ -18,7 +18,7 @@ import {
   User,
 } from 'lucide-react';
 import { ITEM_TYPE_CONFIG, PRIORITY_CONFIG } from '../utils/format';
-import { getStoredTeamMembers } from '../utils/team';
+import { getStoredTeamMembers, matchesAssignee, normalizeAssigneeId } from '../utils/team';
 import { resolveAvatarUrl } from '../utils/avatars';
 
 const TYPE_ICONS: Record<ItemType, React.FC<{ className?: string }>> = {
@@ -215,7 +215,7 @@ export const QuickCaptureModal: React.FC = () => {
   const dueDateRef = useRef<HTMLDivElement>(null);
 
   const activeProjectName = isInProjectView ? activeProject?.name : projects.find((p) => p.id === projectId)?.name;
-  const activeMemberName = teamMembers.find((m) => m.id === assigneeId)?.name;
+  const activeMemberName = teamMembers.find((m) => matchesAssignee(m.id, assigneeId))?.name;
 
   const finalModalWidth = useMemo(() => {
     return getPillsWidth(
@@ -422,7 +422,7 @@ export const QuickCaptureModal: React.FC = () => {
   };
 
   const selectedProject = projects.find((p) => p.id === projectId);
-  const selectedMember = teamMembers.find((m) => m.id === assigneeId);
+  const selectedMember = teamMembers.find((m) => matchesAssignee(m.id, assigneeId));
   const TypeIcon = TYPE_ICONS[type] || CheckSquare;
   const typeConfig = ITEM_TYPE_CONFIG[type] || ITEM_TYPE_CONFIG.task;
   const priorityConfig = PRIORITY_CONFIG[priority] || PRIORITY_CONFIG.none;
@@ -782,33 +782,37 @@ export const QuickCaptureModal: React.FC = () => {
                     {!assigneeId && <Check className="w-3.5 h-3.5 shrink-0" />}
                   </button>
 
-                  {teamMembers.map((member) => (
-                    <button
-                      key={member.id}
-                      type="button"
-                      onClick={() => {
-                        setAssigneeId(member.id);
-                        setIsAssigneeMenuOpen(false);
-                      }}
-                      className={`w-full text-left px-2 py-1.5 rounded-[4px] text-xs flex items-center justify-between transition-colors ${
-                        assigneeId === member.id
-                          ? 'bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-[#f4f4f5] font-semibold'
-                          : 'text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a]'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 truncate">
-                        <span className="w-4 h-4 rounded-full border border-[#e5e7eb] dark:border-[#323238] shrink-0 overflow-hidden">
-                          <img
-                            src={resolveAvatarUrl(member.avatarMascot || member.avatarUrl || member.avatarColor, member.name || member.id)}
-                            alt={member.name}
-                            className="w-full h-full object-cover"
-                          />
-                        </span>
-                        <span className="truncate">{member.name}</span>
-                      </div>
-                      {assigneeId === member.id && <Check className="w-3.5 h-3.5 shrink-0" />}
-                    </button>
-                  ))}
+                  {teamMembers.map((member) => {
+                    const isSelected = matchesAssignee(member.id, assigneeId);
+                    return (
+                      <button
+                        key={member.id}
+                        type="button"
+                        onClick={() => {
+                          const normalizedId = normalizeAssigneeId(member.id);
+                          setAssigneeId(normalizedId);
+                          setIsAssigneeMenuOpen(false);
+                        }}
+                        className={`w-full text-left px-2 py-1.5 rounded-[4px] text-xs flex items-center justify-between transition-colors ${
+                          isSelected
+                            ? 'bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-[#f4f4f5] font-semibold'
+                            : 'text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 truncate">
+                          <span className="w-4 h-4 rounded-full border border-[#e5e7eb] dark:border-[#323238] shrink-0 overflow-hidden">
+                            <img
+                              src={resolveAvatarUrl(member.avatarMascot || member.avatarUrl || member.avatarColor, member.name || member.id)}
+                              alt={member.name}
+                              className="w-full h-full object-cover"
+                            />
+                          </span>
+                          <span className="truncate">{member.name}</span>
+                        </div>
+                        {isSelected && <Check className="w-3.5 h-3.5 shrink-0" />}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>

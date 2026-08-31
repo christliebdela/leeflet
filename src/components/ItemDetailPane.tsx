@@ -40,7 +40,7 @@ import {
   PRIORITY_CONFIG,
   STATUS_CONFIG,
 } from '../utils/format';
-import { getStoredTeamMembers } from '../utils/team';
+import { getStoredTeamMembers, matchesAssignee, normalizeAssigneeId } from '../utils/team';
 import { resolveAvatarUrl } from '../utils/avatars';
 import { Checkbox } from './ui/Checkbox';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
@@ -1024,12 +1024,12 @@ export const ItemDetailPane: React.FC = () => {
                     <span className="w-3.5 h-3.5 rounded-full border border-[#e5e7eb] dark:border-[#323238] shrink-0 overflow-hidden">
                       <img
                         src={resolveAvatarUrl(
-                          teamMembers.find((m) => m.id === assigneeId)?.avatarMascot ||
-                          teamMembers.find((m) => m.id === assigneeId)?.avatarUrl ||
-                          teamMembers.find((m) => m.id === assigneeId)?.avatarColor,
-                          teamMembers.find((m) => m.id === assigneeId)?.name || assigneeId
+                          teamMembers.find((m) => matchesAssignee(m.id, assigneeId))?.avatarMascot ||
+                          teamMembers.find((m) => matchesAssignee(m.id, assigneeId))?.avatarUrl ||
+                          teamMembers.find((m) => matchesAssignee(m.id, assigneeId))?.avatarColor,
+                          teamMembers.find((m) => matchesAssignee(m.id, assigneeId))?.name || assigneeId
                         )}
-                        alt={teamMembers.find((m) => m.id === assigneeId)?.name || 'User'}
+                        alt={teamMembers.find((m) => matchesAssignee(m.id, assigneeId))?.name || 'User'}
                         className="w-full h-full object-cover"
                       />
                     </span>
@@ -1037,7 +1037,7 @@ export const ItemDetailPane: React.FC = () => {
                     <User className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa] shrink-0 opacity-80" />
                   )}
                   <span className="truncate">
-                    {teamMembers.find((m) => m.id === assigneeId)?.name || 'Assignee'}
+                    {teamMembers.find((m) => matchesAssignee(m.id, assigneeId))?.name || 'Assignee'}
                   </span>
                 </div>
                 <ChevronDown className="w-3 h-3 opacity-60 shrink-0" />
@@ -1065,34 +1065,38 @@ export const ItemDetailPane: React.FC = () => {
                     {!assigneeId && <Check className="w-3.5 h-3.5 shrink-0" />}
                   </button>
 
-                  {teamMembers.map((member) => (
-                    <button
-                      key={member.id}
-                      type="button"
-                      onClick={() => {
-                        setAssigneeId(member.id);
-                        handleFieldChange('assigneeId', member.id);
-                        setOpenMenu(null);
-                      }}
-                      className={`w-full text-left px-2 py-1.5 rounded-[4px] text-xs flex items-center justify-between transition-colors ${
-                        assigneeId === member.id
-                          ? 'bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-[#f4f4f5] font-semibold'
-                          : 'text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a]'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 truncate">
-                        <span className="w-3.5 h-3.5 rounded-full border border-[#e5e7eb] dark:border-[#323238] shrink-0 overflow-hidden">
-                          <img
-                            src={resolveAvatarUrl(member.avatarMascot || member.avatarUrl || member.avatarColor, member.name || member.id)}
-                            alt={member.name}
-                            className="w-full h-full object-cover"
-                          />
-                        </span>
-                        <span className="truncate">{member.name}</span>
-                      </div>
-                      {assigneeId === member.id && <Check className="w-3.5 h-3.5 shrink-0" />}
-                    </button>
-                  ))}
+                  {teamMembers.map((member) => {
+                    const isSelected = matchesAssignee(member.id, assigneeId);
+                    return (
+                      <button
+                        key={member.id}
+                        type="button"
+                        onClick={() => {
+                          const normalizedId = normalizeAssigneeId(member.id);
+                          setAssigneeId(normalizedId);
+                          handleFieldChange('assigneeId', normalizedId);
+                          setOpenMenu(null);
+                        }}
+                        className={`w-full text-left px-2 py-1.5 rounded-[4px] text-xs flex items-center justify-between transition-colors ${
+                          isSelected
+                            ? 'bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-[#f4f4f5] font-semibold'
+                            : 'text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 truncate">
+                          <span className="w-3.5 h-3.5 rounded-full border border-[#e5e7eb] dark:border-[#323238] shrink-0 overflow-hidden">
+                            <img
+                              src={resolveAvatarUrl(member.avatarMascot || member.avatarUrl || member.avatarColor, member.name || member.id)}
+                              alt={member.name}
+                              className="w-full h-full object-cover"
+                            />
+                          </span>
+                          <span className="truncate">{member.name}</span>
+                        </div>
+                        {isSelected && <Check className="w-3.5 h-3.5 shrink-0" />}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>

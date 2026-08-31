@@ -21,6 +21,26 @@ export const getMemberColor = (id: string): string => {
   return AVATAR_COLORS[index];
 };
 
+export const OWNER_MEMBER_UUID = '00000000-0000-4000-8000-000000000001';
+
+export const normalizeAssigneeId = (id: string | null | undefined): string | null => {
+  if (!id) return null;
+  if (id === 'owner_1' || id === OWNER_MEMBER_UUID) return OWNER_MEMBER_UUID;
+  return id;
+};
+
+export const matchesAssignee = (memberId: string, assigneeId: string | null | undefined): boolean => {
+  if (!assigneeId) return false;
+  if (memberId === assigneeId) return true;
+  if (
+    (memberId === 'owner_1' || memberId === OWNER_MEMBER_UUID) &&
+    (assigneeId === 'owner_1' || assigneeId === OWNER_MEMBER_UUID)
+  ) {
+    return true;
+  }
+  return false;
+};
+
 export const getStoredTeamMembers = (workspaceId?: string): TeamMember[] => {
   if (typeof window === 'undefined') return [];
 
@@ -61,8 +81,11 @@ export const getStoredTeamMembers = (workspaceId?: string): TeamMember[] => {
           return true;
         });
         // Sync owner entry with latest profile data
-        const ownerEntry = unique.find((m: TeamMember) => m.role === 'Owner' || m.id === 'owner_1');
+        const ownerEntry = unique.find(
+          (m: TeamMember) => m.role === 'Owner' || m.id === 'owner_1' || m.id === OWNER_MEMBER_UUID
+        );
         if (ownerEntry) {
+          ownerEntry.id = OWNER_MEMBER_UUID;
           if (profileName) ownerEntry.name = profileName;
           if (profileEmail) ownerEntry.email = profileEmail;
           if (profileMascot) ownerEntry.avatarMascot = profileMascot;
@@ -76,7 +99,7 @@ export const getStoredTeamMembers = (workspaceId?: string): TeamMember[] => {
   // Fallback / Initial: current profile or workspace creator
   const initial: TeamMember[] = [
     {
-      id: 'owner_1',
+      id: OWNER_MEMBER_UUID,
       name: profileName,
       email: profileEmail,
       role: 'Owner',

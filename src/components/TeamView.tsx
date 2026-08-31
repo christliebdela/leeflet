@@ -139,7 +139,7 @@ export const TeamView: React.FC = () => {
     if (!isSmtpConfigured()) {
       // Create pending invitation anyway and offer link copy
       const newMember: TeamMember = {
-        id: `member_${Date.now()}`,
+        id: crypto.randomUUID(),
         name: email.split('@')[0],
         email,
         role: inviteRole,
@@ -167,7 +167,7 @@ export const TeamView: React.FC = () => {
       );
 
       const newMember: TeamMember = {
-        id: `member_${Date.now()}`,
+        id: crypto.randomUUID(),
         name: email.split('@')[0],
         email,
         role: inviteRole,

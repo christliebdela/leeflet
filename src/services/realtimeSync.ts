@@ -1,5 +1,5 @@
 import { createClient, RealtimeChannel, SupabaseClient } from '@supabase/supabase-js';
-import { Item, Project, ChecklistItem } from '../types';
+import { Item, Project, ChecklistItem, Attachment } from '../types';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -10,6 +10,8 @@ export interface RealtimeCallbacks {
   onProjectDelete: (projectId: string) => void;
   onChecklistUpsert: (c: Partial<ChecklistItem> & { id: string; itemId: string }) => void;
   onChecklistDelete: (checklistId: string) => void;
+  onAttachmentUpsert?: (a: Attachment) => void;
+  onAttachmentDelete?: (attachmentId: string) => void;
   onReconnect: () => void; // called after reconnect to do a full catch-up sync
 }
 
@@ -34,7 +36,7 @@ function getStoredCredentials(workspaceId: string): { url: string; anonKey: stri
   return null;
 }
 
-// Map a raw PostgREST row to our Item shape
+// Map a raw PostgREST row to our Item shape (without hardcoded empty arrays for relations)
 function rowToItem(row: Record<string, unknown>): Partial<Item> & { id: string } {
   return {
     id: row.id as string,
@@ -51,8 +53,6 @@ function rowToItem(row: Record<string, unknown>): Partial<Item> & { id: string }
     completedAt: (row.completed_at as string) || null,
     createdAt: (row.created_at as string) || new Date().toISOString(),
     updatedAt: (row.updated_at as string) || new Date().toISOString(),
-    checklist: [],
-    attachments: [],
   };
 }
 
@@ -81,11 +81,24 @@ function rowToChecklist(row: Record<string, unknown>): Partial<ChecklistItem> & 
   };
 }
 
+// Map a raw PostgREST row to our Attachment shape
+function rowToAttachment(row: Record<string, unknown>): Attachment {
+  return {
+    id: row.id as string,
+    itemId: (row.item_id as string) || '',
+    fileName: (row.file_name as string) || '',
+    filePath: (row.file_path as string) || '',
+    fileSize: Number(row.file_size || 0),
+    mimeType: (row.mime_type as string) || 'application/octet-stream',
+    createdAt: (row.created_at as string) || new Date().toISOString(),
+  };
+}
+
 // ─── Subscribe ────────────────────────────────────────────────────────────────
 
 /**
  * Opens a Supabase Realtime WebSocket channel for the given workspace.
- * Subscribes to INSERT/UPDATE/DELETE on items, projects, checklist_items.
+ * Subscribes to INSERT/UPDATE/DELETE on items, projects, checklist_items, attachments.
  * Replaces any previous subscription automatically.
  */
 export function subscribeToWorkspace(workspaceId: string, callbacks: RealtimeCallbacks): void {
@@ -159,6 +172,23 @@ export function subscribeToWorkspace(workspaceId: string, callbacks: RealtimeCal
       'postgres_changes',
       { event: 'DELETE', schema: 'public', table: 'checklist_items' },
       (payload) => callbacks.onChecklistDelete((payload.old as { id: string }).id)
+    )
+
+    // ── Attachments ────────────────────────────────────────────────────────
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'attachments' },
+      (payload) => callbacks.onAttachmentUpsert?.(rowToAttachment(payload.new as Record<string, unknown>))
+    )
+    .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'attachments' },
+      (payload) => callbacks.onAttachmentUpsert?.(rowToAttachment(payload.new as Record<string, unknown>))
+    )
+    .on(
+      'postgres_changes',
+      { event: 'DELETE', schema: 'public', table: 'attachments' },
+      (payload) => callbacks.onAttachmentDelete?.((payload.old as { id: string }).id)
     )
 
     .subscribe((status) => {

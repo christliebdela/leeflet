@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { Item, ChecklistItem, Project } from '../types';
 import { formatDate, formatDueDateLabel } from '../utils/format';
-import { getStoredTeamMembers } from '../utils/team';
+import { getStoredTeamMembers, matchesAssignee } from '../utils/team';
 import { resolveAvatarUrl } from '../utils/avatars';
 
 const LinearPriorityIcon: React.FC<{ priority: string }> = ({ priority }) => {
@@ -481,7 +481,7 @@ export const ItemListView: React.FC = () => {
 
                   {/* Assignee Avatar Indicator */}
                   {item.assigneeId && (() => {
-                    const assignedMember = getStoredTeamMembers().find(m => m.id === item.assigneeId);
+                    const assignedMember = getStoredTeamMembers().find(m => matchesAssignee(m.id, item.assigneeId));
                     return (
                       <span
                         className="w-4 h-4 rounded-full border border-[#e5e7eb] dark:border-[#323238] shrink-0 overflow-hidden shadow-2xs"

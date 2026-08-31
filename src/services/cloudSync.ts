@@ -1,4 +1,5 @@
-import { Workspace, Project, Item, ChecklistItem } from '../types';
+import { Workspace, Project, Item, ChecklistItem, Attachment } from '../types';
+import { normalizeAssigneeId } from '../utils/team';
 
 export interface CloudCredentials {
   url: string;
@@ -127,7 +128,8 @@ export async function pushItemToCloud(wsId: string, item: Item): Promise<void> {
 
   const updatedAt = item.updatedAt || new Date().toISOString();
   const project_id = item.projectId && isValidUuid(item.projectId) ? item.projectId : null;
-  const assignee_id = item.assigneeId && isValidUuid(item.assigneeId) ? item.assigneeId : null;
+  const normalizedAssignee = normalizeAssigneeId(item.assigneeId);
+  const assignee_id = normalizedAssignee && isValidUuid(normalizedAssignee) ? normalizedAssignee : null;
 
   const body = {
     id: item.id,
@@ -199,6 +201,29 @@ export async function pushItemToCloud(wsId: string, item: Item): Promise<void> {
         }
       }
     }
+
+    // Push attachments if present
+    if (item.attachments && item.attachments.length > 0) {
+      const validAttachments = item.attachments
+        .filter((a) => isValidUuid(a.id))
+        .map((a) => ({
+          id: a.id,
+          item_id: item.id,
+          file_name: a.fileName,
+          file_path: a.filePath,
+          file_size: Number(a.fileSize || 0),
+          mime_type: a.mimeType || 'application/octet-stream',
+          created_at: a.createdAt || new Date().toISOString(),
+        }));
+
+      if (validAttachments.length > 0) {
+        await fetch(`${creds.url}/rest/v1/attachments`, {
+          method: 'POST',
+          headers: { ...getAuthHeaders(creds), Prefer: 'resolution=ignore-duplicates,return=minimal' },
+          body: JSON.stringify(validAttachments),
+        });
+      }
+    }
   } catch {
     // swallowed
   }
@@ -245,9 +270,9 @@ export async function syncWorkspaceWithCloud(
       remoteProjects = await projRes.json();
     }
 
-    // 3. Fetch remote items with checklist items
+    // 3. Fetch remote items with checklist items and attachments
     const itemsRes = await fetch(
-      `${creds.url}/rest/v1/items?workspace_id=eq.${ws.id}&select=*,checklist_items(*)`,
+      `${creds.url}/rest/v1/items?workspace_id=eq.${ws.id}&select=*,checklist_items(*),attachments(*)`,
       {
         method: 'GET',
         headers: getAuthHeaders(creds),
@@ -311,6 +336,19 @@ export async function syncWorkspaceWithCloud(
           }))
         : [];
 
+      const attachments: Attachment[] =
+        Array.isArray(ri.attachments) && ri.attachments.length > 0
+          ? ri.attachments.map((a: any) => ({
+              id: a.id,
+              itemId: ri.id,
+              fileName: a.file_name,
+              filePath: a.file_path,
+              fileSize: Number(a.file_size || 0),
+              mimeType: a.mime_type || 'application/octet-stream',
+              createdAt: a.created_at || new Date().toISOString(),
+            }))
+          : existing?.attachments || [];
+
       const remoteItem: Item = {
         id: ri.id,
         projectId: ri.project_id || '',
@@ -321,10 +359,10 @@ export async function syncWorkspaceWithCloud(
         priority: ri.priority || 'none',
         tags: Array.isArray(ri.tags) ? ri.tags : [],
         checklist,
-        attachments: existing?.attachments || [],
+        attachments,
         dueAt: ri.due_at || null,
         completedAt: ri.completed_at || null,
-        assigneeId: ri.assignee_id || null,
+        assigneeId: ri.assignee_id || existing?.assigneeId || null,
         createdAt: ri.created_at || new Date().toISOString(),
         updatedAt: ri.updated_at || new Date().toISOString(),
       };
