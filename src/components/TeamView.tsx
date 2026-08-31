@@ -9,7 +9,7 @@ import {
   Check,
   Link2,
   Settings,
-  MoreHorizontal,
+  MoreVertical,
   ShieldCheck,
   Shield,
   Trash2,
@@ -381,6 +381,14 @@ export const TeamView: React.FC = () => {
                       <span className="px-2 py-1 text-[11px] font-semibold text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/30 rounded-[5px] border border-violet-200 dark:border-violet-800/40">
                         Owner
                       </span>
+                    ) : isPending ? (
+                      <span
+                        className="flex items-center gap-1.5 px-2.5 py-1 text-[11.5px] font-medium text-[#6b7280] dark:text-[#a1a1aa] bg-[#f4f5f6] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#323238] rounded-[5px] opacity-75 select-none"
+                        title="Role assigned in invitation (editable once member joins)"
+                      >
+                        <Shield className="w-3 h-3 text-[#9ca3af]" />
+                        <span>{member.role}</span>
+                      </span>
                     ) : (
                       <button
                         type="button"
@@ -397,8 +405,8 @@ export const TeamView: React.FC = () => {
                       </button>
                     )}
 
-                    {/* Role Popover */}
-                    {isRoleOpen && (
+                    {/* Role Popover (Only for joined members) */}
+                    {isRoleOpen && !isPending && !isOwner && (
                       <div className="absolute right-0 top-full mt-1 w-56 bg-white dark:bg-[#18181b] border border-[#e5e7eb] dark:border-[#323238] rounded-[8px] shadow-dropdown z-40 py-1 divide-y divide-[#f3f4f6] dark:divide-[#27272a] animate-in fade-in duration-100">
                         {ROLES.map((role) => (
                           <button
@@ -436,7 +444,7 @@ export const TeamView: React.FC = () => {
                         className="p-1 rounded-[5px] text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white hover:bg-[#ebecee] dark:hover:bg-[#27272a] transition-colors cursor-pointer"
                         title="Member actions"
                       >
-                        <MoreHorizontal className="w-4 h-4" />
+                        <MoreVertical className="w-4 h-4" />
                       </button>
 
                       {/* Actions Dropdown */}
