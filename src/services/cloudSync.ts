@@ -110,13 +110,53 @@ export async function deleteProjectFromCloud(wsId: string, projectId: string): P
   const creds = getCloudCredentials(wsId);
   if (!creds || !isValidUuid(projectId)) return;
 
+  // Track deleted project ID locally so sync never resurrects it
   try {
-    await fetch(`${creds.url}/rest/v1/projects?id=eq.${projectId}`, {
+    const raw = localStorage.getItem(`leeflet_deleted_project_ids_${wsId}`);
+    const set = new Set(raw ? JSON.parse(raw) : []);
+    set.add(projectId);
+    localStorage.setItem(`leeflet_deleted_project_ids_${wsId}`, JSON.stringify(Array.from(set)));
+  } catch {}
+
+  try {
+    // 1. Fetch child items belonging to this project to delete checklists and attachments
+    const itemsRes = await fetch(`${creds.url}/rest/v1/items?project_id=eq.${projectId}&select=id`, {
+      method: 'GET',
+      headers: getAuthHeaders(creds),
+    });
+    if (itemsRes.ok) {
+      const itemsList: Array<{ id: string }> = await itemsRes.json();
+      for (const it of itemsList) {
+        if (isValidUuid(it.id)) {
+          await fetch(`${creds.url}/rest/v1/checklist_items?item_id=eq.${it.id}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders(creds),
+          }).catch(() => {});
+          await fetch(`${creds.url}/rest/v1/attachments?item_id=eq.${it.id}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders(creds),
+          }).catch(() => {});
+        }
+      }
+    }
+
+    // 2. Delete all items in this project to prevent foreign key constraint violations
+    await fetch(`${creds.url}/rest/v1/items?project_id=eq.${projectId}`, {
       method: 'DELETE',
       headers: getAuthHeaders(creds),
     });
-  } catch {
-    // swallowed
+
+    // 3. Delete the project itself
+    const res = await fetch(`${creds.url}/rest/v1/projects?id=eq.${projectId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(creds),
+    });
+
+    if (!res.ok) {
+      console.warn('Supabase delete project failed:', await res.text());
+    }
+  } catch (e) {
+    console.warn('Error deleting project from cloud:', e);
   }
 }
 
@@ -233,13 +273,35 @@ export async function deleteItemFromCloud(wsId: string, itemId: string): Promise
   const creds = getCloudCredentials(wsId);
   if (!creds || !isValidUuid(itemId)) return;
 
+  // Track deleted item ID locally so sync never resurrects it
   try {
-    await fetch(`${creds.url}/rest/v1/items?id=eq.${itemId}`, {
+    const raw = localStorage.getItem(`leeflet_deleted_item_ids_${wsId}`);
+    const set = new Set(raw ? JSON.parse(raw) : []);
+    set.add(itemId);
+    localStorage.setItem(`leeflet_deleted_item_ids_${wsId}`, JSON.stringify(Array.from(set)));
+  } catch {}
+
+  try {
+    await fetch(`${creds.url}/rest/v1/checklist_items?item_id=eq.${itemId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(creds),
+    }).catch(() => {});
+
+    await fetch(`${creds.url}/rest/v1/attachments?item_id=eq.${itemId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(creds),
+    }).catch(() => {});
+
+    const res = await fetch(`${creds.url}/rest/v1/items?id=eq.${itemId}`, {
       method: 'DELETE',
       headers: getAuthHeaders(creds),
     });
-  } catch {
-    // swallowed
+
+    if (!res.ok) {
+      console.warn('Supabase delete item failed:', await res.text());
+    }
+  } catch (e) {
+    console.warn('Error deleting item from cloud:', e);
   }
 }
 
@@ -255,6 +317,19 @@ export async function syncWorkspaceWithCloud(
     return { projects: localProjects, items: localItems, synced: false };
   }
 
+  // Load deleted IDs tombstones
+  let deletedProjIds = new Set<string>();
+  try {
+    const raw = localStorage.getItem(`leeflet_deleted_project_ids_${ws.id}`);
+    if (raw) deletedProjIds = new Set(JSON.parse(raw));
+  } catch {}
+
+  let deletedItemIds = new Set<string>();
+  try {
+    const raw = localStorage.getItem(`leeflet_deleted_item_ids_${ws.id}`);
+    if (raw) deletedItemIds = new Set(JSON.parse(raw));
+  } catch {}
+
   try {
     // 1. Ensure Workspace exists in Cloud
     await pushWorkspaceToCloud(ws);
@@ -267,7 +342,9 @@ export async function syncWorkspaceWithCloud(
 
     let remoteProjects: any[] = [];
     if (projRes.ok) {
-      remoteProjects = await projRes.json();
+      const rawProjs = await projRes.json();
+      // Filter out deleted projects
+      remoteProjects = rawProjs.filter((p: any) => !deletedProjIds.has(p.id));
     }
 
     // 3. Fetch remote items with checklist items and attachments
@@ -281,17 +358,22 @@ export async function syncWorkspaceWithCloud(
 
     let remoteItems: any[] = [];
     if (itemsRes.ok) {
-      remoteItems = await itemsRes.json();
+      const rawItems = await itemsRes.json();
+      // Filter out deleted items and items in deleted projects
+      remoteItems = rawItems.filter((i: any) => !deletedItemIds.has(i.id) && !deletedProjIds.has(i.project_id));
     }
 
     // 4. Merge Projects
     const projectMap = new Map<string, Project>();
     // Local projects first
     for (const p of localProjects) {
-      projectMap.set(p.id, p);
+      if (!deletedProjIds.has(p.id)) {
+        projectMap.set(p.id, p);
+      }
     }
     // Merge or add remote projects
     for (const rp of remoteProjects) {
+      if (deletedProjIds.has(rp.id)) continue;
       const existing = projectMap.get(rp.id);
       const remoteP: Project = {
         id: rp.id,
@@ -310,10 +392,10 @@ export async function syncWorkspaceWithCloud(
     }
     const mergedProjects = Array.from(projectMap.values());
 
-    // Push any local projects that were not in remote
+    // Push any local projects that were not in remote (and not deleted)
     const remoteProjIds = new Set(remoteProjects.map((p) => p.id));
     for (const p of localProjects) {
-      if (!remoteProjIds.has(p.id) && isValidUuid(p.id)) {
+      if (!remoteProjIds.has(p.id) && !deletedProjIds.has(p.id) && isValidUuid(p.id)) {
         await pushProjectToCloud(ws.id, p);
       }
     }
@@ -321,7 +403,9 @@ export async function syncWorkspaceWithCloud(
     // 5. Merge Items
     const itemMap = new Map<string, Item>();
     for (const item of localItems) {
-      itemMap.set(item.id, item);
+      if (!deletedItemIds.has(item.id) && !deletedProjIds.has(item.projectId)) {
+        itemMap.set(item.id, item);
+      }
     }
 
     for (const ri of remoteItems) {

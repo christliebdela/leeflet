@@ -58,7 +58,12 @@ export const ProjectModal: React.FC = () => {
     }
   }, [editingProject, isProjectModalOpen]);
 
-  if (!isProjectModalOpen) return null;
+  const workspace = useLeafStore((s) => s.workspace);
+  const isJoinedWorkspace = workspace?.id ? localStorage.getItem(`leeflet_is_joined_workspace_${workspace.id}`) === 'true' : false;
+  const workspaceRole = workspace?.id ? localStorage.getItem(`leeflet_workspace_role_${workspace.id}`) : null;
+  const isCurrentUserAdmin = !isJoinedWorkspace || workspaceRole === 'Admin' || workspaceRole === 'Owner' || workspaceRole === 'admin' || workspaceRole === 'owner';
+
+  if (!isProjectModalOpen || !isCurrentUserAdmin) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

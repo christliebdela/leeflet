@@ -66,6 +66,9 @@ export const HeaderBar: React.FC = () => {
 
   const supabaseUrl = workspace ? localStorage.getItem(`leeflet_supabase_url_${workspace.id}`) : null;
   const isCloudSync = workspace ? localStorage.getItem(`leeflet_sync_mode_${workspace.id}`) === 'cloud' && Boolean(supabaseUrl) : false;
+  const isJoinedWorkspace = workspace?.id ? localStorage.getItem(`leeflet_is_joined_workspace_${workspace.id}`) === 'true' : false;
+  const workspaceRole = workspace?.id ? localStorage.getItem(`leeflet_workspace_role_${workspace.id}`) : null;
+  const isCurrentUserAdmin = !isJoinedWorkspace || workspaceRole === 'Admin' || workspaceRole === 'Owner' || workspaceRole === 'admin' || workspaceRole === 'owner';
 
   const handleRefresh = async (silent = false) => {
     if (isRefreshing) return;
@@ -237,7 +240,7 @@ export const HeaderBar: React.FC = () => {
           >
             {headerInfo.title}
           </h1>
-          {viewMode.type === 'project' && activeProj && (
+          {viewMode.type === 'project' && activeProj && isCurrentUserAdmin && (
             <button
               onClick={() => setProjectModalOpen(true, activeProj)}
               className="p-1 rounded-[4px] hover:bg-[#ebecee] dark:hover:bg-[#27272a] text-[#9ca3af] hover:text-[#111827] dark:hover:text-white transition-colors"

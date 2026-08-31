@@ -102,6 +102,10 @@ export const Sidebar: React.FC = () => {
   const [isProjectsCollapsed, setIsProjectsCollapsed] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
 
+  const isCurrentWsJoined = workspace?.id ? localStorage.getItem(`leeflet_is_joined_workspace_${workspace.id}`) === 'true' : false;
+  const currentWsRole = workspace?.id ? localStorage.getItem(`leeflet_workspace_role_${workspace.id}`) : null;
+  const isCurrentUserAdmin = !isCurrentWsJoined || currentWsRole === 'Admin' || currentWsRole === 'Owner' || currentWsRole === 'admin' || currentWsRole === 'owner';
+
   // Workspace Switcher State
   const [isWorkspaceMenuOpen, setIsWorkspaceMenuOpen] = useState(false);
   const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
@@ -811,12 +815,14 @@ export const Sidebar: React.FC = () => {
                 )}
                 <span>Projects</span>
               </div>
-              <button
-                onClick={() => setProjectModalOpen(true)}
-                className="hover:text-[#111827] dark:hover:text-white p-0.5 rounded-[4px] hover:bg-[#ebecee] dark:hover:bg-[#27272a]"
-              >
-                <Plus className="w-3 h-3 text-[#6b7280] dark:text-[#a1a1aa]" />
-              </button>
+              {isCurrentUserAdmin && (
+                <button
+                  onClick={() => setProjectModalOpen(true)}
+                  className="hover:text-[#111827] dark:hover:text-white p-0.5 rounded-[4px] hover:bg-[#ebecee] dark:hover:bg-[#27272a]"
+                >
+                  <Plus className="w-3 h-3 text-[#6b7280] dark:text-[#a1a1aa]" />
+                </button>
+              )}
             </div>
 
             {!isProjectsCollapsed && (
@@ -854,28 +860,32 @@ export const Sidebar: React.FC = () => {
 
                         <div className="flex items-center gap-1 shrink-0 ml-1">
                           {count > 0 && (
-                            <span className="text-[11px] text-[#6b7280] dark:text-[#71717a] font-normal group-hover:hidden">
+                            <span className={`text-[11px] text-[#6b7280] dark:text-[#71717a] font-normal ${isCurrentUserAdmin ? 'group-hover:hidden' : ''}`}>
                               {count}
                             </span>
                           )}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setProjectModalOpen(true, project);
-                            }}
-                            className="hidden group-hover:flex items-center justify-center p-0.5 text-[#9ca3af] hover:text-[#111827] dark:hover:text-white rounded transition-colors"
-                          >
-                            <SquarePen className="w-3 h-3" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setProjectToDelete(project);
-                            }}
-                            className="hidden group-hover:flex items-center justify-center p-0.5 text-[#9ca3af] hover:text-rose-600 dark:hover:text-rose-400 rounded transition-colors"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
+                          {isCurrentUserAdmin && (
+                            <>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setProjectModalOpen(true, project);
+                                }}
+                                className="hidden group-hover:flex items-center justify-center p-0.5 text-[#9ca3af] hover:text-[#111827] dark:hover:text-white rounded transition-colors"
+                              >
+                                <SquarePen className="w-3 h-3" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setProjectToDelete(project);
+                                }}
+                                className="hidden group-hover:flex items-center justify-center p-0.5 text-[#9ca3af] hover:text-rose-600 dark:hover:text-rose-400 rounded transition-colors"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </div>
                     );
