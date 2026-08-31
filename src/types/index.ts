@@ -58,6 +58,8 @@ export interface TeamMember {
   status: 'active' | 'invited';
   joinedAt?: string;
   avatarColor?: string;
+  avatarUrl?: string;
+  avatarMascot?: string;
 }
 
 export interface Project {

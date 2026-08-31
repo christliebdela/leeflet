@@ -21,13 +21,19 @@ import {
   RefreshCw,
   Lock,
   Database,
-  Palette,
   ArrowRight,
+  Sparkles,
+  Dices,
 } from 'lucide-react';
 import { useLeafStore } from '../store/useLeafStore';
 import { toast } from '../store/useToastStore';
 import { dbService } from '../services/db';
 import { getStoredTeamMembers, saveStoredTeamMembers } from '../utils/team';
+import {
+  MASCOT_PRESETS,
+  resolveAvatarUrl,
+  getDiceBearSvgUrl,
+} from '../utils/avatars';
 
 export type StatusIconType = 'zap' | 'message' | 'coffee' | 'rocket' | 'compass';
 
@@ -37,6 +43,8 @@ interface ProfileData {
   email: string;
   title: string;
   avatarColor?: string;
+  avatarMascot?: string;
+  avatarUrl?: string;
   statusIcon: StatusIconType;
   statusText: string;
 }
@@ -55,6 +63,7 @@ const DEFAULT_PROFILE: ProfileData = {
   username: '',
   email: '',
   title: 'Workspace Owner',
+  avatarMascot: 'bot-spark',
   avatarColor: 'bg-violet-600 dark:bg-violet-500',
   statusIcon: 'zap',
   statusText: 'In the zone',
@@ -78,15 +87,6 @@ const STATUS_PRESETS: StatusPreset[] = [
   { icon: 'coffee', label: 'Coffee break', text: 'Coffee break' },
   { icon: 'rocket', label: 'Shipping', text: 'Shipping features' },
   { icon: 'compass', label: 'Away', text: 'Away from keyboard' },
-];
-
-const AVATAR_COLORS = [
-  { label: 'Violet', class: 'bg-violet-600 dark:bg-violet-500' },
-  { label: 'Emerald', class: 'bg-emerald-600 dark:bg-emerald-500' },
-  { label: 'Blue', class: 'bg-blue-600 dark:bg-blue-500' },
-  { label: 'Amber', class: 'bg-amber-600 dark:bg-amber-500' },
-  { label: 'Rose', class: 'bg-rose-600 dark:bg-rose-500' },
-  { label: 'Zinc', class: 'bg-zinc-800 dark:bg-zinc-700' },
 ];
 
 interface ToggleSwitchProps {
@@ -161,6 +161,32 @@ export const ProfileView: React.FC = () => {
   // 2FA Mock State
   const [is2FAEnabled, setIs2FAEnabled] = useState(false);
 
+  const [selectedMascotCategory, setSelectedMascotCategory] = useState<'All' | 'Robots' | 'Characters' | 'Emoji' | 'Shapes'>('All');
+  const [customSeedInput, setCustomSeedInput] = useState('');
+
+  const handleRandomizeMascot = () => {
+    const randomPreset = MASCOT_PRESETS[Math.floor(Math.random() * MASCOT_PRESETS.length)];
+    const randomSeed = `${randomPreset.seed}-${Math.floor(Math.random() * 1000)}`;
+    const url = getDiceBearSvgUrl(randomPreset.style, randomSeed);
+    setProfile({
+      ...profile,
+      avatarMascot: randomPreset.id,
+      avatarUrl: url,
+    });
+    toast.success(`Selected mascot: ${randomPreset.name}`);
+  };
+
+  const handleApplyCustomSeed = (seed: string) => {
+    if (!seed.trim()) return;
+    const url = getDiceBearSvgUrl('bottts', seed.trim());
+    setProfile({
+      ...profile,
+      avatarMascot: `custom:${seed.trim()}`,
+      avatarUrl: url,
+    });
+    toast.success(`Generated mascot for: ${seed.trim()}`);
+  };
+
   // Has changes check (disables save button when pristine)
   const hasChanges = JSON.stringify(profile) !== JSON.stringify(initialProfile);
 
@@ -189,6 +215,8 @@ export const ProfileView: React.FC = () => {
       if (members.length > 0) {
         members[0].name = profile.fullName;
         members[0].email = profile.email;
+        if (profile.avatarMascot) members[0].avatarMascot = profile.avatarMascot;
+        if (profile.avatarUrl) members[0].avatarUrl = profile.avatarUrl;
         if (profile.avatarColor) {
           members[0].avatarColor = profile.avatarColor;
         }
@@ -234,7 +262,7 @@ export const ProfileView: React.FC = () => {
       setNewPassword('');
       setConfirmPassword('');
       toast.success('Password updated successfully');
-    }, 450);
+    }, 800);
   };
 
   const handleSendResetEmail = () => {
@@ -256,13 +284,6 @@ export const ProfileView: React.FC = () => {
     } catch {
       toast.error('Failed to export workspace data');
     }
-  };
-
-  const getInitials = (name: string) => {
-    const parts = name.trim().split(' ').filter(Boolean);
-    if (parts.length === 0) return 'U';
-    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   };
 
   const renderStatusIcon = (icon: StatusIconType, className = "w-3.5 h-3.5") => {
@@ -287,8 +308,12 @@ export const ProfileView: React.FC = () => {
         {/* Profile Header (Linear Style) */}
         <div className="flex items-center justify-between gap-4 pb-5 border-b border-[#e5e7eb] dark:border-[#27272a]">
           <div className="flex items-center gap-3.5">
-            <div className={`w-12 h-12 rounded-xl text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-2xs transition-colors ${profile.avatarColor || 'bg-violet-600 dark:bg-violet-500'}`}>
-              {getInitials(profile.fullName)}
+            <div className="w-12 h-12 rounded-xl bg-[#f4f5f6] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#323238] flex items-center justify-center p-1 shrink-0 shadow-2xs overflow-hidden">
+              <img
+                src={resolveAvatarUrl(profile.avatarMascot || profile.avatarUrl || profile.avatarColor, profile.fullName || profile.username || 'owner')}
+                alt={profile.fullName || 'User'}
+                className="w-full h-full object-contain"
+              />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -300,9 +325,13 @@ export const ProfileView: React.FC = () => {
                 </span>
               </div>
               <div className="flex items-center gap-1.5 text-[11px] text-[#6b7280] dark:text-[#a1a1aa] mt-0.5">
-                <span>@{profile.username}</span>
-                <span>•</span>
-                <span>{profile.email}</span>
+                <span>@{profile.username || 'user'}</span>
+                {profile.email && (
+                  <>
+                    <span>•</span>
+                    <span>{profile.email}</span>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -405,30 +434,102 @@ export const ProfileView: React.FC = () => {
               />
             </div>
 
-            {/* Avatar Color */}
-            <div className="flex items-center justify-between px-4 py-3 gap-4">
-              <label className="text-[#6b7280] dark:text-[#a1a1aa] font-medium shrink-0 w-32 flex items-center gap-1.5">
-                <Palette className="w-3.5 h-3.5" />
-                <span>Avatar Color</span>
-              </label>
-              <div className="flex items-center gap-2">
-                {AVATAR_COLORS.map((c) => (
+            {/* Mascot Avatar Selection */}
+            <div className="p-4 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <div className="text-xs font-medium text-[#111827] dark:text-[#f4f4f5] flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
+                    <span>Workspace Mascot Avatar</span>
+                  </div>
+                  <div className="text-[11px] text-[#9ca3af] dark:text-[#71717a]">
+                    Choose a DiceBear mascot or generate a custom seed for your profile
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 self-start sm:self-auto">
                   <button
-                    key={c.class}
                     type="button"
-                    title={c.label}
-                    onClick={() => setProfile({ ...profile, avatarColor: c.class })}
-                    className={`w-5 h-5 rounded-full ${c.class} flex items-center justify-center transition-all cursor-pointer ${
-                      (profile.avatarColor || 'bg-violet-600 dark:bg-violet-500') === c.class
-                        ? 'ring-2 ring-offset-2 ring-[#111827] dark:ring-white scale-110'
-                        : 'opacity-70 hover:opacity-100 hover:scale-105'
+                    onClick={handleRandomizeMascot}
+                    className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-[5px] border border-[#e5e7eb] dark:border-[#27272a] bg-[#f9fafb] dark:bg-[#202024] text-[#374151] dark:text-[#d4d4d8] hover:text-[#111827] dark:hover:text-white transition-colors cursor-pointer"
+                  >
+                    <Dices className="w-3.5 h-3.5" />
+                    <span>Randomize</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Category Segmented Tabs */}
+              <div className="flex items-center gap-1 overflow-x-auto pb-1 custom-scrollbar">
+                {(['All', 'Robots', 'Characters', 'Emoji', 'Shapes'] as const).map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setSelectedMascotCategory(cat)}
+                    className={`px-2.5 py-1 rounded-[5px] text-[11px] transition-colors shrink-0 cursor-pointer ${
+                      selectedMascotCategory === cat
+                        ? 'bg-[#111827] dark:bg-white text-white dark:text-[#111827] font-semibold'
+                        : 'text-[#6b7280] dark:text-[#a1a1aa] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a]'
                     }`}
                   >
-                    {(profile.avatarColor || 'bg-violet-600 dark:bg-violet-500') === c.class && (
-                      <Check className="w-3 h-3 text-white stroke-[3]" />
-                    )}
+                    {cat}
                   </button>
                 ))}
+              </div>
+
+              {/* Mascot Grid */}
+              <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2 pt-1">
+                {MASCOT_PRESETS.filter((m) => selectedMascotCategory === 'All' || m.category === selectedMascotCategory).map((m) => {
+                  const url = getDiceBearSvgUrl(m.style, m.seed);
+                  const isSelected = (profile.avatarMascot || 'bot-spark') === m.id || profile.avatarUrl === url;
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => setProfile({ ...profile, avatarMascot: m.id, avatarUrl: url })}
+                      title={m.name}
+                      className={`group relative flex flex-col items-center p-2 rounded-[8px] border transition-all cursor-pointer ${
+                        isSelected
+                          ? 'border-[#9ca3af] dark:border-[#52525b] bg-[#f4f5f6] dark:bg-[#27272a] shadow-2xs'
+                          : 'border-[#e5e7eb] dark:border-[#27272a] hover:border-[#d1d5db] dark:hover:border-[#3f3f46] bg-[#f9fafb] dark:bg-[#202024]'
+                      }`}
+                    >
+                      <img
+                        src={url}
+                        alt={m.name}
+                        className="w-8 h-8 object-contain transition-transform group-hover:scale-105"
+                      />
+                      <span className="text-[10px] text-[#6b7280] dark:text-[#a1a1aa] mt-1 truncate max-w-full font-medium">
+                        {m.name}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Custom Seed Input */}
+              <div className="pt-2 flex items-center gap-2">
+                <input
+                  type="text"
+                  placeholder="Type a custom seed (e.g. your nickname or keyword)..."
+                  value={customSeedInput}
+                  onChange={(e) => setCustomSeedInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleApplyCustomSeed(customSeedInput);
+                    }
+                  }}
+                  className="flex-1 px-3 py-1.5 text-xs bg-[#f9fafb] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] text-[#111827] dark:text-white placeholder-[#9ca3af] focus:outline-none focus:border-[#9ca3af] dark:focus:border-[#52525b]"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleApplyCustomSeed(customSeedInput)}
+                  disabled={!customSeedInput.trim()}
+                  className="px-3 py-1.5 text-xs font-medium rounded-[6px] border border-[#e5e7eb] dark:border-[#27272a] bg-[#f9fafb] dark:bg-[#202024] text-[#374151] dark:text-[#d4d4d8] hover:text-[#111827] dark:hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  Apply Seed
+                </button>
               </div>
             </div>
           </div>

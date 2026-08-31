@@ -40,7 +40,8 @@ import {
   PRIORITY_CONFIG,
   STATUS_CONFIG,
 } from '../utils/format';
-import { getStoredTeamMembers, getMemberColor, getInitials } from '../utils/team';
+import { getStoredTeamMembers } from '../utils/team';
+import { resolveAvatarUrl } from '../utils/avatars';
 import { Checkbox } from './ui/Checkbox';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { markdownToHtml, htmlToMarkdown, autoLinkHtml } from '../utils/markdown';
@@ -1020,13 +1021,17 @@ export const ItemDetailPane: React.FC = () => {
               >
                 <div className="flex items-center gap-1.5 truncate">
                   {assigneeId ? (
-                    <span
-                      className={`w-3.5 h-3.5 rounded-full text-white text-[8.5px] font-bold flex items-center justify-center shrink-0 ${
-                        teamMembers.find((m) => m.id === assigneeId)?.avatarColor ||
-                        getMemberColor(assigneeId)
-                      }`}
-                    >
-                      {getInitials(teamMembers.find((m) => m.id === assigneeId)?.name || 'U')}
+                    <span className="w-3.5 h-3.5 rounded-full bg-[#f4f5f6] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#323238] flex items-center justify-center p-0.5 shrink-0 overflow-hidden">
+                      <img
+                        src={resolveAvatarUrl(
+                          teamMembers.find((m) => m.id === assigneeId)?.avatarMascot ||
+                          teamMembers.find((m) => m.id === assigneeId)?.avatarUrl ||
+                          teamMembers.find((m) => m.id === assigneeId)?.avatarColor,
+                          teamMembers.find((m) => m.id === assigneeId)?.name || assigneeId
+                        )}
+                        alt={teamMembers.find((m) => m.id === assigneeId)?.name || 'User'}
+                        className="w-full h-full object-contain"
+                      />
                     </span>
                   ) : (
                     <User className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa] shrink-0 opacity-80" />
@@ -1076,12 +1081,12 @@ export const ItemDetailPane: React.FC = () => {
                       }`}
                     >
                       <div className="flex items-center gap-2 truncate">
-                        <span
-                          className={`w-3.5 h-3.5 rounded-full text-white text-[8.5px] font-bold flex items-center justify-center shrink-0 ${
-                            member.avatarColor || getMemberColor(member.id)
-                          }`}
-                        >
-                          {getInitials(member.name)}
+                        <span className="w-3.5 h-3.5 rounded-full bg-[#f4f5f6] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#323238] flex items-center justify-center p-0.5 shrink-0 overflow-hidden">
+                          <img
+                            src={resolveAvatarUrl(member.avatarMascot || member.avatarUrl || member.avatarColor, member.name || member.id)}
+                            alt={member.name}
+                            className="w-full h-full object-contain"
+                          />
                         </span>
                         <span className="truncate">{member.name}</span>
                       </div>

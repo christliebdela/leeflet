@@ -34,6 +34,7 @@ import { ViewMode, ItemType, Priority, Project, Item, Workspace } from '../types
 import { enterMiniMode } from '../utils/window';
 import { Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
 import { toast } from '../store/useToastStore';
+import { resolveAvatarUrl } from '../utils/avatars';
 
 export const Sidebar: React.FC = () => {
   const {
@@ -885,24 +886,46 @@ export const Sidebar: React.FC = () => {
 
 
           {/* User Profile */}
-          <button
-            onClick={() => setViewMode({ type: 'profile' })}
-            className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] transition-colors text-xs font-medium ${
-              isViewActive({ type: 'profile' })
-                ? 'bg-[#ebecee] dark:bg-[#27272a] text-[#111827] dark:text-white font-semibold'
-                : 'text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white'
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded-full bg-[#111827] dark:bg-white text-white dark:text-[#111827] text-[9px] font-bold flex items-center justify-center shrink-0">
-                C
-              </div>
-              <span className="truncate">Profile</span>
-            </div>
-            <span className="text-[10.5px] text-[#9ca3af] dark:text-[#71717a] font-normal">
-              Owner
-            </span>
-          </button>
+          {(() => {
+            let userProfileName = 'Profile';
+            let userAvatarUrl = '';
+            try {
+              const pRaw = localStorage.getItem('leeflet_user_profile_data') || localStorage.getItem('leaf_user_profile_data');
+              if (pRaw) {
+                const p = JSON.parse(pRaw);
+                if (p.fullName) userProfileName = p.fullName;
+                userAvatarUrl = resolveAvatarUrl(p.avatarMascot || p.avatarUrl || p.avatarColor, p.fullName || 'user');
+              }
+            } catch {}
+            if (!userAvatarUrl) {
+              userAvatarUrl = resolveAvatarUrl(undefined, 'owner');
+            }
+
+            return (
+              <button
+                onClick={() => setViewMode({ type: 'profile' })}
+                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] transition-colors text-xs font-medium ${
+                  isViewActive({ type: 'profile' })
+                    ? 'bg-[#ebecee] dark:bg-[#27272a] text-[#111827] dark:text-white font-semibold'
+                    : 'text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white'
+                }`}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-4 h-4 rounded-full bg-[#f4f5f6] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#323238] flex items-center justify-center p-0.5 shrink-0 overflow-hidden">
+                    <img
+                      src={userAvatarUrl}
+                      alt="Profile"
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  <span className="truncate">{userProfileName}</span>
+                </div>
+                <span className="text-[10.5px] text-[#9ca3af] dark:text-[#71717a] font-normal shrink-0">
+                  Owner
+                </span>
+              </button>
+            );
+          })()}
         </div>
       </aside>
 

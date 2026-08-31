@@ -18,7 +18,8 @@ import {
   User,
 } from 'lucide-react';
 import { ITEM_TYPE_CONFIG, PRIORITY_CONFIG } from '../utils/format';
-import { getStoredTeamMembers, getMemberColor, getInitials } from '../utils/team';
+import { getStoredTeamMembers } from '../utils/team';
+import { resolveAvatarUrl } from '../utils/avatars';
 
 const TYPE_ICONS: Record<ItemType, React.FC<{ className?: string }>> = {
   task: CheckSquare,
@@ -746,12 +747,12 @@ export const QuickCaptureModal: React.FC = () => {
                 className="flex items-center gap-1.5 bg-[#f9fafb] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] px-2 py-1 hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-colors shrink-0 text-xs font-medium text-[#374151] dark:text-[#f4f4f5]"
               >
                 {selectedMember ? (
-                  <span
-                    className={`w-4 h-4 rounded-full text-white text-[9px] font-bold flex items-center justify-center shrink-0 ${
-                      selectedMember.avatarColor || getMemberColor(selectedMember.id)
-                    }`}
-                  >
-                    {getInitials(selectedMember.name)}
+                  <span className="w-4 h-4 rounded-full bg-[#f4f5f6] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#323238] flex items-center justify-center p-0.5 shrink-0 overflow-hidden">
+                    <img
+                      src={resolveAvatarUrl(selectedMember.avatarMascot || selectedMember.avatarUrl || selectedMember.avatarColor, selectedMember.name || selectedMember.id)}
+                      alt={selectedMember.name}
+                      className="w-full h-full object-contain"
+                    />
                   </span>
                 ) : (
                   <User className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa] shrink-0 opacity-80" />
@@ -796,12 +797,12 @@ export const QuickCaptureModal: React.FC = () => {
                       }`}
                     >
                       <div className="flex items-center gap-2 truncate">
-                        <span
-                          className={`w-4 h-4 rounded-full text-white text-[9px] font-bold flex items-center justify-center shrink-0 ${
-                            member.avatarColor || getMemberColor(member.id)
-                          }`}
-                        >
-                          {getInitials(member.name)}
+                        <span className="w-4 h-4 rounded-full bg-[#f4f5f6] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#323238] flex items-center justify-center p-0.5 shrink-0 overflow-hidden">
+                          <img
+                            src={resolveAvatarUrl(member.avatarMascot || member.avatarUrl || member.avatarColor, member.name || member.id)}
+                            alt={member.name}
+                            className="w-full h-full object-contain"
+                          />
                         </span>
                         <span className="truncate">{member.name}</span>
                       </div>

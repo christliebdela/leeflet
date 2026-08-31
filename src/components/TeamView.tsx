@@ -14,6 +14,7 @@ import { useLeafStore } from '../store/useLeafStore';
 import { toast } from '../store/useToastStore';
 import { getStoredTeamMembers, saveStoredTeamMembers } from '../utils/team';
 import { isSmtpConfigured, sendInviteEmail, generateInviteDeepLink } from '../utils/smtp';
+import { resolveAvatarUrl } from '../utils/avatars';
 import { TeamMember, RoleId } from '../types';
 
 interface RoleConfig {
@@ -194,8 +195,12 @@ export const TeamView: React.FC = () => {
               className="px-3.5 py-2.5 flex items-center justify-between text-xs"
             >
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-7 h-7 rounded-full bg-[#f3f4f6] dark:bg-[#27272a] border border-[#e5e7eb] dark:border-[#3f3f46] flex items-center justify-center text-[10px] font-semibold text-[#4b5563] dark:text-[#d4d4d8] shrink-0">
-                  {member.name.slice(0, 2).toUpperCase()}
+                <div className="w-7 h-7 rounded-full bg-[#f3f4f6] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#323238] flex items-center justify-center p-0.5 shrink-0 overflow-hidden">
+                  <img
+                    src={resolveAvatarUrl(member.avatarMascot || member.avatarUrl || member.avatarColor, member.name || member.id)}
+                    alt={member.name}
+                    className="w-full h-full object-contain"
+                  />
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
