@@ -38,8 +38,9 @@ import {
   X,
   Send,
   Lock,
-  Heart,
   Info,
+  Zap,
+  Shield,
 } from 'lucide-react';
 import { Item, Attachment, ItemType, Priority, Project, THEME_PRESETS } from '../types';
 import { formatFileSize, ITEM_TYPE_CONFIG, PRIORITY_CONFIG } from '../utils/format';
@@ -160,6 +161,7 @@ export const SettingsView: React.FC = () => {
   const [exportScope, setExportScope] = useState<'current' | 'all'>('current');
   const [showExportModal, setShowExportModal] = useState(false);
   const [showEmptyExportModal, setShowEmptyExportModal] = useState(false);
+  const [showDisconnectModal, setShowDisconnectModal] = useState(false);
 
   // Workflow & Behavior preferences stored in localStorage
   const [defaultProject, setDefaultProject] = useState(() => localStorage.getItem('leaf_pref_default_project') || '');
@@ -416,7 +418,7 @@ export const SettingsView: React.FC = () => {
     }
   };
 
-  const handleDisconnect = () => {
+  const handleConfirmDisconnect = () => {
     if (wsId) {
       localStorage.removeItem(`leeflet_supabase_url_${wsId}`);
       localStorage.removeItem(`leeflet_supabase_anon_key_${wsId}`);
@@ -428,6 +430,7 @@ export const SettingsView: React.FC = () => {
     setSupabaseAnonKey('');
     setSyncMode('local');
     setTestStatus('idle');
+    setShowDisconnectModal(false);
     toast.info('Disconnected cloud database. Workspace is now local-only.');
   };
 
@@ -744,6 +747,24 @@ export const SettingsView: React.FC = () => {
       s.keys.some((k) => k.toLowerCase().includes(shortcutFilter.toLowerCase()))
   );
 
+  const handleOpenGithub = async () => {
+    try {
+      const { openUrl } = await import('@tauri-apps/plugin-opener');
+      await openUrl('https://github.com/christliebdela');
+    } catch {
+      window.open('https://github.com/christliebdela', '_blank');
+    }
+  };
+
+  const handleOpenWebsite = async () => {
+    try {
+      const { openUrl } = await import('@tauri-apps/plugin-opener');
+      await openUrl('https://christliebdela.vercel.app/');
+    } catch {
+      window.open('https://christliebdela.vercel.app/', '_blank');
+    }
+  };
+
   return (
     <div className="flex-1 h-full overflow-y-auto p-4 sm:p-8 custom-scrollbar">
       <div className="max-w-[760px] mx-auto space-y-6 pb-16">
@@ -758,11 +779,11 @@ export const SettingsView: React.FC = () => {
             </p>
           </div>
 
-          {/* Segmented Tab Switcher */}
-          <div className="inline-flex items-center p-0.5 rounded-[6px] bg-[#f4f5f6] dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] max-w-full overflow-x-auto no-scrollbar">
+          {/* Segmented Tab Switcher - Full Width */}
+          <div className="grid grid-cols-2 sm:grid-cols-5 p-1 rounded-[8px] bg-[#f4f5f6] dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] w-full gap-1">
             <button
               onClick={() => setActiveTab('preferences')}
-              className={`flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-[5px] transition-all whitespace-nowrap shrink-0 ${
+              className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-[6px] transition-all whitespace-nowrap ${
                 activeTab === 'preferences'
                   ? 'bg-white dark:bg-[#27272a] text-[#111827] dark:text-white shadow-xs font-semibold'
                   : 'text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white'
@@ -774,7 +795,7 @@ export const SettingsView: React.FC = () => {
 
             <button
               onClick={() => setActiveTab('sync')}
-              className={`flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-[5px] transition-all whitespace-nowrap shrink-0 ${
+              className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-[6px] transition-all whitespace-nowrap ${
                 activeTab === 'sync'
                   ? 'bg-white dark:bg-[#27272a] text-[#111827] dark:text-white shadow-xs font-semibold'
                   : 'text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white'
@@ -786,19 +807,19 @@ export const SettingsView: React.FC = () => {
 
             <button
               onClick={() => setActiveTab('data')}
-              className={`flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-[5px] transition-all whitespace-nowrap shrink-0 ${
+              className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-[6px] transition-all whitespace-nowrap ${
                 activeTab === 'data'
                   ? 'bg-white dark:bg-[#27272a] text-[#111827] dark:text-white shadow-xs font-semibold'
                   : 'text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white'
               }`}
             >
               <Database className="w-3.5 h-3.5" />
-              <span>Data & Backup</span>
+              <span>Data &amp; Backup</span>
             </button>
 
             <button
               onClick={() => setActiveTab('shortcuts')}
-              className={`flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-[5px] transition-all whitespace-nowrap shrink-0 ${
+              className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-[6px] transition-all whitespace-nowrap ${
                 activeTab === 'shortcuts'
                   ? 'bg-white dark:bg-[#27272a] text-[#111827] dark:text-white shadow-xs font-semibold'
                   : 'text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white'
@@ -810,7 +831,7 @@ export const SettingsView: React.FC = () => {
 
             <button
               onClick={() => setActiveTab('about')}
-              className={`flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-[5px] transition-all whitespace-nowrap shrink-0 ${
+              className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-[6px] transition-all whitespace-nowrap col-span-2 sm:col-span-1 ${
                 activeTab === 'about'
                   ? 'bg-white dark:bg-[#27272a] text-[#111827] dark:text-white shadow-xs font-semibold'
                   : 'text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white'
@@ -1553,8 +1574,8 @@ export const SettingsView: React.FC = () => {
                     {syncMode === 'cloud' && (
                       <button
                         type="button"
-                        onClick={handleDisconnect}
-                        className="px-3 py-1.5 text-xs font-medium rounded-[6px] text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 transition-all"
+                        onClick={() => setShowDisconnectModal(true)}
+                        className="px-3 py-1.5 text-xs font-medium rounded-[6px] text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 transition-all cursor-pointer"
                       >
                         Disconnect
                       </button>
@@ -2165,7 +2186,58 @@ export const SettingsView: React.FC = () => {
             </div>
           </div>
         )}
-      </div>
+
+      {/* Database Disconnect Confirmation Modal */}
+      {showDisconnectModal && (
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowDisconnectModal(false);
+          }}
+          className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 select-none"
+        >
+          <div className="w-full max-w-md bg-white dark:bg-[#18181b] rounded-[8px] border border-[#e5e7eb] dark:border-[#27272a] shadow-modal p-5 space-y-4">
+            <div className="flex items-center justify-between border-b border-[#f3f4f6] dark:border-[#27272a] pb-2.5">
+              <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400">
+                <AlertCircle className="w-4 h-4" />
+                <h2 className="text-xs font-semibold text-[#111827] dark:text-[#f4f4f5]">Disconnect Cloud Database</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDisconnectModal(false)}
+                className="p-1 rounded-[4px] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] text-[#6b7280] dark:text-[#a1a1aa] cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div className="space-y-2 text-xs text-[#6b7280] dark:text-[#a1a1aa] leading-relaxed">
+              <p>
+                Are you sure you want to disconnect this Supabase database from <strong className="text-[#111827] dark:text-white font-medium">{workspace.name}</strong>?
+              </p>
+              <div className="p-3 rounded-[6px] bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 text-[11px] text-amber-800 dark:text-amber-300">
+                Your local tasks, projects, and attachments remain safe on this device. Realtime multiplayer sync and teammate invitations will be paused until reconnected.
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#f3f4f6] dark:border-[#27272a]">
+              <button
+                type="button"
+                onClick={() => setShowDisconnectModal(false)}
+                className="px-3 py-1.5 text-xs font-medium rounded-[6px] text-[#6b7280] dark:text-[#a1a1aa] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDisconnect}
+                className="px-3.5 py-1.5 text-xs font-semibold rounded-[6px] bg-rose-600 hover:bg-rose-700 text-white transition-all shadow-xs cursor-pointer"
+              >
+                Disconnect Database
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Export Scope Choice Modal */}
       {showExportModal && (
@@ -2400,83 +2472,137 @@ export const SettingsView: React.FC = () => {
       {/* TAB 5: ABOUT */}
       {activeTab === 'about' && (
         <div className="space-y-6">
-          {/* Hero Card */}
-          <div className="border border-[#e5e7eb] dark:border-[#27272a] rounded-[10px] bg-white dark:bg-[#18181b] overflow-hidden">
-            <div className="px-6 py-8 flex flex-col items-center text-center gap-3 border-b border-[#f3f4f6] dark:border-[#27272a]">
-              <div className="w-14 h-14 rounded-[14px] bg-gradient-to-br from-[#111827] to-[#374151] dark:from-white dark:to-[#d1d5db] flex items-center justify-center shadow-lg">
-                <Sparkles className="w-7 h-7 text-white dark:text-[#111827]" />
+          {/* Premium Hero Identity Card */}
+          <div className="border border-[#e5e7eb] dark:border-[#27272a] rounded-[12px] bg-white dark:bg-[#18181b] overflow-hidden shadow-2xs">
+            <div className="px-6 py-8 flex flex-col items-center text-center gap-3.5">
+              {/* App Icon */}
+              <div className="w-16 h-16 rounded-[16px] bg-[#f4f5f6] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#323238] flex items-center justify-center shadow-xs p-3">
+                <img
+                  src="/leaf_logo.png"
+                  alt="leeflet"
+                  className="w-10 h-10 object-contain invert dark:invert-0"
+                />
               </div>
-              <div>
-                <h2 className="text-base font-bold text-[#111827] dark:text-white tracking-tight">
-                  Leeflet
-                </h2>
-                <p className="text-xs text-[#6b7280] dark:text-[#a1a1aa] mt-0.5">
-                  Local-first task &amp; workspace management
+
+              <div className="space-y-1">
+                <div className="flex items-center justify-center gap-2">
+                  <h2 className="text-lg font-bold font-brand text-[#111827] dark:text-white tracking-tight">
+                    leeflet
+                  </h2>
+                  <span className="px-2 py-0.5 rounded-full bg-[#f4f5f6] dark:bg-[#27272a] border border-[#e5e7eb] dark:border-[#3f3f46] text-[11px] font-mono text-[#374151] dark:text-[#d4d4d8]">
+                    v0.1.0
+                  </span>
+                </div>
+                <p className="text-xs text-[#6b7280] dark:text-[#a1a1aa] max-w-sm mx-auto leading-normal">
+                  High-performance, local-first productivity workspace engineered for speed, focus, and real-time team collaboration.
                 </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 rounded-full bg-[#f3f4f6] dark:bg-[#27272a] border border-[#e5e7eb] dark:border-[#3f3f46] text-[11px] font-semibold text-[#374151] dark:text-[#d4d4d8]">
-                  v0.1.0
-                </span>
-                <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
-                  Early Access
-                </span>
               </div>
             </div>
 
-            {/* Credits row */}
-            <div className="px-6 py-4 flex items-center justify-center gap-1.5 text-xs text-[#6b7280] dark:text-[#a1a1aa]">
-              <span>Built with</span>
-              <Heart className="w-3 h-3 text-rose-500 fill-rose-500" />
-              <span>by</span>
-              <span className="font-semibold text-[#111827] dark:text-white">Christlieb Dela</span>
+            <div className="px-5 py-3 border-t border-[#f3f4f6] dark:border-[#27272a] bg-[#fafafa] dark:bg-[#151518] flex items-center justify-between text-xs text-[#6b7280] dark:text-[#a1a1aa]">
+              <div className="flex items-center gap-2">
+                <span>Designed &amp; Engineered by <strong className="text-[#111827] dark:text-white font-medium">Christlieb Dela</strong></span>
+                <div className="flex items-center gap-0.5">
+                  <button
+                    type="button"
+                    onClick={handleOpenWebsite}
+                    className="p-1 rounded-[5px] text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                    title="Website (christliebdela.vercel.app)"
+                  >
+                    <Globe className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleOpenGithub}
+                    className="p-1 rounded-[5px] text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                    title="GitHub (@christliebdela)"
+                  >
+                    <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                      <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <span className="text-[11px] font-mono text-[#9ca3af] dark:text-[#71717a]">© {new Date().getFullYear()}</span>
             </div>
           </div>
 
-          {/* Tech stack */}
+          {/* Architectural Pillars */}
+          <div className="space-y-2">
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-[#9ca3af] dark:text-[#71717a] px-1">
+              Architectural Pillars
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+              <div className="p-3.5 rounded-[8px] bg-white dark:bg-[#18181b] border border-[#e5e7eb] dark:border-[#27272a] space-y-1">
+                <div className="flex items-center gap-1.5 font-semibold text-[#111827] dark:text-[#f4f4f5]">
+                  <Zap className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
+                  <span>0ms Latency UI</span>
+                </div>
+                <p className="text-[11px] text-[#6b7280] dark:text-[#a1a1aa] leading-relaxed">
+                  Mutations commit instantly to local storage. You never wait on network latency or cloud server roundtrips.
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-[8px] bg-white dark:bg-[#18181b] border border-[#e5e7eb] dark:border-[#27272a] space-y-1">
+                <div className="flex items-center gap-1.5 font-semibold text-[#111827] dark:text-[#f4f4f5]">
+                  <Cloud className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
+                  <span>Realtime WebSockets</span>
+                </div>
+                <p className="text-[11px] text-[#6b7280] dark:text-[#a1a1aa] leading-relaxed">
+                  Sub-second delta synchronization and multiplayer presence over Supabase WebSocket channels with conflict guards.
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-[8px] bg-white dark:bg-[#18181b] border border-[#e5e7eb] dark:border-[#27272a] space-y-1">
+                <div className="flex items-center gap-1.5 font-semibold text-[#111827] dark:text-[#f4f4f5]">
+                  <Shield className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
+                  <span>Privacy by Default</span>
+                </div>
+                <p className="text-[11px] text-[#6b7280] dark:text-[#a1a1aa] leading-relaxed">
+                  Zero telemetry. Zero usage tracking. You maintain complete cryptographic ownership of all local and cloud data.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* System & Specifications */}
           <div className="space-y-1.5">
             <div className="text-[11px] font-semibold uppercase tracking-wider text-[#9ca3af] dark:text-[#71717a] px-1">
-              Built With
+              System &amp; Specifications
             </div>
             <div className="border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] bg-white dark:bg-[#18181b] divide-y divide-[#f3f4f6] dark:divide-[#27272a] text-xs">
-              {([
-                { label: 'Framework', value: 'React 18 + TypeScript' },
-                { label: 'Desktop Shell', value: 'Tauri v2 (Rust)' },
-                { label: 'Styling', value: 'Tailwind CSS v4' },
-                { label: 'Database', value: 'SQLite (local) / Supabase (cloud)' },
-                { label: 'State', value: 'Zustand' },
-                { label: 'Avatars', value: 'DiceBear 10.x' },
-                { label: 'Icons', value: 'Lucide React' },
-              ] as { label: string; value: string }[]).map(({ label, value }) => (
+              {[
+                { label: 'Desktop Shell', value: 'Tauri v2 • Rust 1.80+ Core' },
+                { label: 'Frontend Engine', value: 'React 18 • TypeScript • Tailwind CSS' },
+                { label: 'Local Database', value: 'Embedded SQLite (WAL mode) / IndexedDB' },
+                { label: 'Cloud Replication', value: 'Supabase (PostgreSQL + Realtime WebSockets)' },
+                { label: 'State Management', value: 'Zustand' },
+                { label: 'Avatar Engine', value: 'DiceBear 10.x Multi-Collection Engine' },
+                { label: 'Design System', value: 'Geist / Inter Typography • Lucide Icons' },
+                { label: 'Telemetry & Analytics', value: 'Disabled (100% Private)' },
+              ].map(({ label, value }) => (
                 <div key={label} className="flex items-center justify-between px-4 py-2.5 gap-4">
                   <span className="text-[#6b7280] dark:text-[#a1a1aa]">{label}</span>
-                  <span className="font-medium text-[#111827] dark:text-[#f4f4f5] text-right">{value}</span>
+                  <span className="font-medium text-[#111827] dark:text-[#f4f4f5] text-right font-mono text-[11px]">
+                    {value}
+                  </span>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Legal */}
-          <div className="space-y-1.5">
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-[#9ca3af] dark:text-[#71717a] px-1">
-              Legal &amp; Licenses
-            </div>
-            <div className="border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] bg-white dark:bg-[#18181b] p-4 text-xs text-[#6b7280] dark:text-[#a1a1aa] leading-relaxed space-y-2">
-              <p>
-                Leeflet is a personal productivity tool. All data is stored locally on your device
-                unless you configure a cloud database. No telemetry or analytics are collected.
-              </p>
-              <p>
-                Third-party licenses: DiceBear avatar styles are used under their respective
-                open-source licenses (CC0 1.0 &amp; CC BY 4.0). Lucide icons are MIT licensed.
-              </p>
-              <p className="text-[10px] text-[#9ca3af] dark:text-[#71717a]">
-                © {new Date().getFullYear()} Christlieb Dela. All rights reserved.
-              </p>
-            </div>
+          {/* Legal & Licenses */}
+          <div className="border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] bg-white dark:bg-[#18181b] p-4 text-[11.5px] text-[#6b7280] dark:text-[#a1a1aa] leading-relaxed space-y-1.5">
+            <p>
+              All workspace data is stored directly on your physical machine. Cloud synchronization is optional and end-to-end encrypted under your private database credentials.
+            </p>
+            <p className="text-[10.5px] text-[#9ca3af] dark:text-[#71717a] pt-1">
+              Open-source components licensed under MIT, CC0 1.0 &amp; CC BY 4.0.
+            </p>
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };
