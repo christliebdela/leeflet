@@ -42,21 +42,30 @@ export async function pushWorkspaceToCloud(ws: Workspace): Promise<void> {
   const creds = getCloudCredentials(ws.id);
   if (!creds || !isValidUuid(ws.id)) return;
 
+  const updatedAt = ws.updatedAt || new Date().toISOString();
+  const body = {
+    id: ws.id,
+    name: ws.name,
+    created_at: ws.createdAt || new Date().toISOString(),
+    updated_at: updatedAt,
+  };
+
   try {
+    // 1. Try INSERT (no-op if already exists)
     await fetch(`${creds.url}/rest/v1/workspaces`, {
       method: 'POST',
       headers: {
         ...getAuthHeaders(creds),
-        Prefer: 'resolution=merge-duplicates,return=minimal',
+        Prefer: 'resolution=ignore-duplicates,return=minimal',
       },
-      body: JSON.stringify([
-        {
-          id: ws.id,
-          name: ws.name,
-          created_at: ws.createdAt || new Date().toISOString(),
-          updated_at: ws.updatedAt || new Date().toISOString(),
-        },
-      ]),
+      body: JSON.stringify([body]),
+    });
+
+    // 2. PATCH to update name
+    await fetch(`${creds.url}/rest/v1/workspaces?id=eq.${ws.id}`, {
+      method: 'PATCH',
+      headers: { ...getAuthHeaders(creds), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: ws.name, updated_at: updatedAt }),
     });
   } catch {
     // swallowed
@@ -92,9 +101,9 @@ export async function pushProjectToCloud(wsId: string, project: Project): Promis
       body: JSON.stringify([body]),
     });
 
-    // 2. PATCH only if our updated_at is strictly newer than what's in the cloud
+    // 2. PATCH to update project details (name, color, description)
     await fetch(
-      `${creds.url}/rest/v1/projects?id=eq.${project.id}&updated_at=lt.${encodeURIComponent(updatedAt)}`,
+      `${creds.url}/rest/v1/projects?id=eq.${project.id}`,
       {
         method: 'PATCH',
         headers: { ...getAuthHeaders(creds), 'Content-Type': 'application/json' },

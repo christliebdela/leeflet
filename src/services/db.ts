@@ -120,6 +120,7 @@ export class DatabaseService {
         ws.name = newName;
         ws.updatedAt = new Date().toISOString();
         localStorage.setItem(`${STORAGE_KEY_PREFIX}${id}`, JSON.stringify(ws));
+        pushWorkspaceToCloud(ws).catch(() => {});
       } catch {
         // ignore
       }
