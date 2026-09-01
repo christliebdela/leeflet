@@ -28,6 +28,7 @@ import {
   Check,
   Link2,
   Building2,
+  Sparkles,
 } from 'lucide-react';
 import { dbService } from '../services/db';
 import { ViewMode, ItemType, Priority, Project, Item, Workspace } from '../types';
@@ -36,6 +37,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
 import { toast } from '../store/useToastStore';
 import { resolveAvatarUrl } from '../utils/avatars';
 import { getUserPermissions } from '../utils/permissions';
+import { useUpdaterStore } from '../store/useUpdaterStore';
 
 export const Sidebar: React.FC = () => {
   const {
@@ -58,6 +60,8 @@ export const Sidebar: React.FC = () => {
     toggleSidebar,
     initialize,
   } = useLeafStore();
+
+  const { status: updateStatus, availableVersion, setModalOpen: setUpdateModalOpen } = useUpdaterStore();
 
   // User profile & mascot avatar state with real-time instant sync
   const [profileState, setProfileState] = useState(() => {
@@ -100,7 +104,12 @@ export const Sidebar: React.FC = () => {
   const userProfileName = profileState.name;
   const userAvatarUrl = profileState.avatar;
 
-  const [isProjectsCollapsed, setIsProjectsCollapsed] = useState(false);
+  const [isProjectsCollapsed, setIsProjectsCollapsed] = useState(() => {
+    return localStorage.getItem('leaf_sidebar_projects_collapsed') === 'true';
+  });
+  const [isViewsCollapsed, setIsViewsCollapsed] = useState(() => {
+    return localStorage.getItem('leaf_sidebar_views_collapsed') === 'true';
+  });
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
 
   const permissions = getUserPermissions(workspace?.id);
@@ -512,6 +521,22 @@ export const Sidebar: React.FC = () => {
 
         {/* Bottom Tools in Rail */}
         <div className="flex flex-col items-center gap-1 w-full px-2 pt-2 border-t border-[#e5e7eb] dark:border-[#27272a]">
+          {updateStatus === 'available' && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => setUpdateModalOpen(true)}
+                  className="w-9 h-9 flex items-center justify-center rounded-[6px] text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white transition-colors cursor-pointer relative"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-[#111827] dark:bg-white" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Update Available (v{availableVersion || 'new'})</TooltipContent>
+            </Tooltip>
+          )}
+
           <Tooltip>
             <TooltipTrigger asChild>
               <button
@@ -805,8 +830,12 @@ export const Sidebar: React.FC = () => {
           <div className="space-y-1">
             <div className="flex items-center justify-between px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-[#9ca3af] dark:text-[#71717a]">
               <div
-                className="flex items-center gap-1 cursor-pointer hover:text-[#111827] dark:hover:text-white"
-                onClick={() => setIsProjectsCollapsed(!isProjectsCollapsed)}
+                className="flex items-center gap-1 cursor-pointer hover:text-[#111827] dark:hover:text-white select-none"
+                onClick={() => {
+                  const next = !isProjectsCollapsed;
+                  setIsProjectsCollapsed(next);
+                  localStorage.setItem('leaf_sidebar_projects_collapsed', String(next));
+                }}
               >
                 {isProjectsCollapsed ? (
                   <ChevronRight className="w-3 h-3 text-[#6b7280] dark:text-[#a1a1aa]" />
@@ -896,121 +925,154 @@ export const Sidebar: React.FC = () => {
           </div>
 
           {/* VIEWS SECTION (All Icons Monochrome) */}
-          <div className="space-y-0.5">
-            <div className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-[#9ca3af] dark:text-[#71717a]">
-              Views
+          <div className="space-y-1">
+            <div className="flex items-center justify-between px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-[#9ca3af] dark:text-[#71717a]">
+              <div
+                className="flex items-center gap-1 cursor-pointer hover:text-[#111827] dark:hover:text-white select-none"
+                onClick={() => {
+                  const next = !isViewsCollapsed;
+                  setIsViewsCollapsed(next);
+                  localStorage.setItem('leaf_sidebar_views_collapsed', String(next));
+                }}
+              >
+                {isViewsCollapsed ? (
+                  <ChevronRight className="w-3 h-3 text-[#6b7280] dark:text-[#a1a1aa]" />
+                ) : (
+                  <ChevronDown className="w-3 h-3 text-[#6b7280] dark:text-[#a1a1aa]" />
+                )}
+                <span>Views</span>
+              </div>
             </div>
-            <div className="space-y-0.5">
-              <button
-                onClick={() => setViewMode({ type: 'type_filter', itemType: 'bug' as ItemType })}
-                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] transition-colors text-xs ${
-                  isViewActive({ type: 'type_filter', itemType: 'bug' })
-                    ? 'bg-[#e5e7eb] dark:bg-[#27272a] text-[#111827] dark:text-white font-medium'
-                    : 'text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <Bug className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
-                  <span>Bugs</span>
-                </div>
-                {bugsCount > 0 && <span className="text-[11px] text-[#6b7280] dark:text-[#71717a]">{bugsCount}</span>}
-              </button>
 
-              <button
-                onClick={() => setViewMode({ type: 'type_filter', itemType: 'idea' as ItemType })}
-                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] transition-colors text-xs ${
-                  isViewActive({ type: 'type_filter', itemType: 'idea' })
-                    ? 'bg-[#e5e7eb] dark:bg-[#27272a] text-[#111827] dark:text-white font-medium'
-                    : 'text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <Lightbulb className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
-                  <span>Ideas</span>
-                </div>
-                {ideasCount > 0 && <span className="text-[11px] text-[#6b7280] dark:text-[#71717a]">{ideasCount}</span>}
-              </button>
+            {!isViewsCollapsed && (
+              <div className="space-y-0.5">
+                <button
+                  onClick={() => setViewMode({ type: 'type_filter', itemType: 'bug' as ItemType })}
+                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] transition-colors text-xs ${
+                    isViewActive({ type: 'type_filter', itemType: 'bug' })
+                      ? 'bg-[#e5e7eb] dark:bg-[#27272a] text-[#111827] dark:text-white font-medium'
+                      : 'text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Bug className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
+                    <span>Bugs</span>
+                  </div>
+                  {bugsCount > 0 && <span className="text-[11px] text-[#6b7280] dark:text-[#71717a]">{bugsCount}</span>}
+                </button>
 
-              <button
-                onClick={() => setViewMode({ type: 'type_filter', itemType: 'task' as ItemType })}
-                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] transition-colors text-xs ${
-                  isViewActive({ type: 'type_filter', itemType: 'task' })
-                    ? 'bg-[#e5e7eb] dark:bg-[#27272a] text-[#111827] dark:text-white font-medium'
-                    : 'text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <CheckSquare className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
-                  <span>Tasks</span>
-                </div>
-                {tasksCount > 0 && <span className="text-[11px] text-[#6b7280] dark:text-[#71717a]">{tasksCount}</span>}
-              </button>
+                <button
+                  onClick={() => setViewMode({ type: 'type_filter', itemType: 'idea' as ItemType })}
+                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] transition-colors text-xs ${
+                    isViewActive({ type: 'type_filter', itemType: 'idea' })
+                      ? 'bg-[#e5e7eb] dark:bg-[#27272a] text-[#111827] dark:text-white font-medium'
+                      : 'text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Lightbulb className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
+                    <span>Ideas</span>
+                  </div>
+                  {ideasCount > 0 && <span className="text-[11px] text-[#6b7280] dark:text-[#71717a]">{ideasCount}</span>}
+                </button>
 
-              <button
-                onClick={() => setViewMode({ type: 'type_filter', itemType: 'research' as ItemType })}
-                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] transition-colors text-xs ${
-                  isViewActive({ type: 'type_filter', itemType: 'research' })
-                    ? 'bg-[#e5e7eb] dark:bg-[#27272a] text-[#111827] dark:text-white font-medium'
-                    : 'text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <BookOpen className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
-                  <span>Research</span>
-                </div>
-                {researchCount > 0 && <span className="text-[11px] text-[#6b7280] dark:text-[#71717a]">{researchCount}</span>}
-              </button>
+                <button
+                  onClick={() => setViewMode({ type: 'type_filter', itemType: 'task' as ItemType })}
+                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] transition-colors text-xs ${
+                    isViewActive({ type: 'type_filter', itemType: 'task' })
+                      ? 'bg-[#e5e7eb] dark:bg-[#27272a] text-[#111827] dark:text-white font-medium'
+                      : 'text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <CheckSquare className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
+                    <span>Tasks</span>
+                  </div>
+                  {tasksCount > 0 && <span className="text-[11px] text-[#6b7280] dark:text-[#71717a]">{tasksCount}</span>}
+                </button>
 
-              <button
-                onClick={() => setViewMode({ type: 'priority_filter', priority: 'high' as Priority })}
-                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] transition-colors text-xs ${
-                  isViewActive({ type: 'priority_filter', priority: 'high' })
-                    ? 'bg-[#e5e7eb] dark:bg-[#27272a] text-[#111827] dark:text-white font-medium'
-                    : 'text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <AlertCircle className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
-                  <span>High Priority</span>
-                </div>
-                {highPriorityCount > 0 && <span className="text-[11px] text-[#6b7280] dark:text-[#71717a]">{highPriorityCount}</span>}
-              </button>
+                <button
+                  onClick={() => setViewMode({ type: 'type_filter', itemType: 'research' as ItemType })}
+                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] transition-colors text-xs ${
+                    isViewActive({ type: 'type_filter', itemType: 'research' })
+                      ? 'bg-[#e5e7eb] dark:bg-[#27272a] text-[#111827] dark:text-white font-medium'
+                      : 'text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
+                    <span>Research</span>
+                  </div>
+                  {researchCount > 0 && <span className="text-[11px] text-[#6b7280] dark:text-[#71717a]">{researchCount}</span>}
+                </button>
 
-              <button
-                onClick={() => setViewMode({ type: 'completed' })}
-                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] transition-colors text-xs ${
-                  isViewActive({ type: 'completed' })
-                    ? 'bg-[#e5e7eb] dark:bg-[#27272a] text-[#111827] dark:text-white font-medium'
-                    : 'text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
-                  <span>Completed</span>
-                </div>
-                {completedCount > 0 && <span className="text-[11px] text-[#6b7280] dark:text-[#71717a]">{completedCount}</span>}
-              </button>
+                <button
+                  onClick={() => setViewMode({ type: 'priority_filter', priority: 'high' as Priority })}
+                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] transition-colors text-xs ${
+                    isViewActive({ type: 'priority_filter', priority: 'high' })
+                      ? 'bg-[#e5e7eb] dark:bg-[#27272a] text-[#111827] dark:text-white font-medium'
+                      : 'text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
+                    <span>High Priority</span>
+                  </div>
+                  {highPriorityCount > 0 && <span className="text-[11px] text-[#6b7280] dark:text-[#71717a]">{highPriorityCount}</span>}
+                </button>
 
-              <button
-                onClick={() => setViewMode({ type: 'archived' })}
-                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] transition-colors text-xs ${
-                  isViewActive({ type: 'archived' })
-                    ? 'bg-[#e5e7eb] dark:bg-[#27272a] text-[#111827] dark:text-white font-medium'
-                    : 'text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <Archive className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
-                  <span>Archived</span>
-                </div>
-                {archivedCount > 0 && <span className="text-[11px] text-[#6b7280] dark:text-[#71717a]">{archivedCount}</span>}
-              </button>
-            </div>
+                <button
+                  onClick={() => setViewMode({ type: 'completed' })}
+                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] transition-colors text-xs ${
+                    isViewActive({ type: 'completed' })
+                      ? 'bg-[#e5e7eb] dark:bg-[#27272a] text-[#111827] dark:text-white font-medium'
+                      : 'text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
+                    <span>Completed</span>
+                  </div>
+                  {completedCount > 0 && <span className="text-[11px] text-[#6b7280] dark:text-[#71717a]">{completedCount}</span>}
+                </button>
+
+                <button
+                  onClick={() => setViewMode({ type: 'archived' })}
+                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] transition-colors text-xs ${
+                    isViewActive({ type: 'archived' })
+                      ? 'bg-[#e5e7eb] dark:bg-[#27272a] text-[#111827] dark:text-white font-medium'
+                      : 'text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Archive className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
+                    <span>Archived</span>
+                  </div>
+                  {archivedCount > 0 && <span className="text-[11px] text-[#6b7280] dark:text-[#71717a]">{archivedCount}</span>}
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Bottom Footer Controls */}
         <div className="p-3 border-t border-[#e5e7eb] dark:border-[#27272a] space-y-1">
+          {updateStatus === 'available' && (
+            <button
+              type="button"
+              onClick={() => setUpdateModalOpen(true)}
+              className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white transition-colors text-xs font-medium cursor-pointer"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <Sparkles className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa] shrink-0" />
+                <span className="truncate">Update Ready</span>
+              </div>
+              <span className="text-[10px] font-mono bg-[#ebecee] dark:bg-[#27272a] text-[#374151] dark:text-[#d4d4d8] px-1.5 py-0.5 rounded font-semibold shrink-0 border border-[#e5e7eb] dark:border-[#3f3f46]">
+                v{availableVersion || 'new'}
+              </span>
+            </button>
+          )}
+
           {/* Theme Toggle */}
           <button
             onClick={toggleTheme}

@@ -48,6 +48,7 @@ import { INITIAL_SCHEMA_SQL } from '../utils/schemaSql';
 import { getStoredSmtpConfig, saveStoredSmtpConfig, isSmtpConfigured, sendTestEmail } from '../utils/smtp';
 import { getDiceBearSvgUrl } from '../utils/avatars';
 import { Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
+import { useUpdaterStore } from '../store/useUpdaterStore';
 
 type SettingsTab = 'preferences' | 'shortcuts' | 'sync' | 'data' | 'about';
 
@@ -131,6 +132,18 @@ export const SettingsView: React.FC = () => {
     viewMode,
     initialize,
   } = useLeafStore();
+
+  const {
+    status: updateStatus,
+    currentVersion,
+    availableVersion,
+    lastCheckedAt,
+    autoCheckEnabled,
+    setAutoCheckEnabled,
+    checkForUpdates,
+    setModalOpen: setUpdateModalOpen,
+    simulateUpdateForTesting,
+  } = useUpdaterStore();
 
   const [activeTab, setActiveTab] = useState<SettingsTab>(() => {
     if (viewMode.type === 'settings' && viewMode.tab) {
@@ -2425,6 +2438,100 @@ export const SettingsView: React.FC = () => {
             <div className="px-5 py-2.5 border-t border-[#f3f4f6] dark:border-[#27272a] bg-[#fafafa] dark:bg-[#151518] flex items-center justify-between text-xs text-[#6b7280] dark:text-[#a1a1aa]">
               <span className="text-[11px] font-mono text-[#9ca3af] dark:text-[#71717a]">Leeflet Desktop Workspace</span>
               <span className="text-[11px] font-mono text-[#9ca3af] dark:text-[#71717a]">© {new Date().getFullYear()}</span>
+            </div>
+          </div>
+
+          {/* Software Updates Section */}
+          <div className="p-4 sm:p-5 rounded-[8px] bg-white dark:bg-[#18181b] border border-[#e5e7eb] dark:border-[#27272a] space-y-4 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-[8px] bg-[#f4f5f6] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#2e2e33] flex items-center justify-center shrink-0 shadow-xs">
+                  <Sparkles className="w-5 h-5 text-[#6b7280] dark:text-[#a1a1aa]" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-[#111827] dark:text-[#f4f4f5]">
+                      Software Updates
+                    </span>
+                    <span className="px-1.5 py-0.5 rounded-[4px] bg-[#f4f5f6] dark:bg-[#27272a] font-mono text-[10px] text-[#6b7280] dark:text-[#a1a1aa] font-semibold border border-[#e5e7eb] dark:border-[#3f3f46]">
+                      v{currentVersion}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-[#6b7280] dark:text-[#a1a1aa] mt-0.5">
+                    {lastCheckedAt
+                      ? `Last checked ${new Date(lastCheckedAt).toLocaleDateString()} at ${new Date(lastCheckedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                      : 'Never checked'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    simulateUpdateForTesting();
+                    toast.info('Simulating update availability for testing');
+                  }}
+                  className="text-xs text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white hover:underline transition-colors px-1.5 py-1 cursor-pointer"
+                >
+                  Preview Dialog
+                </button>
+
+                <button
+                  type="button"
+                  disabled={updateStatus === 'checking'}
+                  onClick={async () => {
+                    const res = await checkForUpdates(false);
+                    if (res && res.available) {
+                      toast.success(`New update available: v${res.version}`);
+                    } else if (res && !res.available) {
+                      toast.info('You are already on the latest version of Leeflet');
+                    }
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] text-xs font-medium text-[#374151] dark:text-[#d4d4d8] bg-[#f4f5f6] dark:bg-[#202024] hover:bg-[#eaebee] dark:hover:bg-[#28282e] hover:text-[#111827] dark:hover:text-white border border-[#e5e7eb] dark:border-[#2e2e33] transition-all cursor-pointer shadow-2xs disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${updateStatus === 'checking' ? 'animate-spin' : ''}`} />
+                  <span>{updateStatus === 'checking' ? 'Checking...' : 'Check for Updates'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* When update is available banner */}
+            {updateStatus === 'available' && (
+              <div className="p-3 rounded-[6px] bg-[#f4f5f6] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#2e2e33] flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-xs text-[#111827] dark:text-white font-medium">
+                  <CheckCircle2 className="w-4 h-4 text-[#6b7280] dark:text-[#a1a1aa] shrink-0" />
+                  <span>A new version <strong>v{availableVersion}</strong> is ready to install!</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setUpdateModalOpen(true)}
+                  className="px-3.5 py-1.5 bg-[#111827] dark:bg-white hover:bg-[#1f2937] dark:hover:bg-[#e4e4e7] text-white dark:text-[#111827] rounded-[6px] text-xs font-semibold transition-all shadow-subtle cursor-pointer shrink-0 active:scale-[0.98]"
+                >
+                  View Details &amp; Install
+                </button>
+              </div>
+            )}
+
+            {/* Auto check toggle */}
+            <div className="pt-3 border-t border-[#f3f4f6] dark:border-[#27272a] flex items-center justify-between gap-3 text-xs">
+              <div>
+                <span className="font-medium text-[#111827] dark:text-[#f4f4f5]">
+                  Automatic update checks
+                </span>
+                <p className="text-[11px] text-[#6b7280] dark:text-[#a1a1aa] mt-0.5">
+                  Silently check for new versions on application launch and show a badge when available.
+                </p>
+              </div>
+              <ToggleSwitch
+                checked={autoCheckEnabled}
+                onChange={() => {
+                  const next = !autoCheckEnabled;
+                  setAutoCheckEnabled(next);
+                  toast.success(next ? 'Automatic update checks enabled' : 'Automatic update checks disabled');
+                }}
+                ariaLabel="Toggle automatic update checks"
+              />
             </div>
           </div>
 

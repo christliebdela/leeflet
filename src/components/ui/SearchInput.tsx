@@ -4,6 +4,7 @@ import { Search, X, Command } from 'lucide-react';
 export interface SearchInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   cmdk?: boolean;
   onClear?: () => void;
+  onFocusStateChange?: (isFocused: boolean) => void;
 }
 
 export const SearchInput: React.FC<SearchInputProps> = ({
@@ -11,12 +12,23 @@ export const SearchInput: React.FC<SearchInputProps> = ({
   value = '',
   onChange,
   onClear,
+  onFocusStateChange,
   placeholder = 'Search...',
   className = '',
   ...props
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isFocused, setIsFocused] = useState(false);
+
+  const handleFocus = () => {
+    setIsFocused(true);
+    if (onFocusStateChange) onFocusStateChange(true);
+  };
+
+  const handleBlur = () => {
+    setIsFocused(false);
+    if (onFocusStateChange) onFocusStateChange(false);
+  };
 
   useEffect(() => {
     if (!cmdk) return;
@@ -65,7 +77,7 @@ export const SearchInput: React.FC<SearchInputProps> = ({
     <div
       onClick={() => inputRef.current?.focus()}
       className={`relative flex items-center transition-all duration-200 ease-out cursor-pointer ${
-        isActive ? 'w-40 sm:w-52 shadow-xs' : 'w-7 sm:w-24'
+        isActive ? 'w-36 sm:w-44 md:w-48 shadow-xs' : 'w-7 sm:w-20 md:w-24'
       } ${className}`}
     >
       <Search
@@ -81,8 +93,8 @@ export const SearchInput: React.FC<SearchInputProps> = ({
         type="text"
         value={value}
         onChange={onChange}
-        onFocus={() => setIsFocused(true)}
-        onBlur={() => setIsFocused(false)}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
         placeholder={isActive ? placeholder : ''}
         className={`w-full py-1 text-xs font-medium text-[#111827] dark:text-[#f4f4f5] placeholder-[#9ca3af] dark:placeholder-[#71717a] rounded-[6px] border border-[#e5e7eb] dark:border-[#27272a] focus:border-[#9ca3af] dark:focus:border-[#52525b] outline-none transition-all cursor-text ${
           isActive

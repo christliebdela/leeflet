@@ -974,7 +974,7 @@ export const StandaloneQueueWidget: React.FC = () => {
             </div>
           ) : (
             <>
-              {renderSection('Critical', 'critical', criticalItems, 'bg-rose-500')}
+              {renderSection('Urgent', 'critical', criticalItems, 'bg-rose-500')}
               {renderSection('High', 'high', highItems, 'bg-orange-500')}
               {renderSection('Medium', 'medium', mediumItems, 'bg-amber-500')}
               {renderSection('Low', 'low', lowItems, 'bg-blue-500')}

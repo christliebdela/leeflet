@@ -27,6 +27,7 @@ import { formatDate, formatDueDateLabel } from '../utils/format';
 import { getStoredTeamMembers, matchesAssignee } from '../utils/team';
 import { resolveAvatarUrl } from '../utils/avatars';
 import { getUserPermissions } from '../utils/permissions';
+import { Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
 
 const LinearPriorityIcon: React.FC<{ priority: string }> = ({ priority }) => {
   switch (priority) {
@@ -499,16 +500,25 @@ export const ItemListView: React.FC = () => {
           {/* Assignee Avatar Indicator */}
           {item.assigneeId && (() => {
             const assignedMember = getStoredTeamMembers(workspace?.id).find(m => matchesAssignee(m.id, item.assigneeId));
+            const memberName = assignedMember?.name || item.assigneeId;
             return (
-              <span
-                className="w-4 h-4 rounded-full border border-[#e5e7eb] dark:border-[#323238] shrink-0 overflow-hidden shadow-2xs"
-              >
-                <img
-                  src={resolveAvatarUrl(assignedMember?.avatarMascot || assignedMember?.avatarUrl || assignedMember?.avatarColor, assignedMember?.name || item.assigneeId)}
-                  alt={assignedMember?.name || 'Assigned'}
-                  className="w-full h-full object-cover"
-                />
-              </span>
+              <Tooltip delayDuration={150}>
+                <TooltipTrigger asChild>
+                  <span
+                    className="w-4 h-4 rounded-full border border-[#e5e7eb] dark:border-[#323238] shrink-0 overflow-hidden shadow-2xs cursor-default flex items-center justify-center"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <img
+                      src={resolveAvatarUrl(assignedMember?.avatarMascot || assignedMember?.avatarUrl || assignedMember?.avatarColor, memberName)}
+                      alt={memberName}
+                      className="w-full h-full object-cover"
+                    />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-[11px] font-medium py-1 px-2">
+                  <span>{memberName}</span>
+                </TooltipContent>
+              </Tooltip>
             );
           })()}
 
@@ -539,97 +549,69 @@ export const ItemListView: React.FC = () => {
   return (
     <div className={`flex-1 h-full overflow-y-auto overflow-x-hidden ${isPaneOpen ? 'pl-3 pr-2 py-3' : 'p-3'} flex flex-col custom-scrollbar`}>
 
-      {/* 2. BACKLOG METRICS: COMPACT 3 STAT CARDS + FAR-RIGHT PROGRESS RING */}
+      {/* 2. BACKLOG METRICS: SLEEK METRIC STRIP & PROGRESS PILL */}
       {viewMode.type === 'inbox' && inboxItems.length > 0 && (
-        <div className="mb-2.5 p-1.5 sm:p-2 bg-white dark:bg-[#18181b] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-2xs flex items-center justify-between gap-2">
-          {/* Left: 3 Interactive Stat Cards */}
-          <div className="grid grid-cols-3 gap-1.5 flex-1 min-w-0">
-            {/* 1. All Backlog Card */}
+        <div className="mb-3 pb-2.5 px-0.5 border-b border-[#e5e7eb]/70 dark:border-[#27272a]/70 flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+          {/* Left: 3 Interactive Metric Filter Pills */}
+          <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+            {/* 1. All Backlog Pill */}
             <button
               type="button"
               onClick={clearPriorityFilters}
               title="Show all backlog items"
-              className={`flex items-center gap-1.5 sm:gap-2 px-2 py-1 rounded-[6px] border transition-all text-left cursor-pointer select-none active:scale-[0.98] ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] border text-xs font-medium transition-all cursor-pointer select-none active:scale-[0.98] ${
                 !isUrgentFilterActive
-                  ? 'bg-[#f4f5f6]/90 dark:bg-[#202024] border-[#d1d5db] dark:border-[#3f3f46] shadow-2xs'
-                  : 'bg-[#fafafa] dark:bg-[#1c1c1f] border-[#e5e7eb] dark:border-[#27272a] hover:border-[#d1d5db] dark:hover:border-[#3f3f46]'
+                  ? 'bg-[#111827] dark:bg-white text-white dark:text-[#111827] border-[#111827] dark:border-white shadow-2xs'
+                  : 'bg-[#f4f5f6] dark:bg-[#1a1a1e] border-[#e5e7eb] dark:border-[#27272a] text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#27272a]'
               }`}
             >
-              <Layers className="w-3 h-3 text-[#6b7280] dark:text-[#a1a1aa] shrink-0" />
-              <div className="min-w-0 flex-1 truncate">
-                <div className="text-xs font-bold text-[#111827] dark:text-white leading-none truncate">
-                  {inboxItems.length}
-                </div>
-                <div className="text-[9px] font-medium text-[#6b7280] dark:text-[#a1a1aa] truncate mt-0.5 leading-none">
-                  Total
-                </div>
-              </div>
+              <Layers className="w-3.5 h-3.5 shrink-0" />
+              <span className="font-bold">{inboxItems.length}</span>
+              <span className="opacity-75 text-[11px]">Total</span>
             </button>
 
-            {/* 2. Urgent Triage Card */}
+            {/* 2. Urgent Triage Pill */}
             <button
               type="button"
               onClick={toggleUrgentFilter}
-              title={isUrgentFilterActive ? 'Clear urgent filter' : 'Filter by urgent items needing triage (High & Critical)'}
-              className={`flex items-center gap-1.5 sm:gap-2 px-2 py-1 rounded-[6px] border transition-all text-left cursor-pointer select-none active:scale-[0.98] ${
+              title={isUrgentFilterActive ? 'Clear urgent filter' : 'Filter by urgent items (High & Critical)'}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] border text-xs font-medium transition-all cursor-pointer select-none active:scale-[0.98] ${
                 isUrgentFilterActive
-                  ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/40 shadow-2xs ring-1 ring-rose-500/30'
+                  ? 'bg-rose-600 text-white border-rose-600 shadow-2xs'
                   : urgentInboxCount > 0
-                  ? 'bg-rose-500/[0.04] dark:bg-rose-500/[0.08] border-rose-500/20 hover:border-rose-500/35'
-                  : 'bg-[#fafafa] dark:bg-[#1c1c1f] border-[#e5e7eb] dark:border-[#27272a] hover:border-[#d1d5db] dark:hover:border-[#3f3f46]'
+                  ? 'bg-rose-500/10 dark:bg-rose-500/15 border-rose-500/30 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20'
+                  : 'bg-[#f4f5f6] dark:bg-[#1a1a1e] border-[#e5e7eb] dark:border-[#27272a] text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#27272a]'
               }`}
             >
-              <AlertCircle
-                className={`w-3 h-3 shrink-0 ${
-                  urgentInboxCount > 0 ? 'text-rose-500' : 'text-[#9ca3af] dark:text-[#71717a]'
-                }`}
-              />
-              <div className="min-w-0 flex-1 truncate">
-                <div
-                  className={`text-xs font-bold leading-none truncate ${
-                    urgentInboxCount > 0
-                      ? 'text-rose-600 dark:text-rose-400'
-                      : 'text-[#111827] dark:text-white'
-                  }`}
-                >
-                  {urgentInboxCount}
-                </div>
-                <div className="text-[9px] font-medium text-[#6b7280] dark:text-[#a1a1aa] truncate mt-0.5 flex items-center justify-between leading-none">
-                  <span>Urgent</span>
-                  {isUrgentFilterActive && <X className="w-2 h-2 ml-0.5 opacity-70" />}
-                </div>
-              </div>
+              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+              <span className="font-bold">{urgentInboxCount}</span>
+              <span className="opacity-85 text-[11px]">Urgent</span>
+              {isUrgentFilterActive && <X className="w-3 h-3 ml-0.5 opacity-80" />}
             </button>
 
-            {/* 3. Standard Queue Card */}
+            {/* 3. Standard Queue Pill */}
             <button
               type="button"
               onClick={clearPriorityFilters}
               title="Standard queue items"
-              className="flex items-center gap-1.5 sm:gap-2 px-2 py-1 rounded-[6px] bg-[#fafafa] dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-all text-left cursor-pointer select-none active:scale-[0.98]"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] bg-[#f4f5f6] dark:bg-[#1a1a1e] border border-[#e5e7eb] dark:border-[#27272a] text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#27272a] text-xs font-medium transition-all cursor-pointer select-none active:scale-[0.98]"
             >
-              <Inbox className="w-3 h-3 text-indigo-500 shrink-0" />
-              <div className="min-w-0 flex-1 truncate">
-                <div className="text-xs font-bold text-[#111827] dark:text-white leading-none truncate">
-                  {inboxItems.length - urgentInboxCount}
-                </div>
-                <div className="text-[9px] font-medium text-[#6b7280] dark:text-[#a1a1aa] truncate mt-0.5 leading-none">
-                  Standard
-                </div>
-              </div>
+              <Inbox className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+              <span className="font-bold text-[#111827] dark:text-white">{inboxItems.length - urgentInboxCount}</span>
+              <span className="opacity-75 text-[11px]">Standard</span>
             </button>
           </div>
 
-          {/* Right: Circular Triage Ring & Summary */}
-          <div className="flex items-center gap-2 pl-2 border-l border-[#e5e7eb] dark:border-[#27272a] shrink-0">
-            <div className="relative w-7 h-7 shrink-0 flex items-center justify-center">
-              <svg className="w-7 h-7 -rotate-90 transform" viewBox="0 0 36 36">
+          {/* Right: Circular Triage Ring & Status */}
+          <div className="flex items-center gap-2 px-2 py-0.5 rounded-[6px] bg-[#f4f5f6]/80 dark:bg-[#1a1a1e]/80 border border-[#e5e7eb] dark:border-[#27272a] shrink-0 select-none">
+            <div className="relative w-5 h-5 shrink-0 flex items-center justify-center">
+              <svg className="w-5 h-5 -rotate-90 transform" viewBox="0 0 36 36">
                 <circle
                   cx="18"
                   cy="18"
                   r="14"
                   className="text-[#e5e7eb] dark:text-[#27272a]"
-                  strokeWidth="3.5"
+                  strokeWidth="4"
                   stroke="currentColor"
                   fill="transparent"
                 />
@@ -638,7 +620,7 @@ export const ItemListView: React.FC = () => {
                   cy="18"
                   r="14"
                   style={{ stroke: urgentInboxCount > 0 ? '#f43f5e' : '#6366f1' }}
-                  strokeWidth="3.5"
+                  strokeWidth="4"
                   strokeDasharray={88}
                   strokeDashoffset={
                     inboxItems.length > 0
@@ -647,22 +629,19 @@ export const ItemListView: React.FC = () => {
                   }
                   strokeLinecap="round"
                   fill="transparent"
-                  className="transition-all duration-700 ease-out"
+                  className="transition-all duration-500 ease-out"
                 />
               </svg>
-              <span className="absolute text-[8px] font-bold text-[#111827] dark:text-white font-mono leading-none">
+            </div>
+
+            <div className="flex items-center gap-1.5 text-xs">
+              <span className="font-bold text-[#111827] dark:text-white text-[11.5px]">
                 {inboxItems.length > 0
                   ? Math.round(((inboxItems.length - urgentInboxCount) / inboxItems.length) * 100)
                   : 100}%
               </span>
-            </div>
-
-            <div className="hidden sm:flex flex-col text-right">
-              <span className="text-[11px] font-bold text-[#111827] dark:text-white leading-tight">
-                {inboxItems.length}
-              </span>
-              <span className="text-[9px] text-[#6b7280] dark:text-[#a1a1aa] leading-none">
-                In Queue
+              <span className="text-[11px] text-[#6b7280] dark:text-[#a1a1aa] hidden sm:inline">
+                triaged
               </span>
             </div>
           </div>

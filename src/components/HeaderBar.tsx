@@ -61,6 +61,7 @@ export const HeaderBar: React.FC = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [syncState, setSyncState] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   const filterDropdownRef = useRef<HTMLDivElement>(null);
   const sortDropdownRef = useRef<HTMLDivElement>(null);
@@ -227,6 +228,8 @@ export const HeaderBar: React.FC = () => {
     setFilterOptions({ types: undefined, priorities: undefined, projectIds: undefined, statuses: undefined });
   };
 
+  const isSearchExpanded = isSearchFocused || Boolean(filterOptions.searchQuery && filterOptions.searchQuery.trim().length > 0);
+
   return (
     <header
       data-tauri-drag-region
@@ -283,18 +286,28 @@ export const HeaderBar: React.FC = () => {
               </svg>
             </div>
 
-            <span className="font-bold text-[#111827] dark:text-white text-[11px]">
+            <span className="font-bold text-[#111827] dark:text-white text-[11px] shrink-0">
               {Math.round(((totalCount - openCount) / totalCount) * 100)}%
             </span>
 
-            <span className="text-[11px] text-[#6b7280] dark:text-[#a1a1aa] hidden md:inline">
+            <span
+              className={`text-[11px] text-[#6b7280] dark:text-[#a1a1aa] whitespace-nowrap overflow-hidden transition-all duration-200 ease-out inline-flex items-center ${
+                isSearchExpanded
+                  ? 'max-w-0 opacity-0 xl:max-w-[200px] xl:opacity-100'
+                  : 'max-w-0 opacity-0 md:max-w-[200px] md:opacity-100'
+              }`}
+            >
               {openCount} active · {totalCount - openCount} done
             </span>
           </div>
         ) : (
           viewMode.type !== 'my_queue' && viewMode.type !== 'team' && viewMode.type !== 'profile' && viewMode.type !== 'settings' && totalCount > 0 && (
             <span
-              className="text-xs text-[#6b7280] dark:text-[#a1a1aa] font-normal shrink-0 hidden md:inline"
+              className={`text-xs text-[#6b7280] dark:text-[#a1a1aa] font-normal whitespace-nowrap overflow-hidden transition-all duration-200 ease-out inline-flex items-center ${
+                isSearchExpanded
+                  ? 'max-w-0 opacity-0 xl:max-w-[200px] xl:opacity-100'
+                  : 'max-w-0 opacity-0 md:max-w-[200px] md:opacity-100'
+              }`}
               data-tauri-drag-region
             >
               {totalCount} {totalCount === 1 ? 'item' : 'items'}
@@ -316,6 +329,7 @@ export const HeaderBar: React.FC = () => {
               value={filterOptions.searchQuery || ''}
               onChange={(e) => setSearchQuery(e.target.value)}
               onClear={() => setSearchQuery('')}
+              onFocusStateChange={setIsSearchFocused}
               placeholder="Search..."
             />
 

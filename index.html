@@ -8,26 +8,28 @@
     <!-- Prevent theme flash before paint -->
     <style>
       :root {
-        background-color: #f9fafb;
-      }
-      :root.dark {
-        background-color: #121214;
+        background-color: transparent;
       }
       html, body {
-        background-color: inherit;
+        background-color: transparent !important;
       }
     </style>
     <script>
       (function() {
         try {
+          var isCapture = window.location.search.includes('window=capture');
           var saved = localStorage.getItem('leaf_theme');
           var isDark = saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
           if (isDark) {
             document.documentElement.classList.add('dark');
-            document.documentElement.style.backgroundColor = '#121214';
+            if (!isCapture) {
+              document.documentElement.style.backgroundColor = '#121214';
+            }
           } else {
             document.documentElement.classList.remove('dark');
-            document.documentElement.style.backgroundColor = '#f9fafb';
+            if (!isCapture) {
+              document.documentElement.style.backgroundColor = '#f9fafb';
+            }
           }
         } catch (e) {}
       })();

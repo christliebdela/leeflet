@@ -17,6 +17,8 @@ import { Trash2, X } from 'lucide-react';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { ToastContainer } from './components/ui/ToastContainer';
 import { fetchRandomDevJoke, warmJokePool } from './utils/jokes';
+import { UpdateModal } from './components/UpdateModal';
+import { useUpdaterStore } from './store/useUpdaterStore';
 
 export const App: React.FC = () => {
   const {
@@ -67,6 +69,16 @@ export const App: React.FC = () => {
     initialize();
     // Pre-build joke pool in background so standby is instant
     warmJokePool();
+
+    // Silent background update check after startup
+    const timer = setTimeout(() => {
+      const { autoCheckEnabled, checkForUpdates } = useUpdaterStore.getState();
+      if (autoCheckEnabled) {
+        checkForUpdates(true).catch(() => {});
+      }
+    }, 2500);
+
+    return () => clearTimeout(timer);
   }, [initialize]);
 
   // Web / Browser URL hash invite link listener
@@ -505,6 +517,9 @@ export const App: React.FC = () => {
 
         {/* Global In-App Toast Notifications */}
         <ToastContainer />
+
+        {/* Global App Updater Modal */}
+        <UpdateModal />
       </div>
     </TooltipProvider>
   );

@@ -107,7 +107,7 @@ export const PRIORITY_CONFIG: Record<
   low: { label: 'Low', dotColor: 'bg-blue-500', textColor: 'text-blue-600 dark:text-blue-400' },
   medium: { label: 'Medium', dotColor: 'bg-amber-500', textColor: 'text-amber-600 dark:text-amber-400' },
   high: { label: 'High', dotColor: 'bg-orange-500', textColor: 'text-orange-600 dark:text-orange-400' },
-  critical: { label: 'Critical', dotColor: 'bg-rose-600', textColor: 'text-rose-600 dark:text-rose-400' },
+  critical: { label: 'Urgent', dotColor: 'bg-rose-600', textColor: 'text-rose-600 dark:text-rose-400' },
 };
 
 export const STATUS_CONFIG: Record<
