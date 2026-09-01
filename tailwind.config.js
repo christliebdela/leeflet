@@ -59,7 +59,16 @@ export default {
         'lg': '8px',
         'xl': '10px',
         '2xl': '12px',
-      }
+      },
+      keyframes: {
+        aurora: {
+          from: { backgroundPosition: "50% 50%, 50% 50%" },
+          to:   { backgroundPosition: "350% 50%, 350% 50%" },
+        },
+      },
+      animation: {
+        aurora: "aurora 24s linear infinite",
+      },
     },
   },
   plugins: [],

@@ -6,6 +6,9 @@ import { StandaloneStickyNote } from './components/standalone/StandaloneStickyNo
 import { StandaloneQueueWidget } from './components/standalone/StandaloneQueueWidget';
 import { LandingPage } from './components/landing/LandingPage';
 import { ChangelogPage } from './components/landing/ChangelogPage';
+import { PrivacyPage } from './components/landing/PrivacyPage';
+import { TermsPage } from './components/landing/TermsPage';
+import { DocsPage } from './components/landing/DocsPage';
 import './index.css';
 
 // Disable default right-click context menu across the desktop app
@@ -51,9 +54,24 @@ function RootRouter() {
     return <App />;
   }
 
+  // Web visitors: dedicated docs page
+  if (pathname === '/docs' || pathname === '/docs/' || page === 'docs') {
+    return <DocsPage />;
+  }
+
   // Web visitors: dedicated changelog page
   if (pathname === '/changelog' || pathname === '/changelog/' || page === 'changelog') {
     return <ChangelogPage />;
+  }
+
+  // Web visitors: dedicated privacy policy page
+  if (pathname === '/privacy' || pathname === '/privacy/' || page === 'privacy') {
+    return <PrivacyPage />;
+  }
+
+  // Web visitors: dedicated terms of service page
+  if (pathname === '/terms' || pathname === '/terms/' || page === 'terms') {
+    return <TermsPage />;
   }
 
   return <LandingPage />;

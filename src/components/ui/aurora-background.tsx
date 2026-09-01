@@ -1,0 +1,51 @@
+import { cn } from "@/lib/utils";
+import React, { ReactNode } from "react";
+
+interface AuroraBackgroundProps extends React.HTMLProps<HTMLDivElement> {
+  children: ReactNode;
+  showRadialGradient?: boolean;
+}
+
+export const AuroraBackground = ({
+  className,
+  children,
+  showRadialGradient = true,
+  ...props
+}: AuroraBackgroundProps) => {
+  return (
+    <div
+      className={cn(
+        "transition-bg relative min-h-screen bg-[#08090a] text-[#ededef] font-sans antialiased selection:bg-white/20 selection:text-white",
+        className,
+      )}
+      {...props}
+    >
+      <div
+        className="fixed inset-0 overflow-hidden pointer-events-none z-0"
+        style={
+          {
+            "--aurora-1":
+              "repeating-linear-gradient(100deg,rgba(255,255,255,0.4) 0%,rgba(161,161,170,0.2) 10%,rgba(63,63,70,0.05) 20%,rgba(255,255,255,0.4) 30%)",
+            "--aurora-2":
+              "repeating-linear-gradient(130deg,rgba(255,255,255,0.35) 0%,rgba(113,113,122,0.15) 12%,rgba(24,24,27,0.02) 22%,rgba(255,255,255,0.35) 32%)",
+            "--dark-stripes":
+              "repeating-linear-gradient(100deg,rgba(8,9,10,0.8) 0%,rgba(8,9,10,0.8) 7%,transparent 10%,transparent 14%,rgba(8,9,10,0.8) 18%)",
+          } as React.CSSProperties
+        }
+      >
+        <div
+          className={cn(
+            "animate-aurora pointer-events-none absolute -inset-[10px] opacity-50 blur-[20px] will-change-transform",
+            "[background-image:var(--dark-stripes),var(--aurora-1)] [background-size:300%,_200%]",
+            "after:content-[''] after:absolute after:inset-0 after:[background-image:var(--dark-stripes),var(--aurora-2)] after:[background-size:200%,_100%] after:animate-aurora after:mix-blend-screen",
+            showRadialGradient &&
+              "[mask-image:radial-gradient(ellipse_120%_80%_at_50%_0%,black_35%,transparent_85%)]",
+          )}
+        ></div>
+      </div>
+      <div className="relative z-10 w-full">
+        {children}
+      </div>
+    </div>
+  );
+};
