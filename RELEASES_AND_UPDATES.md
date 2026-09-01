@@ -106,10 +106,12 @@ git push origin v0.2.0
 
 ### 3. GitHub Actions Builds & Publishes
 Once the tag is pushed, GitHub Actions automatically:
-- Compiles the Windows executable and NSIS installers.
-- Signs the update package with your private key.
-- Generates `latest.json` containing the version, release notes, and signature.
-- Creates a new GitHub Release with the installer assets and `latest.json` attached.
+- **Windows (`windows-latest`)**: Compiles `.exe` NSIS installer, `.msi`, and update zip/sig.
+- **macOS (`macos-latest`)**: Compiles `.dmg` disk image and `.app` bundles for both Apple Silicon (`aarch64`) and Intel (`x86_64`).
+- **Linux (`ubuntu-22.04`)**: Compiles `.AppImage` and `.deb` packages.
+- Signs all update packages with your private key.
+- Generates `latest.json` containing the version, release notes, and minisign signatures.
+- Creates a new GitHub Release with all platform installer assets and `latest.json` attached.
 
 ---
 

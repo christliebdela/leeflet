@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { WobbleCard } from '../ui/wobble-card';
 import { AuroraBackground } from '../ui/aurora-background';
-
-const GITHUB_REPO = 'https://github.com/christliebdela/leeflet';
-const GITHUB_RELEASES = 'https://github.com/christliebdela/leeflet/releases';
+import {
+  useReleaseDownload,
+  OSIcon,
+  WindowsIcon,
+  AppleIcon,
+  LinuxIcon,
+  GITHUB_REPO,
+  GITHUB_RELEASES,
+} from '../../utils/releaseDownload';
 
 interface FaqItemProps {
   question: string;
@@ -55,6 +61,7 @@ const FaqItem: React.FC<FaqItemProps> = ({ question, answer }) => {
 export const LandingPage: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [starCount, setStarCount] = useState<number>(0);
+  const { os, osName, osExtension, downloadUrl, allDownloads } = useReleaseDownload();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -186,18 +193,12 @@ export const LandingPage: React.FC = () => {
 
             {/* Glass Navigation Download Button */}
             <a
-              href="#download"
-              onClick={(e) => {
-                e.preventDefault();
-                scrollTo('download');
-              }}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium rounded-lg bg-white/[0.08] hover:bg-white/[0.14] text-[#ededef] hover:text-white border border-white/[0.12] hover:border-white/[0.22] backdrop-blur-xl transition-all shadow-sm cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+              href={downloadUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium rounded-lg bg-white/[0.06] hover:bg-white/[0.10] text-[#ededef] hover:text-white border border-white/[0.10] hover:border-white/[0.16] backdrop-blur-xl transition-colors duration-150 shadow-sm cursor-pointer"
             >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
+              <OSIcon os={os} className="w-3.5 h-3.5" />
               <span>Download</span>
             </a>
           </div>
@@ -243,20 +244,40 @@ export const LandingPage: React.FC = () => {
             </p>
 
             {/* Glass Download Action Button */}
-            <div className="mt-7 flex flex-wrap items-center gap-3">
+            <div className="mt-7 flex flex-col sm:flex-row items-start sm:items-center gap-4">
               <a
-                href={`${GITHUB_RELEASES}/latest`}
+                href={downloadUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium bg-white/[0.08] hover:bg-white/[0.15] text-white border border-white/[0.16] hover:border-white/[0.28] backdrop-blur-xl transition-all shadow-sm hover:scale-[1.02] active:scale-[0.98] group cursor-pointer"
+                className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-sm font-medium bg-white/[0.08] hover:bg-white/[0.12] text-white border border-white/[0.14] hover:border-white/[0.20] backdrop-blur-xl transition-colors duration-150 shadow-sm group cursor-pointer"
               >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-                <span>Download <span className="font-brand text-lg font-normal">leeflet</span></span>
+                <OSIcon os={os} className="w-4 h-4 text-[#ededef] group-hover:text-white" />
+                <span>Download <span className="font-brand text-lg font-normal">leeflet</span> for {osName}</span>
+                <span className="text-[11px] font-mono text-[#71717a] ml-0.5">{osExtension}</span>
               </a>
+
+              {/* Other OS quick links */}
+              <div className="flex items-center gap-2.5 text-xs text-[#71717a]">
+                <span>or for:</span>
+                {os !== 'windows' && (
+                  <a href={allDownloads.windows} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[#a1a1aa] hover:text-white transition-colors cursor-pointer">
+                    <WindowsIcon className="w-3.5 h-3.5" />
+                    <span>Windows</span>
+                  </a>
+                )}
+                {os !== 'mac' && (
+                  <a href={allDownloads.mac} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[#a1a1aa] hover:text-white transition-colors cursor-pointer">
+                    <AppleIcon className="w-3.5 h-3.5" />
+                    <span>macOS</span>
+                  </a>
+                )}
+                {os !== 'linux' && (
+                  <a href={allDownloads.linux} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[#a1a1aa] hover:text-white transition-colors cursor-pointer">
+                    <LinuxIcon className="w-3.5 h-3.5" />
+                    <span>Linux</span>
+                  </a>
+                )}
+              </div>
             </div>
           </div>
 
@@ -295,7 +316,7 @@ export const LandingPage: React.FC = () => {
               href="https://app.ventryman.com/"
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-2.5 group cursor-pointer transition-all duration-300 opacity-60 hover:opacity-100 hover:scale-[1.03]"
+              className="flex items-center gap-2.5 group cursor-pointer transition-opacity duration-200 opacity-60 hover:opacity-100"
             >
               <img
                 src="/trustees/ventrix-logo.png"
@@ -310,7 +331,7 @@ export const LandingPage: React.FC = () => {
               href="https://ideagap.org/"
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-2.5 group cursor-pointer transition-all duration-300 opacity-60 hover:opacity-100 hover:scale-[1.03]"
+              className="flex items-center gap-2.5 group cursor-pointer transition-opacity duration-200 opacity-60 hover:opacity-100"
             >
               <img
                 src="/trustees/ideagap.jpg"
@@ -325,7 +346,7 @@ export const LandingPage: React.FC = () => {
               href="https://supabase.com/"
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-2.5 group cursor-pointer transition-all duration-300 opacity-60 hover:opacity-100 hover:scale-[1.03]"
+              className="flex items-center gap-2.5 group cursor-pointer transition-opacity duration-200 opacity-60 hover:opacity-100"
             >
               <img
                 src="/trustees/supabase.png"
@@ -340,7 +361,7 @@ export const LandingPage: React.FC = () => {
               href="https://vercel.com/"
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-2.5 group cursor-pointer transition-all duration-300 opacity-60 hover:opacity-100 hover:scale-[1.03]"
+              className="flex items-center gap-2.5 group cursor-pointer transition-opacity duration-200 opacity-60 hover:opacity-100"
             >
               <img
                 src="/trustees/logo-vercel.svg"
@@ -355,7 +376,7 @@ export const LandingPage: React.FC = () => {
               href="https://tuma-nu.vercel.app/"
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-2.5 group cursor-pointer transition-all duration-300 opacity-60 hover:opacity-100 hover:scale-[1.03]"
+              className="flex items-center gap-2.5 group cursor-pointer transition-opacity duration-200 opacity-60 hover:opacity-100"
             >
               <img
                 src="/trustees/tuma.png"
@@ -370,7 +391,7 @@ export const LandingPage: React.FC = () => {
               href="https://qlaima.vercel.app/"
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-2.5 group cursor-pointer transition-all duration-300 opacity-60 hover:opacity-100 hover:scale-[1.03]"
+              className="flex items-center gap-2.5 group cursor-pointer transition-opacity duration-200 opacity-60 hover:opacity-100"
             >
               <img
                 src="/trustees/qlaima.png"
@@ -646,12 +667,13 @@ export const LandingPage: React.FC = () => {
 
               <div className="mt-8">
                 <a
-                  href={`${GITHUB_RELEASES}/latest`}
+                  href={downloadUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium bg-white/[0.08] hover:bg-white/[0.14] text-white border border-white/[0.12] hover:border-white/[0.22] backdrop-blur-xl transition-all shadow-sm cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
+                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium bg-white/[0.06] hover:bg-white/[0.10] text-[#ededef] hover:text-white border border-white/[0.10] hover:border-white/[0.16] backdrop-blur-xl transition-colors duration-150 shadow-sm cursor-pointer"
                 >
-                  Download Free
+                  <OSIcon os={os} className="w-3.5 h-3.5" />
+                  <span>Download Free for {osName}</span>
                 </a>
               </div>
             </div>
@@ -707,7 +729,7 @@ export const LandingPage: React.FC = () => {
               <div className="mt-8">
                 <a
                   href="/docs#byod-supabase"
-                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium bg-white/[0.12] hover:bg-white/[0.2] text-white border border-white/[0.2] hover:border-white/[0.3] backdrop-blur-xl transition-all shadow-sm cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
+                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium bg-white/[0.08] hover:bg-white/[0.12] text-white border border-white/[0.14] hover:border-white/[0.20] backdrop-blur-xl transition-colors duration-150 shadow-sm cursor-pointer"
                 >
                   View BYOD Setup
                 </a>
@@ -767,7 +789,7 @@ export const LandingPage: React.FC = () => {
                   href={GITHUB_REPO}
                   target="_blank"
                   rel="noreferrer"
-                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium bg-white/[0.08] hover:bg-white/[0.14] text-white border border-white/[0.12] hover:border-white/[0.22] backdrop-blur-xl transition-all shadow-sm cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
+                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium bg-white/[0.06] hover:bg-white/[0.10] text-[#ededef] hover:text-white border border-white/[0.10] hover:border-white/[0.16] backdrop-blur-xl transition-colors duration-150 shadow-sm cursor-pointer"
                 >
                   View Source Code
                 </a>
@@ -841,7 +863,7 @@ export const LandingPage: React.FC = () => {
                     href={`${GITHUB_REPO}/issues`}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium bg-white/[0.08] hover:bg-white/[0.15] text-white border border-white/[0.14] hover:border-white/[0.25] backdrop-blur-xl transition-all shadow-sm cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium bg-white/[0.06] hover:bg-white/[0.10] text-[#ededef] hover:text-white border border-white/[0.10] hover:border-white/[0.16] backdrop-blur-xl transition-colors duration-150 shadow-sm cursor-pointer"
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
@@ -882,20 +904,34 @@ export const LandingPage: React.FC = () => {
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
               <a
-                href={`${GITHUB_RELEASES}/latest`}
+                href={downloadUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium bg-white/[0.08] hover:bg-white/[0.15] text-white border border-white/[0.16] hover:border-white/[0.28] backdrop-blur-xl transition-all shadow-sm hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-sm font-medium bg-white/[0.08] hover:bg-white/[0.12] text-white border border-white/[0.14] hover:border-white/[0.20] backdrop-blur-xl transition-colors duration-150 shadow-sm cursor-pointer"
               >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-                <span>Download <span className="font-brand text-lg font-normal">leeflet</span></span>
+                <OSIcon os={os} className="w-4 h-4 text-white" />
+                <span>Download <span className="font-brand text-lg font-normal">leeflet</span> for {osName}</span>
               </a>
+
+              <div className="flex items-center gap-2 text-xs text-[#71717a] sm:pl-2">
+                {os !== 'windows' && (
+                  <a href={allDownloads.windows} target="_blank" rel="noreferrer" className="p-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-[#a1a1aa] hover:text-white border border-white/[0.08] hover:border-white/[0.14] transition-colors duration-150">
+                    <WindowsIcon className="w-4 h-4" />
+                  </a>
+                )}
+                {os !== 'mac' && (
+                  <a href={allDownloads.mac} target="_blank" rel="noreferrer" className="p-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-[#a1a1aa] hover:text-white border border-white/[0.08] hover:border-white/[0.14] transition-colors duration-150">
+                    <AppleIcon className="w-4 h-4" />
+                  </a>
+                )}
+                {os !== 'linux' && (
+                  <a href={allDownloads.linux} target="_blank" rel="noreferrer" className="p-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-[#a1a1aa] hover:text-white border border-white/[0.08] hover:border-white/[0.14] transition-colors duration-150">
+                    <LinuxIcon className="w-4 h-4" />
+                  </a>
+                )}
+              </div>
             </div>
           </div>
         </section>

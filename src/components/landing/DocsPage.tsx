@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AuroraBackground } from '../ui/aurora-background';
 import { INITIAL_SCHEMA_SQL } from '../../utils/schemaSql';
+import { useReleaseDownload, OSIcon } from '../../utils/releaseDownload';
 
 const GITHUB_REPO = 'https://github.com/christliebdela/leeflet';
 
@@ -26,6 +27,7 @@ const SECTIONS: DocSection[] = [
 ];
 
 export const DocsPage: React.FC = () => {
+  const { os, downloadUrl } = useReleaseDownload();
   const [activeSection, setActiveSection] = useState('getting-started');
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
     'Getting started': true,
@@ -35,9 +37,10 @@ export const DocsPage: React.FC = () => {
   });
   const [copied, setCopied] = useState(false);
 
-  // Scroll to section from URL hash on initial load (e.g. /docs#byod-supabase)
+  // Scroll to section from URL hash on initial load (e.g. /docs#byod or /docs#byod-supabase)
   useEffect(() => {
-    const hash = window.location.hash.replace('#', '');
+    const rawHash = window.location.hash.replace('#', '');
+    const hash = rawHash === 'byod' ? 'byod-supabase' : rawHash;
     if (hash) {
       // Small delay to ensure DOM is fully rendered before scrolling
       const timer = setTimeout(() => {
@@ -53,8 +56,9 @@ export const DocsPage: React.FC = () => {
   };
 
   const scrollToSection = (id: string) => {
-    setActiveSection(id);
-    const el = document.getElementById(id);
+    const targetId = id === 'byod' ? 'byod-supabase' : id;
+    setActiveSection(targetId);
+    const el = document.getElementById(targetId);
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
@@ -214,10 +218,13 @@ export const DocsPage: React.FC = () => {
 
             <div className="flex items-center gap-3">
               <a
-                href="/#download"
-                className="px-3.5 py-1.5 rounded-full bg-white text-black font-medium text-xs hover:bg-white/90 transition-all shadow-sm cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+                href={downloadUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white text-black font-medium text-xs hover:bg-white/90 transition-all shadow-sm cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
               >
-                Download App
+                <OSIcon os={os} className="w-3.5 h-3.5" />
+                <span>Download App</span>
               </a>
             </div>
           </header>
@@ -317,7 +324,7 @@ export const DocsPage: React.FC = () => {
                   <div className="text-[10px] font-mono uppercase tracking-widest text-[#71717a]">01 · Architecture</div>
                   <h2 className="text-2xl font-semibold tracking-tight text-[#ededef]">Getting Started with Leeflet</h2>
                   <p className="text-sm text-[#8a8f98] leading-relaxed">
-                    Leeflet is an ultra-fast, local-first issue tracker and developer workspace built on Rust and Tauri. Unlike traditional web applications, Leeflet runs natively on your machine, stores everything in an embedded SQLite database on your SSD, and never requires an account or internet connection to function.
+                    Leeflet is an ultra-fast, local-first project & task tracker and developer workspace built on Rust and Tauri. Unlike traditional web applications, Leeflet runs natively on your machine, stores everything in an embedded SQLite database on your SSD, and never requires an account or internet connection to function.
                   </p>
                   <div className="p-4 rounded-xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl text-xs font-mono text-[#a1a1aa] space-y-1.5">
                     <div className="text-[#ededef] font-medium">Core Tenets:</div>
