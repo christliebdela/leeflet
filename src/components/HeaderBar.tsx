@@ -233,10 +233,10 @@ export const HeaderBar: React.FC = () => {
       className="h-12 px-3 bg-transparent flex items-center justify-between select-none shrink-0"
     >
       {/* Title & Count */}
-      <div className="flex items-center gap-3 min-w-0" data-tauri-drag-region>
-        <div className="flex items-center gap-1.5 min-w-0">
+      <div className="flex items-center gap-2 min-w-0 mr-1.5 overflow-hidden" data-tauri-drag-region>
+        <div className="flex items-center gap-1 min-w-0 shrink-0">
           <h1
-            className="text-lg font-bold text-[#111827] dark:text-[#f4f4f5] tracking-tight truncate"
+            className="text-sm sm:text-base font-bold text-[#111827] dark:text-[#f4f4f5] tracking-tight truncate max-w-[120px] sm:max-w-[200px] md:max-w-[320px]"
             data-tauri-drag-region
           >
             {headerInfo.title}
@@ -244,54 +244,97 @@ export const HeaderBar: React.FC = () => {
           {viewMode.type === 'project' && activeProj && isCurrentUserAdmin && (
             <button
               onClick={() => setProjectModalOpen(true, activeProj)}
-              className="p-1 rounded-[4px] hover:bg-[#ebecee] dark:hover:bg-[#27272a] text-[#9ca3af] hover:text-[#111827] dark:hover:text-white transition-colors"
+              className="p-1 rounded-[4px] hover:bg-[#ebecee] dark:hover:bg-[#27272a] text-[#9ca3af] hover:text-[#111827] dark:hover:text-white transition-colors shrink-0"
+              title="Edit Project"
             >
               <SquarePen className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
-        {viewMode.type !== 'my_queue' && viewMode.type !== 'team' && viewMode.type !== 'profile' && viewMode.type !== 'settings' && totalCount > 0 && (
-          <span
-            className="text-xs text-[#6b7280] dark:text-[#a1a1aa] font-normal shrink-0"
+        {viewMode.type === 'project' && activeProj && totalCount > 0 ? (
+          <div
+            className="hidden md:inline-flex items-center gap-1.5 px-2 py-1 rounded-[6px] bg-[#f4f5f6] dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] text-xs font-medium text-[#4b5563] dark:text-[#a1a1aa] shrink-0 shadow-2xs select-none"
             data-tauri-drag-region
           >
-            {totalCount} {totalCount === 1 ? 'item' : 'items'}
-            {openCount > 0 && ` • ${openCount} open`}
-          </span>
+            {/* Mini circular progress ring */}
+            <div className="relative w-3.5 h-3.5 shrink-0 flex items-center justify-center">
+              <svg className="w-3.5 h-3.5 -rotate-90 transform" viewBox="0 0 36 36">
+                <circle
+                  cx="18"
+                  cy="18"
+                  r="14"
+                  className="text-[#e5e7eb] dark:text-[#3f3f46]"
+                  strokeWidth="4"
+                  stroke="currentColor"
+                  fill="transparent"
+                />
+                <circle
+                  cx="18"
+                  cy="18"
+                  r="14"
+                  style={{ stroke: activeProj.color || '#10b981' }}
+                  strokeWidth="4"
+                  strokeDasharray={88}
+                  strokeDashoffset={88 - Math.round(((totalCount - openCount) / totalCount) * 88)}
+                  strokeLinecap="round"
+                  fill="transparent"
+                  className="transition-all duration-500 ease-out"
+                />
+              </svg>
+            </div>
+
+            <span className="font-bold text-[#111827] dark:text-white text-[11px]">
+              {Math.round(((totalCount - openCount) / totalCount) * 100)}%
+            </span>
+
+            <span className="text-[11px] text-[#6b7280] dark:text-[#a1a1aa] hidden md:inline">
+              {openCount} active · {totalCount - openCount} done
+            </span>
+          </div>
+        ) : (
+          viewMode.type !== 'my_queue' && viewMode.type !== 'team' && viewMode.type !== 'profile' && viewMode.type !== 'settings' && totalCount > 0 && (
+            <span
+              className="text-xs text-[#6b7280] dark:text-[#a1a1aa] font-normal shrink-0 hidden md:inline"
+              data-tauri-drag-region
+            >
+              {totalCount} {totalCount === 1 ? 'item' : 'items'}
+              {openCount > 0 && ` • ${openCount} open`}
+            </span>
+          )
         )}
       </div>
 
       {/* Action Controls & Top Window Controls */}
-      <div className="flex items-center gap-1.5 shrink-0" data-tauri-drag-region="false">
+      <div className="flex items-center gap-1 shrink-0" data-tauri-drag-region="false">
         {/* Search, Filter, and Sort Controls (Only in list and item views) */}
         {viewMode.type !== 'team' && viewMode.type !== 'profile' && viewMode.type !== 'settings' && (
           <>
-            {/* Geist-style CmdK Search Input */}
+            {/* Expandable CmdK Search Input */}
             <SearchInput
-          aria-label="Search items"
-          cmdk
-          value={filterOptions.searchQuery || ''}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          onClear={() => setSearchQuery('')}
-          placeholder="Search..."
-          className="w-28 sm:w-36 md:w-48 transition-all"
-        />
+              aria-label="Search items"
+              cmdk
+              value={filterOptions.searchQuery || ''}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onClear={() => setSearchQuery('')}
+              placeholder="Search..."
+            />
 
         {/* Filter Toggle */}
         <div className="relative shrink-0" ref={filterDropdownRef}>
           <button
             onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] border text-xs font-medium shrink-0 whitespace-nowrap transition-colors ${
+            title="Filter items"
+            className={`flex items-center justify-center p-1.5 md:px-2.5 md:py-1 rounded-[6px] border text-xs font-medium shrink-0 whitespace-nowrap transition-colors ${
               isFilterDropdownOpen || activeFilterCount > 0
                 ? 'bg-[#111827] text-white border-[#111827] dark:bg-white dark:text-[#111827] dark:border-white shadow-sm'
                 : 'bg-[#f4f5f6] dark:bg-[#1c1c1f] border-[#e5e7eb] dark:border-[#27272a] text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#27272a]'
             }`}
           >
             <Filter className="w-3.5 h-3.5" />
-            <span>Filter</span>
+            <span className="hidden md:inline ml-1.5">Filter</span>
             {activeFilterCount > 0 && (
               <span
-                className={`px-1.5 py-0 text-[10px] rounded-full font-bold leading-tight ${
+                className={`px-1.5 py-0 text-[10px] rounded-full font-bold leading-tight ml-1 ${
                   isFilterDropdownOpen || activeFilterCount > 0
                     ? 'bg-white/20 text-white dark:bg-black/20 dark:text-[#111827]'
                     : 'bg-[#111827] text-white dark:bg-white dark:text-[#111827]'
@@ -483,10 +526,11 @@ export const HeaderBar: React.FC = () => {
         <div className="relative shrink-0" ref={sortDropdownRef}>
           <button
             onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-[6px] border border-[#e5e7eb] dark:border-[#27272a] bg-[#f4f5f6] dark:bg-[#1c1c1f] text-xs font-medium text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#27272a] shrink-0 whitespace-nowrap transition-colors"
+            title="Sort items"
+            className="flex items-center justify-center p-1.5 md:px-2.5 md:py-1 rounded-[6px] border border-[#e5e7eb] dark:border-[#27272a] bg-[#f4f5f6] dark:bg-[#1c1c1f] text-xs font-medium text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#27272a] shrink-0 whitespace-nowrap transition-colors"
           >
             <ArrowUpDown className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
-            <span>Sort</span>
+            <span className="hidden md:inline ml-1">Sort</span>
           </button>
 
           {isSortDropdownOpen && (
@@ -559,7 +603,8 @@ export const HeaderBar: React.FC = () => {
               <button
                 type="button"
                 onClick={() => handleRefresh(false)}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] border text-xs font-medium shrink-0 whitespace-nowrap transition-colors cursor-pointer select-none ${
+                title="Cloud synchronization status"
+                className={`flex items-center justify-center p-1.5 md:px-2.5 md:py-1 rounded-[6px] border text-xs font-medium shrink-0 whitespace-nowrap transition-colors cursor-pointer select-none ${
                   !isOnline
                     ? 'bg-[#f4f5f6] dark:bg-[#1c1c1f] border-[#e5e7eb] dark:border-[#27272a] text-[#9ca3af] dark:text-[#52525b]'
                     : 'bg-[#f4f5f6] dark:bg-[#1c1c1f] border-[#e5e7eb] dark:border-[#27272a] text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#27272a]'
@@ -572,7 +617,7 @@ export const HeaderBar: React.FC = () => {
                 ) : (
                   <Cloud className="w-3.5 h-3.5" />
                 )}
-                <span>
+                <span className="hidden md:inline ml-1">
                   {!isOnline
                     ? 'Offline'
                     : syncState === 'syncing'
@@ -633,10 +678,11 @@ export const HeaderBar: React.FC = () => {
         {permissions.canCreateItems ? (
           <button
             onClick={() => setQuickCaptureOpen(true)}
-            className="flex items-center gap-1 px-3 py-1 bg-[#111827] dark:bg-[#f4f4f5] hover:bg-[#1f2937] dark:hover:bg-white text-white dark:text-[#18181b] rounded-[6px] text-xs font-semibold shadow-subtle shrink-0 whitespace-nowrap transition-all active:scale-[0.98] cursor-pointer"
+            title="Create New Item (N)"
+            className="flex items-center justify-center p-1.5 md:px-3 md:py-1 bg-[#111827] dark:bg-[#f4f4f5] hover:bg-[#1f2937] dark:hover:bg-white text-white dark:text-[#18181b] rounded-[6px] text-xs font-semibold shadow-subtle shrink-0 whitespace-nowrap transition-all active:scale-[0.98] cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>New</span>
+            <span className="hidden md:inline ml-1">New</span>
           </button>
         ) : (
           <span className="flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 border border-amber-500/25 text-amber-600 dark:text-amber-400 rounded-[6px] text-[11px] font-semibold shrink-0 select-none">

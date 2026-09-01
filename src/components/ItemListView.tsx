@@ -20,7 +20,6 @@ import {
   Calendar,
   ChevronDown,
   ChevronRight,
-  TrendingUp,
   X,
 } from 'lucide-react';
 import { Item, ChecklistItem, Project } from '../types';
@@ -342,15 +341,6 @@ export const ItemListView: React.FC = () => {
 
   const completedSectionRef = useRef<HTMLDivElement>(null);
 
-  // Project-specific metrics & separation
-  const activeProject = viewMode.type === 'project' ? projects.find((p) => p.id === viewMode.projectId) : null;
-  const allProjectItems = activeProject ? items.filter((i) => i.projectId === activeProject.id && i.status !== 'archived') : [];
-  const totalProjectCount = allProjectItems.length;
-  const doneProjectCount = allProjectItems.filter((i) => i.status === 'done').length;
-  const activeProjectCount = allProjectItems.filter((i) => i.status !== 'done').length;
-  const urgentProjectCount = allProjectItems.filter((i) => (i.priority === 'high' || i.priority === 'critical') && i.status !== 'done').length;
-  const progressPct = totalProjectCount > 0 ? Math.round((doneProjectCount / totalProjectCount) * 100) : 0;
-
   // Backlog metrics
   const inboxItems = viewMode.type === 'inbox' ? items.filter((i) => i.status === 'inbox') : [];
   const urgentInboxCount = viewMode.type === 'inbox' ? inboxItems.filter((i) => i.priority === 'high' || i.priority === 'critical').length : 0;
@@ -370,13 +360,6 @@ export const ItemListView: React.FC = () => {
 
   const clearPriorityFilters = () => {
     setFilterOptions({ ...filterOptions, priorities: [] });
-  };
-
-  const handleCompletedClick = () => {
-    setIsCompletedSectionOpen(true);
-    setTimeout(() => {
-      completedSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, 60);
   };
 
   // Split displayItems for project view (active vs completed)
@@ -515,7 +498,7 @@ export const ItemListView: React.FC = () => {
 
           {/* Assignee Avatar Indicator */}
           {item.assigneeId && (() => {
-            const assignedMember = getStoredTeamMembers().find(m => matchesAssignee(m.id, item.assigneeId));
+            const assignedMember = getStoredTeamMembers(workspace?.id).find(m => matchesAssignee(m.id, item.assigneeId));
             return (
               <span
                 className="w-4 h-4 rounded-full border border-[#e5e7eb] dark:border-[#323238] shrink-0 overflow-hidden shadow-2xs"
@@ -555,153 +538,134 @@ export const ItemListView: React.FC = () => {
 
   return (
     <div className={`flex-1 h-full overflow-y-auto overflow-x-hidden ${isPaneOpen ? 'pl-3 pr-2 py-3' : 'p-3'} flex flex-col custom-scrollbar`}>
-      {/* 1. PROJECT METRICS STAT BAR */}
-      {viewMode.type === 'project' && activeProject && totalProjectCount > 0 && (
-        <div className="mb-3.5 p-3.5 bg-white dark:bg-[#18181b] border border-[#e5e7eb] dark:border-[#27272a] rounded-[10px] shadow-xs flex flex-col gap-3 transition-all">
-          <div className="flex items-center justify-between gap-3 flex-wrap text-xs">
-            {/* Interactive Filter Pills */}
-            <div className="flex items-center gap-2 flex-wrap">
-              {/* Active Tasks Pill */}
-              <button
-                type="button"
-                onClick={clearPriorityFilters}
-                title="Show all active tasks"
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-xs font-medium border transition-all cursor-pointer select-none active:scale-95 ${
-                  !isUrgentFilterActive
-                    ? 'bg-[#f3f4f6] dark:bg-[#27272a] text-[#111827] dark:text-white border-[#d1d5db] dark:border-[#3f3f46] shadow-xs'
-                    : 'bg-transparent text-[#6b7280] dark:text-[#a1a1aa] border-transparent hover:bg-[#f3f4f6] dark:hover:bg-[#202024]'
-                }`}
-              >
-                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: activeProject.color || '#10b981' }} />
-                <span>{activeProjectCount} Active</span>
-              </button>
 
-              {/* Urgent Filter Pill */}
-              {urgentProjectCount > 0 && (
-                <button
-                  type="button"
-                  onClick={toggleUrgentFilter}
-                  title={isUrgentFilterActive ? 'Clear urgent filter' : 'Filter by urgent tasks (High & Critical)'}
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-xs font-medium border transition-all cursor-pointer select-none active:scale-95 ${
-                    isUrgentFilterActive
-                      ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/40 shadow-xs ring-2 ring-rose-500/20 font-semibold'
-                      : 'bg-rose-500/[0.06] text-rose-600 dark:text-rose-400 border-rose-500/20 hover:bg-rose-500/12'
-                  }`}
-                >
-                  <AlertCircle className="w-3.5 h-3.5" />
-                  <span>{urgentProjectCount} Urgent</span>
-                  {isUrgentFilterActive && (
-                    <X className="w-3 h-3 ml-0.5 opacity-70 hover:opacity-100" />
-                  )}
-                </button>
-              )}
-
-              {/* Completed Tasks Pill */}
-              <button
-                type="button"
-                onClick={handleCompletedClick}
-                title="View completed tasks"
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] bg-transparent text-[#6b7280] dark:text-[#a1a1aa] hover:bg-[#f3f4f6] dark:hover:bg-[#202024] hover:text-[#111827] dark:hover:text-white text-xs font-medium border border-transparent hover:border-[#e5e7eb] dark:hover:border-[#27272a] transition-all cursor-pointer select-none active:scale-95"
-              >
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                <span>{doneProjectCount} Completed</span>
-              </button>
-            </div>
-
-            {/* Progress percentage */}
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-[#111827] dark:text-white">
-              <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
-              <span>{progressPct}% Done</span>
-              <span className="text-[#9ca3af] dark:text-[#71717a] font-normal text-[11px]">
-                ({doneProjectCount}/{totalProjectCount})
-              </span>
-            </div>
-          </div>
-
-          {/* Multi-Segmented Progress Bar */}
-          <div className="w-full h-2 bg-[#f3f4f6] dark:bg-[#27272a] rounded-full overflow-hidden flex gap-[2px]">
-            {doneProjectCount > 0 && (
-              <div
-                title={`Completed: ${doneProjectCount} tasks`}
-                className="h-full rounded-l-full transition-all duration-500 bg-emerald-500 hover:brightness-110"
-                style={{ width: `${(doneProjectCount / totalProjectCount) * 100}%` }}
-              />
-            )}
-            {urgentProjectCount > 0 && (
-              <div
-                title={`Urgent: ${urgentProjectCount} tasks`}
-                className="h-full transition-all duration-500 bg-rose-500 hover:brightness-110"
-                style={{ width: `${(urgentProjectCount / totalProjectCount) * 100}%` }}
-              />
-            )}
-            {activeProjectCount - urgentProjectCount > 0 && (
-              <div
-                title={`Active: ${activeProjectCount - urgentProjectCount} tasks`}
-                className="h-full rounded-r-full transition-all duration-500 hover:brightness-110"
-                style={{
-                  width: `${((activeProjectCount - urgentProjectCount) / totalProjectCount) * 100}%`,
-                  backgroundColor: activeProject.color || '#3b82f6',
-                }}
-              />
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* 2. BACKLOG STAT BAR */}
+      {/* 2. BACKLOG METRICS: COMPACT 3 STAT CARDS + FAR-RIGHT PROGRESS RING */}
       {viewMode.type === 'inbox' && inboxItems.length > 0 && (
-        <div className="mb-3.5 px-3.5 py-2.5 bg-white dark:bg-[#18181b] border border-[#e5e7eb] dark:border-[#27272a] rounded-[10px] flex items-center justify-between gap-3 flex-wrap shadow-xs">
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* All Backlog Pill */}
+        <div className="mb-2.5 p-1.5 sm:p-2 bg-white dark:bg-[#18181b] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-2xs flex items-center justify-between gap-2">
+          {/* Left: 3 Interactive Stat Cards */}
+          <div className="grid grid-cols-3 gap-1.5 flex-1 min-w-0">
+            {/* 1. All Backlog Card */}
             <button
               type="button"
               onClick={clearPriorityFilters}
               title="Show all backlog items"
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-xs font-medium border transition-all cursor-pointer select-none active:scale-95 ${
+              className={`flex items-center gap-1.5 sm:gap-2 px-2 py-1 rounded-[6px] border transition-all text-left cursor-pointer select-none active:scale-[0.98] ${
                 !isUrgentFilterActive
-                  ? 'bg-[#f3f4f6] dark:bg-[#27272a] text-[#111827] dark:text-white border-[#d1d5db] dark:border-[#3f3f46] shadow-xs'
-                  : 'bg-transparent text-[#6b7280] dark:text-[#a1a1aa] border-transparent hover:bg-[#f3f4f6] dark:hover:bg-[#202024]'
+                  ? 'bg-[#f4f5f6]/90 dark:bg-[#202024] border-[#d1d5db] dark:border-[#3f3f46] shadow-2xs'
+                  : 'bg-[#fafafa] dark:bg-[#1c1c1f] border-[#e5e7eb] dark:border-[#27272a] hover:border-[#d1d5db] dark:hover:border-[#3f3f46]'
               }`}
             >
-              <Layers className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
-              <span>{inboxItems.length} Backlog Items</span>
+              <Layers className="w-3 h-3 text-[#6b7280] dark:text-[#a1a1aa] shrink-0" />
+              <div className="min-w-0 flex-1 truncate">
+                <div className="text-xs font-bold text-[#111827] dark:text-white leading-none truncate">
+                  {inboxItems.length}
+                </div>
+                <div className="text-[9px] font-medium text-[#6b7280] dark:text-[#a1a1aa] truncate mt-0.5 leading-none">
+                  Total
+                </div>
+              </div>
             </button>
 
-            {/* Urgent Triage Filter Pill */}
-            {urgentInboxCount > 0 && (
-              <button
-                type="button"
-                onClick={toggleUrgentFilter}
-                title={isUrgentFilterActive ? 'Clear urgent filter' : 'Filter by urgent items needing triage (High & Critical)'}
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-xs font-medium border transition-all cursor-pointer select-none active:scale-95 ${
-                  isUrgentFilterActive
-                    ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/40 shadow-xs ring-2 ring-rose-500/20 font-semibold'
-                    : 'bg-rose-500/[0.06] text-rose-600 dark:text-rose-400 border-rose-500/20 hover:bg-rose-500/12'
+            {/* 2. Urgent Triage Card */}
+            <button
+              type="button"
+              onClick={toggleUrgentFilter}
+              title={isUrgentFilterActive ? 'Clear urgent filter' : 'Filter by urgent items needing triage (High & Critical)'}
+              className={`flex items-center gap-1.5 sm:gap-2 px-2 py-1 rounded-[6px] border transition-all text-left cursor-pointer select-none active:scale-[0.98] ${
+                isUrgentFilterActive
+                  ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/40 shadow-2xs ring-1 ring-rose-500/30'
+                  : urgentInboxCount > 0
+                  ? 'bg-rose-500/[0.04] dark:bg-rose-500/[0.08] border-rose-500/20 hover:border-rose-500/35'
+                  : 'bg-[#fafafa] dark:bg-[#1c1c1f] border-[#e5e7eb] dark:border-[#27272a] hover:border-[#d1d5db] dark:hover:border-[#3f3f46]'
+              }`}
+            >
+              <AlertCircle
+                className={`w-3 h-3 shrink-0 ${
+                  urgentInboxCount > 0 ? 'text-rose-500' : 'text-[#9ca3af] dark:text-[#71717a]'
                 }`}
-              >
-                <AlertCircle className="w-3.5 h-3.5" />
-                <span>{urgentInboxCount} Need Urgent Triage</span>
-                {isUrgentFilterActive && (
-                  <X className="w-3 h-3 ml-0.5 opacity-70 hover:opacity-100" />
-                )}
-              </button>
-            )}
-          </div>
+              />
+              <div className="min-w-0 flex-1 truncate">
+                <div
+                  className={`text-xs font-bold leading-none truncate ${
+                    urgentInboxCount > 0
+                      ? 'text-rose-600 dark:text-rose-400'
+                      : 'text-[#111827] dark:text-white'
+                  }`}
+                >
+                  {urgentInboxCount}
+                </div>
+                <div className="text-[9px] font-medium text-[#6b7280] dark:text-[#a1a1aa] truncate mt-0.5 flex items-center justify-between leading-none">
+                  <span>Urgent</span>
+                  {isUrgentFilterActive && <X className="w-2 h-2 ml-0.5 opacity-70" />}
+                </div>
+              </div>
+            </button>
 
-          {isUrgentFilterActive ? (
+            {/* 3. Standard Queue Card */}
             <button
               type="button"
               onClick={clearPriorityFilters}
-              className="text-[11px] font-semibold text-rose-600 dark:text-rose-400 hover:underline flex items-center gap-1 cursor-pointer select-none"
+              title="Standard queue items"
+              className="flex items-center gap-1.5 sm:gap-2 px-2 py-1 rounded-[6px] bg-[#fafafa] dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-all text-left cursor-pointer select-none active:scale-[0.98]"
             >
-              <X className="w-3 h-3" />
-              <span>Clear Filter</span>
+              <Inbox className="w-3 h-3 text-indigo-500 shrink-0" />
+              <div className="min-w-0 flex-1 truncate">
+                <div className="text-xs font-bold text-[#111827] dark:text-white leading-none truncate">
+                  {inboxItems.length - urgentInboxCount}
+                </div>
+                <div className="text-[9px] font-medium text-[#6b7280] dark:text-[#a1a1aa] truncate mt-0.5 leading-none">
+                  Standard
+                </div>
+              </div>
             </button>
-          ) : (
-            <span className="text-[11px] text-[#9ca3af] dark:text-[#71717a]">
-              Click badge to filter
-            </span>
-          )}
+          </div>
+
+          {/* Right: Circular Triage Ring & Summary */}
+          <div className="flex items-center gap-2 pl-2 border-l border-[#e5e7eb] dark:border-[#27272a] shrink-0">
+            <div className="relative w-7 h-7 shrink-0 flex items-center justify-center">
+              <svg className="w-7 h-7 -rotate-90 transform" viewBox="0 0 36 36">
+                <circle
+                  cx="18"
+                  cy="18"
+                  r="14"
+                  className="text-[#e5e7eb] dark:text-[#27272a]"
+                  strokeWidth="3.5"
+                  stroke="currentColor"
+                  fill="transparent"
+                />
+                <circle
+                  cx="18"
+                  cy="18"
+                  r="14"
+                  style={{ stroke: urgentInboxCount > 0 ? '#f43f5e' : '#6366f1' }}
+                  strokeWidth="3.5"
+                  strokeDasharray={88}
+                  strokeDashoffset={
+                    inboxItems.length > 0
+                      ? 88 - Math.round(((inboxItems.length - urgentInboxCount) / inboxItems.length) * 88)
+                      : 0
+                  }
+                  strokeLinecap="round"
+                  fill="transparent"
+                  className="transition-all duration-700 ease-out"
+                />
+              </svg>
+              <span className="absolute text-[8px] font-bold text-[#111827] dark:text-white font-mono leading-none">
+                {inboxItems.length > 0
+                  ? Math.round(((inboxItems.length - urgentInboxCount) / inboxItems.length) * 100)
+                  : 100}%
+              </span>
+            </div>
+
+            <div className="hidden sm:flex flex-col text-right">
+              <span className="text-[11px] font-bold text-[#111827] dark:text-white leading-tight">
+                {inboxItems.length}
+              </span>
+              <span className="text-[9px] text-[#6b7280] dark:text-[#a1a1aa] leading-none">
+                In Queue
+              </span>
+            </div>
+          </div>
         </div>
       )}
 

@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ITEM_TYPE_CONFIG, PRIORITY_CONFIG } from '../utils/format';
-import { getStoredTeamMembers, matchesAssignee, normalizeAssigneeId } from '../utils/team';
+import { getActiveTeamMembers, matchesAssignee, normalizeAssigneeId } from '../utils/team';
 import { resolveAvatarUrl } from '../utils/avatars';
 import { Calendar } from './ui/calendar';
 import { getUserPermissions } from '../utils/permissions';
@@ -233,12 +233,12 @@ export const QuickCaptureModal: React.FC = () => {
     );
   }, [activeProjectName, priority, activeMemberName, dueDate, type]);
 
-  // Load team members on open
+  // Load team members on open (only active members who accepted)
   useEffect(() => {
     if (isQuickCaptureOpen) {
-      setTeamMembers(getStoredTeamMembers());
+      setTeamMembers(getActiveTeamMembers(workspace?.id));
     }
-  }, [isQuickCaptureOpen]);
+  }, [isQuickCaptureOpen, workspace?.id]);
 
   // Persist draft changes
   useEffect(() => {

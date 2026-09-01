@@ -43,7 +43,7 @@ import {
   PRIORITY_CONFIG,
   STATUS_CONFIG,
 } from '../utils/format';
-import { getStoredTeamMembers, matchesAssignee, normalizeAssigneeId } from '../utils/team';
+import { getActiveTeamMembers, matchesAssignee, normalizeAssigneeId } from '../utils/team';
 import { resolveAvatarUrl } from '../utils/avatars';
 import { Checkbox } from './ui/Checkbox';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
@@ -242,11 +242,11 @@ export const ItemDetailPane: React.FC = () => {
       setDueAt(activeItem.dueAt || null);
       setChecklist(activeItem.checklist || []);
       setAttachments(activeItem.attachments || []);
-      setTeamMembers(getStoredTeamMembers());
+      setTeamMembers(getActiveTeamMembers(workspace?.id));
     } else {
       lastLoadedItemIdRef.current = null;
     }
-  }, [activeItem?.id, activeItem?.updatedAt]);
+  }, [activeItem?.id, activeItem?.updatedAt, workspace?.id]);
 
   // Precise dynamic auto-resize based on current wrapped lines & container width
   useLayoutEffect(() => {

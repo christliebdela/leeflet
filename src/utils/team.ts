@@ -41,6 +41,24 @@ export const matchesAssignee = (memberId: string, assigneeId: string | null | un
   return false;
 };
 
+const isSameUser = (nameA: string, nameB: string, emailA?: string, emailB?: string): boolean => {
+  const normA = (nameA || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const normB = (nameB || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (!normA || !normB) return false;
+  if (normA === normB) return true;
+  if (emailA && emailB && emailA.toLowerCase().trim() === emailB.toLowerCase().trim() && emailA.trim().length > 0) return true;
+  if (normA.includes(normB) || normB.includes(normA)) return true;
+  if (Math.abs(normA.length - normB.length) <= 3) {
+    let diff = 0;
+    const minLen = Math.min(normA.length, normB.length);
+    for (let i = 0; i < minLen; i++) {
+      if (normA[i] !== normB[i]) diff++;
+    }
+    if (diff <= 3) return true;
+  }
+  return false;
+};
+
 export const getStoredTeamMembers = (workspaceId?: string): TeamMember[] => {
   if (typeof window === 'undefined') return [];
 
@@ -88,7 +106,7 @@ export const getStoredTeamMembers = (workspaceId?: string): TeamMember[] => {
           if (m.role === 'Owner') m.role = 'Admin';
         });
 
-        // If this is the creator's workspace, sync Admin entry with latest profile data
+        // If this is the creator's workspace, sync Admin entry with latest profile data & remove duplicate self-entries
         if (!isJoined) {
           const adminEntry = unique.find(
             (m: TeamMember) => m.role === 'Admin' || m.id === 'owner_1' || m.id === OWNER_MEMBER_UUID
@@ -101,6 +119,19 @@ export const getStoredTeamMembers = (workspaceId?: string): TeamMember[] => {
             if (profileMascot) adminEntry.avatarMascot = profileMascot;
             if (profileAvatarUrl) adminEntry.avatarUrl = profileAvatarUrl;
           }
+
+          // Filter out duplicate entries that match the admin creator
+          const cleaned = unique.filter((m: TeamMember) => {
+            if (m.id === OWNER_MEMBER_UUID || m.role === 'Admin') return true;
+            if (isSameUser(profileName, m.name, profileEmail, m.email)) return false;
+            return true;
+          });
+
+          if (cleaned.length !== unique.length) {
+            saveStoredTeamMembers(cleaned, workspaceId);
+          }
+
+          return cleaned;
         }
 
         return unique;
@@ -149,6 +180,12 @@ export const getStoredTeamMembers = (workspaceId?: string): TeamMember[] => {
     },
   ];
   return initial;
+};
+
+export const getActiveTeamMembers = (workspaceId?: string): TeamMember[] => {
+  return getStoredTeamMembers(workspaceId).filter(
+    (m) => m.status === 'active' || (!m.status && m.role === 'Admin') || m.id === OWNER_MEMBER_UUID
+  );
 };
 
 export const saveStoredTeamMembers = (members: TeamMember[], workspaceId?: string) => {
