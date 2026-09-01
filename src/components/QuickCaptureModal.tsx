@@ -139,11 +139,14 @@ export const QuickCaptureModal: React.FC = () => {
     isQuickCaptureOpen,
     setQuickCaptureOpen,
     projects,
+    workspace,
     createItem,
     createProject,
     viewMode,
     selectedProjectId,
   } = useLeafStore();
+
+  const permissions = getUserPermissions(workspace?.id);
 
   const isInProjectView = viewMode.type === 'project';
   const activeProject = isInProjectView ? projects.find((p: Project) => p.id === viewMode.projectId) : null;
@@ -430,9 +433,6 @@ export const QuickCaptureModal: React.FC = () => {
   const typeConfig = ITEM_TYPE_CONFIG[type] || ITEM_TYPE_CONFIG.task;
   const priorityConfig = PRIORITY_CONFIG[priority] || PRIORITY_CONFIG.none;
   const hasContent = Boolean(title.trim() || description.trim());
-
-  const workspace = useLeafStore((s) => s.workspace);
-  const permissions = getUserPermissions(workspace?.id);
 
   if (!isQuickCaptureOpen || !permissions.canCreateItems) return null;
 

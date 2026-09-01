@@ -70,6 +70,7 @@ export const ItemListView: React.FC = () => {
   const {
     items,
     projects,
+    workspace,
     viewMode,
     selectedItemId,
     setSelectedItemId,
@@ -79,7 +80,6 @@ export const ItemListView: React.FC = () => {
     setFilterOptions,
   } = useLeafStore();
 
-  const workspace = useLeafStore((s) => s.workspace);
   const permissions = getUserPermissions(workspace?.id);
 
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);

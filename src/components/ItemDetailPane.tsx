@@ -65,6 +65,7 @@ export const ItemDetailPane: React.FC = () => {
   const {
     items,
     projects,
+    workspace,
     selectedItemId,
     setSelectedItemId,
     updateItem,
@@ -73,13 +74,12 @@ export const ItemDetailPane: React.FC = () => {
     createProject,
   } = useLeafStore();
 
+  const permissions = getUserPermissions(workspace?.id);
+
   const isPaneOpen = Boolean(selectedItemId);
   const currentItem = items.find((i: Item) => i.id === selectedItemId);
 
   const [activeItem, setActiveItem] = useState<Item | null>(null);
-
-  const workspace = useLeafStore((s) => s.workspace);
-  const permissions = getUserPermissions(workspace?.id);
 
   // Keep the most recent item cached while open or sliding out
   useEffect(() => {

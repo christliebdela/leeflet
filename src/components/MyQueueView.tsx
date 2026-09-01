@@ -16,8 +16,7 @@ const SECTION_EMPTY_MESSAGES: Record<SectionKey, string> = {
 };
 
 export const MyQueueView: React.FC = () => {
-  const { items, projects, selectedItemId, setSelectedItemId, filterOptions, setQuickCaptureOpen, updateItem, createItem } = useLeafStore();
-  const workspace = useLeafStore((s) => s.workspace);
+  const { items, projects, workspace, selectedItemId, setSelectedItemId, filterOptions, setQuickCaptureOpen, updateItem, createItem } = useLeafStore();
   const permissions = getUserPermissions(workspace?.id);
 
   const [addingSection, setAddingSection] = useState<SectionKey | null>(null);
