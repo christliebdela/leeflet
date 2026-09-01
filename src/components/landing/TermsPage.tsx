@@ -147,10 +147,14 @@ export const TermsPage: React.FC = () => {
       <footer className="border-t border-white/[0.06] pt-16 pb-12 px-6 max-w-6xl mx-auto text-xs">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8 pb-12 border-b border-white/[0.06]">
           <div className="col-span-2 space-y-3">
-            <div className="flex items-center gap-2">
-              <img src="/logo_alpha.png" alt="Leeflet" className="w-5 h-5 rounded opacity-90" />
-              <span className="font-brand text-2xl text-[#ededef]">leeflet</span>
-            </div>
+            <button
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="flex items-center gap-2 group cursor-pointer text-left focus:outline-hidden transition-transform active:scale-[0.98]"
+              title="Scroll to top"
+            >
+              <img src="/logo_alpha.png" alt="Leeflet" className="w-5 h-5 rounded opacity-90 group-hover:opacity-100 transition-opacity" />
+              <span className="font-brand text-2xl text-[#ededef] group-hover:text-white transition-colors">leeflet</span>
+            </button>
             <p className="text-xs text-[#71717a] leading-relaxed max-w-sm">
               Free, local-first project &amp; task tracker and keyboard-driven desktop workspace for solo developers and engineering teams.
             </p>
@@ -198,12 +202,6 @@ export const TermsPage: React.FC = () => {
             <a href="https://christliebdela.vercel.app/" target="_blank" rel="noreferrer" className="text-[#8a8f98] hover:text-white transition-colors">
               Christlieb Dela
             </a>.
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1.5 text-[11px] text-[#71717a]">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400/80"></span>
-              All systems operational
-            </span>
           </div>
         </div>
       </footer>

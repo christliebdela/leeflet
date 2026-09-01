@@ -29,6 +29,7 @@ import {
   Link2,
   Building2,
   ArrowUpCircle,
+  GripVertical,
 } from 'lucide-react';
 import { dbService } from '../services/db';
 import { ViewMode, ItemType, Priority, Project, Item, Workspace } from '../types';
@@ -53,6 +54,7 @@ export const Sidebar: React.FC = () => {
     setViewMode,
     setProjectModalOpen,
     deleteProject,
+    reorderProjects,
     theme,
     toggleTheme,
     isSidebarCollapsed,
@@ -111,6 +113,8 @@ export const Sidebar: React.FC = () => {
     return localStorage.getItem('leaf_sidebar_views_collapsed') === 'true';
   });
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+  const [draggedProjectId, setDraggedProjectId] = useState<string | null>(null);
+  const [dragOverInfo, setDragOverInfo] = useState<{ id: string; position: 'before' | 'after' } | null>(null);
 
   const permissions = getUserPermissions(workspace?.id);
   const isCurrentUserAdmin = permissions.isAdmin;
@@ -480,29 +484,85 @@ export const Sidebar: React.FC = () => {
                 const count = items.filter(
                   (i: Item) => i.projectId === project.id && i.status !== 'done' && i.status !== 'archived'
                 ).length;
+                const isDragged = draggedProjectId === project.id;
+                const isDragOverBefore = dragOverInfo?.id === project.id && dragOverInfo.position === 'before';
+                const isDragOverAfter = dragOverInfo?.id === project.id && dragOverInfo.position === 'after';
+
                 return (
                   <Tooltip key={project.id}>
                     <TooltipTrigger asChild>
-                      <button
-                        type="button"
+                      <div
+                        draggable={!permissions.isViewer}
+                        onDragStart={(e) => {
+                          if (permissions.isViewer) {
+                            e.preventDefault();
+                            return;
+                          }
+                          e.dataTransfer.setData('text/plain', project.id);
+                          e.dataTransfer.effectAllowed = 'move';
+                          setDraggedProjectId(project.id);
+                        }}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          e.dataTransfer.dropEffect = 'move';
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          const isTopHalf = (e.clientY - rect.top) < (rect.height / 2);
+                          const position = isTopHalf ? 'before' : 'after';
+                          if (!dragOverInfo || dragOverInfo.id !== project.id || dragOverInfo.position !== position) {
+                            setDragOverInfo({ id: project.id, position });
+                          }
+                        }}
+                        onDragLeave={(e) => {
+                          if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                            if (dragOverInfo?.id === project.id) {
+                              setDragOverInfo(null);
+                            }
+                          }
+                        }}
+                        onDragEnd={() => {
+                          setDraggedProjectId(null);
+                          setDragOverInfo(null);
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          const sourceId = e.dataTransfer.getData('text/plain') || draggedProjectId;
+                          const position = dragOverInfo?.id === project.id ? dragOverInfo.position : 'before';
+                          if (sourceId && sourceId !== project.id) {
+                            reorderProjects(sourceId, project.id, position);
+                          }
+                          setDraggedProjectId(null);
+                          setDragOverInfo(null);
+                        }}
                         onClick={() => setViewMode({ type: 'project', projectId: project.id })}
-                        className={`w-9 h-9 flex items-center justify-center rounded-[6px] transition-colors cursor-pointer relative ${
+                        className={`w-9 h-9 flex items-center justify-center rounded-[6px] transition-all cursor-pointer relative select-none ${
                           isActive
                             ? 'bg-[#e5e7eb] dark:bg-[#27272a] text-[#111827] dark:text-white'
                             : 'text-[#6b7280] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white'
-                        }`}
+                        } ${isDragged ? 'opacity-30 scale-[0.95]' : ''}`}
                       >
+                        {isDragOverBefore && (
+                          <div className="absolute -top-1 left-0.5 right-0.5 h-0.5 bg-[#111827] dark:bg-white rounded-full z-20 pointer-events-none flex items-center shadow-xs">
+                            <div className="w-1 h-1 rounded-full bg-[#111827] dark:bg-white -ml-0.5 shadow-sm" />
+                          </div>
+                        )}
+                        {isDragOverAfter && (
+                          <div className="absolute -bottom-1 left-0.5 right-0.5 h-0.5 bg-[#111827] dark:bg-white rounded-full z-20 pointer-events-none flex items-center shadow-xs">
+                            <div className="w-1 h-1 rounded-full bg-[#111827] dark:bg-white -ml-0.5 shadow-sm" />
+                          </div>
+                        )}
                         <Folder
                           className="w-4 h-4 transition-transform hover:scale-110"
-                          style={{ color: project.color || '#10b981' }}
+                          style={project.color ? { color: project.color } : undefined}
                         />
-                      </button>
+                      </div>
                     </TooltipTrigger>
                     <TooltipContent side="right">
                       <div className="flex items-center gap-1.5">
                         <span
-                          className="w-2 h-2 rounded-full shrink-0"
-                          style={{ backgroundColor: project.color || '#10b981' }}
+                          className={`w-2 h-2 rounded-full shrink-0 ${!project.color ? 'bg-[#6b7280] dark:bg-[#a1a1aa]' : ''}`}
+                          style={project.color ? { backgroundColor: project.color } : undefined}
                         />
                         <span className="font-medium">{project.name}</span>
                         {count > 0 && (
@@ -866,23 +926,90 @@ export const Sidebar: React.FC = () => {
                       (i: Item) => i.projectId === project.id && i.status !== 'done' && i.status !== 'archived'
                     ).length;
                     const active = isViewActive({ type: 'project', projectId: project.id });
+                    const isDragged = draggedProjectId === project.id;
+                    const isDragOverBefore = dragOverInfo?.id === project.id && dragOverInfo.position === 'before';
+                    const isDragOverAfter = dragOverInfo?.id === project.id && dragOverInfo.position === 'after';
 
                     return (
                       <div
                         key={project.id}
-                        className={`group relative flex items-center justify-between px-2.5 py-1.5 rounded-[6px] transition-colors text-xs ${
+                        draggable={!permissions.isViewer}
+                        onDragStart={(e) => {
+                          if (permissions.isViewer) {
+                            e.preventDefault();
+                            return;
+                          }
+                          e.dataTransfer.setData('text/plain', project.id);
+                          e.dataTransfer.effectAllowed = 'move';
+                          setDraggedProjectId(project.id);
+                        }}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          e.dataTransfer.dropEffect = 'move';
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          const isTopHalf = (e.clientY - rect.top) < (rect.height / 2);
+                          const position = isTopHalf ? 'before' : 'after';
+                          if (!dragOverInfo || dragOverInfo.id !== project.id || dragOverInfo.position !== position) {
+                            setDragOverInfo({ id: project.id, position });
+                          }
+                        }}
+                        onDragLeave={(e) => {
+                          if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                            if (dragOverInfo?.id === project.id) {
+                              setDragOverInfo(null);
+                            }
+                          }
+                        }}
+                        onDragEnd={() => {
+                          setDraggedProjectId(null);
+                          setDragOverInfo(null);
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          const sourceId = e.dataTransfer.getData('text/plain') || draggedProjectId;
+                          const position = dragOverInfo?.id === project.id ? dragOverInfo.position : 'before';
+                          if (sourceId && sourceId !== project.id) {
+                            reorderProjects(sourceId, project.id, position);
+                          }
+                          setDraggedProjectId(null);
+                          setDragOverInfo(null);
+                        }}
+                        className={`group relative flex items-center justify-between px-2 py-1.5 rounded-[6px] transition-colors text-xs select-none ${
                           active
                             ? 'bg-[#e5e7eb] dark:bg-[#27272a] text-[#111827] dark:text-white font-medium'
                             : 'text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white'
-                        }`}
+                        } ${isDragged ? 'opacity-30 scale-[0.99]' : ''}`}
                       >
+                        {/* Floating Insertion Indicator Line */}
+                        {isDragOverBefore && (
+                          <div className="absolute -top-1 left-1 right-1 h-0.5 bg-[#111827] dark:bg-white rounded-full z-20 pointer-events-none flex items-center shadow-xs">
+                            <div className="w-1.5 h-1.5 rounded-full bg-[#111827] dark:bg-white -ml-0.5 shadow-sm" />
+                          </div>
+                        )}
+                        {isDragOverAfter && (
+                          <div className="absolute -bottom-1 left-1 right-1 h-0.5 bg-[#111827] dark:bg-white rounded-full z-20 pointer-events-none flex items-center shadow-xs">
+                            <div className="w-1.5 h-1.5 rounded-full bg-[#111827] dark:bg-white -ml-0.5 shadow-sm" />
+                          </div>
+                        )}
+
+                        {/* Grip Drag Handle */}
+                        {!permissions.isViewer && (
+                          <div
+                            className="cursor-grab active:cursor-grabbing text-[#d1d5db] dark:text-[#52525b] opacity-0 group-hover:opacity-100 group-hover:text-[#9ca3af] dark:group-hover:text-[#a1a1aa] transition-all shrink-0 -ml-0.5 mr-1"
+                          >
+                            <GripVertical className="w-3 h-3" />
+                          </div>
+                        )}
+
                         <button
                           onClick={() => setViewMode({ type: 'project', projectId: project.id })}
-                          className="flex items-center gap-2 truncate flex-1 text-left"
+                          className="flex items-center gap-2 truncate flex-1 text-left cursor-pointer min-w-0"
                         >
                           <Folder
-                            className="w-3.5 h-3.5 shrink-0"
-                            style={{ color: project.color || '#10b981' }}
+                            className={`w-3.5 h-3.5 shrink-0 ${!project.color ? (active ? 'text-[#111827] dark:text-white' : 'text-[#6b7280] dark:text-[#a1a1aa]') : ''}`}
+                            style={project.color ? { color: project.color } : undefined}
                           />
                           <span className="truncate">{project.name}</span>
                         </button>

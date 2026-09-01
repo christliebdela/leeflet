@@ -62,7 +62,7 @@ function rowToProject(row: Record<string, unknown>): Partial<Project> & { id: st
     id: row.id as string,
     name: (row.name as string) || 'Untitled',
     description: (row.description as string) || '',
-    color: (row.color as string) || '#10b981',
+    color: (row.color as string) || '',
     icon: (row.icon as string) || undefined,
     isArchived: Boolean(row.is_archived),
     createdAt: (row.created_at as string) || new Date().toISOString(),

@@ -52,6 +52,7 @@ interface LeafState {
   createProject: (data: { name: string; description?: string; color?: string; localPath?: string }) => Promise<Project>;
   updateProject: (project: Project) => Promise<void>;
   deleteProject: (id: string) => Promise<void>;
+  reorderProjects: (sourceId: string, targetId: string, position?: 'before' | 'after') => void;
   
   loadItems: () => Promise<void>;
   createItem: (data: {
@@ -385,6 +386,26 @@ export const useLeafStore = create<LeafState>((set, get) => ({
     await get().loadItems();
     broadcastSync({ type: 'projects_reload' });
     broadcastSync({ type: 'items_reload' });
+  },
+
+  reorderProjects: async (sourceId: string, targetId: string, position: 'before' | 'after' = 'before') => {
+    if (sourceId === targetId) return;
+
+    const projects = [...get().projects];
+    const sourceIndex = projects.findIndex((p) => p.id === sourceId);
+    if (sourceIndex === -1) return;
+
+    const [movedProject] = projects.splice(sourceIndex, 1);
+
+    const newTargetIndex = projects.findIndex((p) => p.id === targetId);
+    if (newTargetIndex === -1) return;
+
+    const insertIndex = position === 'after' ? newTargetIndex + 1 : newTargetIndex;
+    projects.splice(insertIndex, 0, movedProject);
+
+    set({ projects });
+    await dbService.saveProjectsOrder(projects);
+    broadcastSync({ type: 'projects_reload' });
   },
 
   loadItems: async () => {

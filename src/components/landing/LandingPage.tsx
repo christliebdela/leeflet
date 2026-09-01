@@ -291,64 +291,94 @@ export const LandingPage: React.FC = () => {
           <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-12 md:gap-14">
             
             {/* Ventrix RMS */}
-            <div className="flex items-center gap-2.5 group cursor-default transition-all duration-300 opacity-60 hover:opacity-100">
+            <a
+              href="https://app.ventryman.com/"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-2.5 group cursor-pointer transition-all duration-300 opacity-60 hover:opacity-100 hover:scale-[1.03]"
+            >
               <img
                 src="/trustees/ventrix-logo.png"
                 alt="Ventrix RMS"
                 className="h-6 sm:h-7 w-auto object-contain brightness-0 invert opacity-90 group-hover:opacity-100 group-hover:brightness-100 group-hover:invert-0 transition-all"
               />
               <span className="font-semibold text-xs sm:text-sm tracking-tight text-[#ededef]">Ventrix RMS</span>
-            </div>
+            </a>
 
             {/* IdeaGap */}
-            <div className="flex items-center gap-2.5 group cursor-default transition-all duration-300 opacity-60 hover:opacity-100">
+            <a
+              href="https://ideagap.org/"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-2.5 group cursor-pointer transition-all duration-300 opacity-60 hover:opacity-100 hover:scale-[1.03]"
+            >
               <img
                 src="/trustees/ideagap.jpg"
                 alt="IdeaGap"
                 className="w-6 h-6 rounded object-cover opacity-85 group-hover:opacity-100 transition-opacity"
               />
               <span className="font-semibold text-xs sm:text-sm tracking-tight text-[#ededef]">IdeaGap</span>
-            </div>
+            </a>
 
             {/* Supabase */}
-            <div className="flex items-center gap-2.5 group cursor-default transition-all duration-300 opacity-60 hover:opacity-100">
+            <a
+              href="https://supabase.com/"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-2.5 group cursor-pointer transition-all duration-300 opacity-60 hover:opacity-100 hover:scale-[1.03]"
+            >
               <img
                 src="/trustees/supabase.png"
                 alt="Supabase"
                 className="h-5 sm:h-6 w-auto object-contain opacity-85 group-hover:opacity-100 transition-opacity"
               />
               <span className="font-semibold text-xs sm:text-sm tracking-tight text-[#ededef]">Supabase</span>
-            </div>
+            </a>
 
             {/* Vercel */}
-            <div className="flex items-center gap-2.5 group cursor-default transition-all duration-300 opacity-60 hover:opacity-100">
+            <a
+              href="https://vercel.com/"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-2.5 group cursor-pointer transition-all duration-300 opacity-60 hover:opacity-100 hover:scale-[1.03]"
+            >
               <img
                 src="/trustees/logo-vercel.svg"
                 alt="Vercel"
                 className="w-4 h-4 object-contain brightness-0 invert opacity-90 group-hover:opacity-100 transition-opacity"
               />
               <span className="font-semibold text-xs sm:text-sm tracking-tight text-[#ededef]">Vercel</span>
-            </div>
+            </a>
 
             {/* Tuma */}
-            <div className="flex items-center gap-2.5 group cursor-default transition-all duration-300 opacity-60 hover:opacity-100">
+            <a
+              href="https://tuma-nu.vercel.app/"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-2.5 group cursor-pointer transition-all duration-300 opacity-60 hover:opacity-100 hover:scale-[1.03]"
+            >
               <img
                 src="/trustees/tuma.png"
                 alt="Tuma"
                 className="h-5 sm:h-6 w-auto object-contain brightness-0 invert opacity-85 group-hover:opacity-100 transition-opacity"
               />
               <span className="font-semibold text-xs sm:text-sm tracking-tight text-[#ededef]">Tuma</span>
-            </div>
+            </a>
 
             {/* Qlaima */}
-            <div className="flex items-center gap-2.5 group cursor-default transition-all duration-300 opacity-60 hover:opacity-100">
+            <a
+              href="https://qlaima.vercel.app/"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-2.5 group cursor-pointer transition-all duration-300 opacity-60 hover:opacity-100 hover:scale-[1.03]"
+            >
               <img
                 src="/trustees/qlaima.png"
                 alt="Qlaima"
                 className="h-5 sm:h-6 w-auto object-contain brightness-0 invert opacity-90 group-hover:opacity-100 transition-opacity"
               />
               <span className="font-semibold text-xs sm:text-sm tracking-tight text-[#ededef]">Qlaima</span>
-            </div>
+            </a>
 
           </div>
         </section>
@@ -874,12 +904,15 @@ export const LandingPage: React.FC = () => {
       {/* ── Multi-Column Structured Footer ── */}
       <footer className="border-t border-white/[0.06] pt-16 pb-12 px-6 max-w-6xl mx-auto text-xs">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8 pb-12 border-b border-white/[0.06]">
-          {/* Col 1: Brand & Bio */}
           <div className="col-span-2 space-y-3">
-            <div className="flex items-center gap-2">
-              <img src="/logo_alpha.png" alt="Leeflet" className="w-5 h-5 rounded opacity-90" />
-              <span className="font-brand text-2xl text-[#ededef]">leeflet</span>
-            </div>
+            <button
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="flex items-center gap-2 group cursor-pointer text-left focus:outline-hidden transition-transform active:scale-[0.98]"
+              title="Scroll to top"
+            >
+              <img src="/logo_alpha.png" alt="Leeflet" className="w-5 h-5 rounded opacity-90 group-hover:opacity-100 transition-opacity" />
+              <span className="font-brand text-2xl text-[#ededef] group-hover:text-white transition-colors">leeflet</span>
+            </button>
             <p className="text-xs text-[#71717a] leading-relaxed max-w-sm">
               Free, local-first project &amp; task tracker and keyboard-driven desktop workspace for solo developers and engineering teams.
             </p>
@@ -1003,12 +1036,6 @@ export const LandingPage: React.FC = () => {
             <a href="https://christliebdela.vercel.app/" target="_blank" rel="noreferrer" className="text-[#8a8f98] hover:text-white transition-colors">
               Christlieb Dela
             </a>.
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1.5 text-[11px] text-[#71717a]">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400/80"></span>
-              All systems operational
-            </span>
           </div>
         </div>
       </footer>

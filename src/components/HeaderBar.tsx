@@ -275,7 +275,7 @@ export const HeaderBar: React.FC = () => {
                   cx="18"
                   cy="18"
                   r="14"
-                  style={{ stroke: activeProj.color || '#10b981' }}
+                  style={{ stroke: activeProj.color || '#71717a' }}
                   strokeWidth="4"
                   strokeDasharray={88}
                   strokeDashoffset={88 - Math.round(((totalCount - openCount) / totalCount) * 88)}

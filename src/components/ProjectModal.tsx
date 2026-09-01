@@ -20,7 +20,7 @@ export const ProjectModal: React.FC = () => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [localPath, setLocalPath] = useState('');
-  const [color, setColor] = useState('#10b981');
+  const [color, setColor] = useState('');
 
   // Set of colors already assigned to other projects
   const assignedColors = new Set<string>(
@@ -45,16 +45,12 @@ export const ProjectModal: React.FC = () => {
       setName(editingProject.name);
       setDescription(editingProject.description || '');
       setLocalPath(editingProject.localPath || '');
-      setColor(editingProject.color || '#10b981');
+      setColor(editingProject.color || '');
     } else {
       setName('');
       setDescription('');
       setLocalPath('');
-      // Auto-assign the first available preset color that isn't already in use
-      const availablePreset = PROJECT_COLOR_PRESETS.find(
-        (p) => !assignedColors.has(p.value.toLowerCase())
-      );
-      setColor(availablePreset ? availablePreset.value : '#10b981');
+      setColor('');
     }
   }, [editingProject, isProjectModalOpen]);
 
@@ -75,14 +71,14 @@ export const ProjectModal: React.FC = () => {
         name: name.trim(),
         description: description.trim() || undefined,
         localPath: localPath.trim() || undefined,
-        color,
+        color: color.trim() || '',
       });
     } else {
       const proj = await createProject({
         name: name.trim(),
         description: description.trim() || undefined,
         localPath: localPath.trim() || undefined,
-        color,
+        color: color.trim() || '',
       });
       setSelectedProjectId(proj.id);
     }
@@ -98,9 +94,9 @@ export const ProjectModal: React.FC = () => {
     }
   };
 
-  const activePresetMatch = PROJECT_COLOR_PRESETS.find(
-    (p) => p.value.toLowerCase() === color.toLowerCase()
-  );
+  const activePresetMatch = Boolean(color)
+    ? PROJECT_COLOR_PRESETS.find((p) => p.value.toLowerCase() === color.toLowerCase())
+    : undefined;
 
   return (
     <div
@@ -112,7 +108,10 @@ export const ProjectModal: React.FC = () => {
       <div className="w-full max-w-md bg-white dark:bg-[#18181b] rounded-[12px] border border-[#e5e7eb] dark:border-[#27272a] shadow-modal p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
         <div className="flex items-center justify-between border-b border-[#f3f4f6] dark:border-[#27272a] pb-3">
           <div className="flex items-center gap-2">
-            <Folder className="w-4 h-4" style={{ color }} />
+            <Folder
+              className="w-4 h-4 text-[#6b7280] dark:text-[#a1a1aa] transition-colors"
+              style={color ? { color } : undefined}
+            />
             <h2 className="text-sm font-bold text-[#111827] dark:text-[#f4f4f5]">
               {editingProject ? 'Edit Project' : 'New Project'}
             </h2>
@@ -147,15 +146,27 @@ export const ProjectModal: React.FC = () => {
               <label className="font-semibold text-[#374151] dark:text-[#d4d4d8]">
                 Project Color
               </label>
-              <span className="text-[11px] text-[#6b7280] dark:text-[#a1a1aa] font-medium">
-                {activePresetMatch ? activePresetMatch.name : `Custom (${color})`}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-[#6b7280] dark:text-[#a1a1aa] font-medium">
+                  {activePresetMatch ? activePresetMatch.name : (color ? `Custom (${color})` : 'Default (Monochrome)')}
+                </span>
+                {Boolean(color) && (
+                  <button
+                    type="button"
+                    onClick={() => setColor('')}
+                    className="text-[10px] text-[#6b7280] hover:text-[#111827] dark:text-[#a1a1aa] dark:hover:text-white transition-colors cursor-pointer"
+                  >
+                    Reset to default
+                  </button>
+                )}
+              </div>
             </div>
 
             <ColorPicker
               value={color}
               onChange={setColor}
               assignedColors={assignedColors}
+              allowDefault={true}
             />
           </div>
 

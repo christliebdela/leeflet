@@ -849,7 +849,7 @@ export const ItemDetailPane: React.FC = () => {
                         <div className="flex items-center gap-2 truncate">
                           <Folder
                             className="w-3.5 h-3.5 shrink-0"
-                            style={{ color: p.color || '#10b981' }}
+                            style={{ color: p.color || '#6b7280' }}
                           />
                           <span className="truncate">{p.name}</span>
                         </div>

@@ -34,6 +34,7 @@ interface ColorPickerProps {
   value: string;
   onChange: (color: string) => void;
   assignedColors?: Set<string>;
+  allowDefault?: boolean;
   className?: string;
 }
 
@@ -41,6 +42,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
   value,
   onChange,
   assignedColors = new Set(),
+  allowDefault = true,
   className = '',
 }) => {
   const [isCustomOpen, setIsCustomOpen] = useState(false);
@@ -64,9 +66,13 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isCustomOpen]);
 
-  const activePresetMatch = MODERN_COLOR_PRESETS.find(
-    (p) => p.value.toLowerCase() === value.toLowerCase()
-  );
+  const isDefaultSelected = !value || value.toLowerCase() === 'default' || value.toLowerCase() === 'none';
+
+  const activePresetMatch = Boolean(value)
+    ? MODERN_COLOR_PRESETS.find((p) => p.value.toLowerCase() === value.toLowerCase())
+    : undefined;
+
+  const isCustomSelected = Boolean(value && !activePresetMatch && !isDefaultSelected);
 
   const handleHexChange = (val: string) => {
     let clean = val.startsWith('#') ? val : `#${val}`;
@@ -97,9 +103,36 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
     <div className={`space-y-2 select-none ${className}`}>
       {/* Preset Row */}
       <div className="flex items-center gap-2 flex-wrap p-2.5 rounded-[8px] bg-[#f9fafb] dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a]">
+        {/* Default (Monochrome) Option */}
+        {allowDefault && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={() => {
+                  onChange('');
+                  setIsCustomOpen(false);
+                }}
+                className={`w-6 h-6 rounded-full flex items-center justify-center transition-all relative border border-[#d1d5db] dark:border-[#3f3f46] cursor-pointer ${
+                  isDefaultSelected
+                    ? 'ring-2 ring-offset-2 ring-offset-white dark:ring-offset-[#1c1c1f] ring-[#111827] dark:ring-white scale-110 shadow-xs bg-[#6b7280] dark:bg-[#71717a]'
+                    : 'hover:scale-110 shadow-2xs bg-[#9ca3af] dark:bg-[#52525b] opacity-75 hover:opacity-100'
+                }`}
+              >
+                {isDefaultSelected && (
+                  <Check className="w-3.5 h-3.5 text-white drop-shadow-md stroke-[2.5]" />
+                )}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top">
+              Default (Monochrome)
+            </TooltipContent>
+          </Tooltip>
+        )}
+
         {MODERN_COLOR_PRESETS.map((preset) => {
           const isAssigned = assignedColors.has(preset.value.toLowerCase());
-          const isSelected = value.toLowerCase() === preset.value.toLowerCase();
+          const isSelected = Boolean(value) && value.toLowerCase() === preset.value.toLowerCase();
 
           return (
             <Tooltip key={preset.value}>
@@ -143,15 +176,15 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
                 type="button"
                 onClick={() => setIsCustomOpen(!isCustomOpen)}
                 className={`w-6 h-6 rounded-full flex items-center justify-center border border-[#d1d5db] dark:border-[#3f3f46] transition-all cursor-pointer relative overflow-hidden ${
-                  !activePresetMatch
+                  isCustomSelected
                     ? 'ring-2 ring-offset-2 ring-offset-white dark:ring-offset-[#1c1c1f] ring-[#111827] dark:ring-white scale-110 shadow-xs'
                     : 'hover:scale-110 bg-[#ebecee] dark:bg-[#27272a]'
                 }`}
                 style={{
-                  backgroundColor: !activePresetMatch ? value : undefined,
+                  backgroundColor: isCustomSelected ? value : undefined,
                 }}
               >
-                {!activePresetMatch ? (
+                {isCustomSelected ? (
                   <Check className="w-3.5 h-3.5 text-white drop-shadow-md stroke-[2.5]" />
                 ) : (
                   <Pipette className="w-3 h-3 text-[#6b7280] dark:text-[#a1a1aa]" />
@@ -159,7 +192,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
               </button>
             </TooltipTrigger>
             <TooltipContent side="top">
-              Custom Color {!activePresetMatch ? `(${value})` : ''}
+              Custom Color {isCustomSelected ? `(${value})` : ''}
             </TooltipContent>
           </Tooltip>
 
