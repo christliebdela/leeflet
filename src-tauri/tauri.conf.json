@@ -22,8 +22,8 @@
         "fullscreen": false,
         "decorations": false,
         "center": true,
-        "transparent": true,
-        "backgroundColor": [18, 18, 20, 255],
+        "transparent": false,
+        "backgroundColor": [15, 15, 17, 255],
         "shadow": true,
         "dragDropEnabled": false
       },

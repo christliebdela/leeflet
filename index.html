@@ -7,29 +7,36 @@
     <title>leeflet</title>
     <!-- Prevent theme flash before paint -->
     <style>
-      :root {
-        background-color: transparent;
-      }
       html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow: hidden;
+      }
+      /* Floating popup widgets (quick capture, sticky note, queue widget) require transparent body */
+      html.is-popup-window, html.is-popup-window body {
         background-color: transparent !important;
+      }
+      html.dark:not(.is-popup-window), html.dark:not(.is-popup-window) body {
+        background-color: #0f0f11 !important;
+      }
+      html:not(.dark):not(.is-popup-window), html:not(.dark):not(.is-popup-window) body {
+        background-color: #f8f9fa !important;
       }
     </style>
     <script>
       (function() {
         try {
-          var isCapture = window.location.search.includes('window=capture');
+          var isPopup = window.location.search.includes('window=');
+          if (isPopup) {
+            document.documentElement.classList.add('is-popup-window');
+          }
           var saved = localStorage.getItem('leaf_theme');
           var isDark = saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
           if (isDark) {
             document.documentElement.classList.add('dark');
-            if (!isCapture) {
-              document.documentElement.style.backgroundColor = '#121214';
-            }
           } else {
             document.documentElement.classList.remove('dark');
-            if (!isCapture) {
-              document.documentElement.style.backgroundColor = '#f9fafb';
-            }
           }
         } catch (e) {}
       })();
