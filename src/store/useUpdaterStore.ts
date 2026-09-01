@@ -132,11 +132,11 @@ export const useUpdaterStore = create<UpdaterState>((set, get) => ({
       currentVersion: '0.1.0',
       availableVersion: '0.2.0',
       releaseDate: new Date().toLocaleDateString(),
-      releaseNotes: `### What's New in v0.2.0 ✨
-- 🚀 **Auto-updater & In-App Alerts**: Seamless one-click updates directly inside Leeflet.
-- ⚡ **Dynamic Stat Badge Animations**: Smooth, responsive header metrics that adjust seamlessly to search.
-- 🎨 **Sleek Backlog Metrics Strip**: Streamlined dashboard filter ribbon above task items.
-- 🛡️ **Role-Based Access Control**: Enhanced security and permission gates for team workspaces.`,
+      releaseNotes: `### What's New in v0.2.0
+- **Auto-updater & In-App Alerts**: Seamless one-click updates directly inside Leeflet.
+- **Dynamic Stat Badge Animations**: Smooth, responsive header metrics that adjust seamlessly to search.
+- **Sleek Backlog Metrics Strip**: Streamlined dashboard filter ribbon above task items.
+- **Role-Based Access Control**: Enhanced security and permission gates for team workspaces.`,
       isModalOpen: true,
       error: null,
     });

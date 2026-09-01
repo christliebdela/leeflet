@@ -40,6 +40,7 @@ import {
   Info,
   Zap,
   Shield,
+  ArrowUpCircle,
 } from 'lucide-react';
 import { Item, Attachment, ItemType, Priority, Project, THEME_PRESETS } from '../types';
 import { formatFileSize, ITEM_TYPE_CONFIG, PRIORITY_CONFIG } from '../utils/format';
@@ -2446,7 +2447,7 @@ export const SettingsView: React.FC = () => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-[8px] bg-[#f4f5f6] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#2e2e33] flex items-center justify-center shrink-0 shadow-xs">
-                  <Sparkles className="w-5 h-5 text-[#6b7280] dark:text-[#a1a1aa]" />
+                  <ArrowUpCircle className="w-5 h-5 text-[#111827] dark:text-white" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
@@ -2540,7 +2541,7 @@ export const SettingsView: React.FC = () => {
             <div className="flex items-center gap-3.5">
               <div className="w-10 h-10 rounded-full overflow-hidden bg-[#27272a] border border-[#e5e7eb] dark:border-[#323238] flex items-center justify-center shadow-xs shrink-0 select-none">
                 <img
-                  src={authorAvatarError ? getDiceBearSvgUrl('bottts-neutral', 'Christlieb') : 'https://github.com/christliebdela.png'}
+                  src={authorAvatarError ? getDiceBearSvgUrl('bottts-neutral', 'Christlieb') : '/author_avatar.png'}
                   alt="Christlieb Dela"
                   onError={() => setAuthorAvatarError(true)}
                   className="w-full h-full object-cover"

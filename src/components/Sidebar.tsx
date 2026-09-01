@@ -28,7 +28,7 @@ import {
   Check,
   Link2,
   Building2,
-  Sparkles,
+  ArrowUpCircle,
 } from 'lucide-react';
 import { dbService } from '../services/db';
 import { ViewMode, ItemType, Priority, Project, Item, Workspace } from '../types';
@@ -527,10 +527,10 @@ export const Sidebar: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setUpdateModalOpen(true)}
-                  className="w-9 h-9 flex items-center justify-center rounded-[6px] text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white transition-colors cursor-pointer relative"
+                  className="w-9 h-9 flex items-center justify-center rounded-[6px] bg-[#111827] dark:bg-[#f4f4f5] text-white dark:text-[#18181b] hover:bg-[#1f2937] dark:hover:bg-white transition-all shadow-xs cursor-pointer relative active:scale-[0.96]"
                 >
-                  <Sparkles className="w-4 h-4" />
-                  <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-[#111827] dark:bg-white" />
+                  <ArrowUpCircle className="w-4 h-4" />
+                  <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-white dark:bg-[#18181b]" />
                 </button>
               </TooltipTrigger>
               <TooltipContent side="right">Update Available (v{availableVersion || 'new'})</TooltipContent>
@@ -1061,13 +1061,13 @@ export const Sidebar: React.FC = () => {
             <button
               type="button"
               onClick={() => setUpdateModalOpen(true)}
-              className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white transition-colors text-xs font-medium cursor-pointer"
+              className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] bg-[#111827] dark:bg-[#f4f4f5] text-white dark:text-[#18181b] hover:bg-[#1f2937] dark:hover:bg-white transition-all text-xs font-semibold shadow-xs cursor-pointer select-none active:scale-[0.98] mb-1"
             >
               <div className="flex items-center gap-2 min-w-0">
-                <Sparkles className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa] shrink-0" />
-                <span className="truncate">Update Ready</span>
+                <ArrowUpCircle className="w-3.5 h-3.5 text-white dark:text-[#18181b] shrink-0" />
+                <span className="truncate">Update Available</span>
               </div>
-              <span className="text-[10px] font-mono bg-[#ebecee] dark:bg-[#27272a] text-[#374151] dark:text-[#d4d4d8] px-1.5 py-0.5 rounded font-semibold shrink-0 border border-[#e5e7eb] dark:border-[#3f3f46]">
+              <span className="text-[10px] font-mono bg-white/20 dark:bg-black/10 text-white dark:text-[#18181b] px-1.5 py-0.5 rounded font-bold shrink-0">
                 v{availableVersion || 'new'}
               </span>
             </button>
