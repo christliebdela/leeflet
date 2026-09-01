@@ -23,6 +23,7 @@ import { Item, ChecklistItem, Project } from '../types';
 import { formatDate, formatDueDateLabel } from '../utils/format';
 import { getStoredTeamMembers, matchesAssignee } from '../utils/team';
 import { resolveAvatarUrl } from '../utils/avatars';
+import { getUserPermissions } from '../utils/permissions';
 
 const LinearPriorityIcon: React.FC<{ priority: string }> = ({ priority }) => {
   switch (priority) {
@@ -77,6 +78,9 @@ export const ItemListView: React.FC = () => {
     filterOptions,
     setFilterOptions,
   } = useLeafStore();
+
+  const workspace = useLeafStore((s) => s.workspace);
+  const permissions = getUserPermissions(workspace?.id);
 
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
   const [dragOverInfo, setDragOverInfo] = useState<{ id: string; position: 'before' | 'after' } | null>(null);
@@ -365,8 +369,12 @@ export const ItemListView: React.FC = () => {
               <div
                 key={item.id}
                 data-item-card="true"
-                draggable
+                draggable={permissions.canMoveItemStatus(item)}
                 onDragStart={(e) => {
+                  if (!permissions.canMoveItemStatus(item)) {
+                    e.preventDefault();
+                    return;
+                  }
                   e.dataTransfer.setData('text/plain', item.id);
                   e.dataTransfer.effectAllowed = 'move';
                   setDraggedItemId(item.id);

@@ -30,9 +30,11 @@ import {
   Redo2,
   Calendar as CalendarIcon,
   User,
+  Shield,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Item, ItemType, Priority, Status, ChecklistItem, Attachment, TeamMember } from '../types';
+import { getUserPermissions } from '../utils/permissions';
 import {
   formatFullDate,
   formatFileSize,
@@ -75,6 +77,9 @@ export const ItemDetailPane: React.FC = () => {
   const currentItem = items.find((i: Item) => i.id === selectedItemId);
 
   const [activeItem, setActiveItem] = useState<Item | null>(null);
+
+  const workspace = useLeafStore((s) => s.workspace);
+  const permissions = getUserPermissions(workspace?.id);
 
   // Keep the most recent item cached while open or sliding out
   useEffect(() => {
@@ -332,10 +337,12 @@ export const ItemDetailPane: React.FC = () => {
   };
 
   const itemToRender = activeItem || fallbackItem;
+  const canEdit = permissions.canEditItem(itemToRender);
+  const canDelete = permissions.canDeleteItem(itemToRender);
 
   // Auto-save helper
   const triggerAutoSave = (patch: Partial<Item>) => {
-    if (!itemToRender.id) return;
+    if (!itemToRender.id || !canEdit) return;
     setSaveStatus('saving');
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = setTimeout(async () => {
@@ -359,7 +366,7 @@ export const ItemDetailPane: React.FC = () => {
   };
 
   const handleFieldChange = async (field: keyof Item, value: any) => {
-    if (!itemToRender.id) return;
+    if (!itemToRender.id || !canEdit) return;
     if (field === 'status' && value === 'done' && itemToRender.status !== 'done') {
       soundService.playCompletionChime();
     }
@@ -373,7 +380,7 @@ export const ItemDetailPane: React.FC = () => {
 
   // Checklist Actions
   const addChecklistItem = () => {
-    if (!newChecklistText.trim() || !itemToRender.id) return;
+    if (!canEdit || !newChecklistText.trim() || !itemToRender.id) return;
     const newItem: ChecklistItem = {
       id: crypto.randomUUID(),
       itemId: itemToRender.id,
@@ -388,6 +395,7 @@ export const ItemDetailPane: React.FC = () => {
   };
 
   const toggleChecklist = (id: string) => {
+    if (!canEdit) return;
     const target = checklist.find((c) => c.id === id);
     if (target && !target.isCompleted) {
       soundService.playCompletionChime();
@@ -400,6 +408,7 @@ export const ItemDetailPane: React.FC = () => {
   };
 
   const removeChecklistItem = (id: string) => {
+    if (!canEdit) return;
     const next = checklist.filter((c) => c.id !== id);
     setChecklist(next);
     triggerAutoSave({ checklist: next });
@@ -407,6 +416,7 @@ export const ItemDetailPane: React.FC = () => {
 
   // Attachments Actions
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!canEdit) return;
     const files = e.target.files;
     if (!files || files.length === 0 || !itemToRender.id) return;
 
@@ -432,6 +442,7 @@ export const ItemDetailPane: React.FC = () => {
   };
 
   const removeAttachment = (id: string) => {
+    if (!canEdit) return;
     const next = attachments.filter((a) => a.id !== id);
     setAttachments(next);
     triggerAutoSave({ attachments: next });
@@ -439,6 +450,7 @@ export const ItemDetailPane: React.FC = () => {
 
   // Rich WYSIWYG Formatting helper
   const applyRichCommand = (command: string, value: string = '') => {
+    if (!canEdit) return;
     const editor = editorRef.current;
     if (!editor) return;
 
@@ -747,6 +759,14 @@ export const ItemDetailPane: React.FC = () => {
           </div>
         </div>
 
+        {/* View Only Banner for Viewers */}
+        {!canEdit && (
+          <div className="mx-3 mt-2 flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-500/10 border border-amber-500/25 text-amber-600 dark:text-amber-400 rounded-[6px] text-xs font-medium shrink-0 select-none">
+            <Shield className="w-3.5 h-3.5 shrink-0" />
+            <span>View Only — You have Viewer permissions in this workspace</span>
+          </div>
+        )}
+
         {/* Title & Metadata Section */}
         <div className="px-3 pb-2.5 pt-0.5 border-b border-[#f3f4f6] dark:border-[#27272a] flex flex-col gap-2">
           {/* Full-width Title Textarea */}
@@ -754,7 +774,9 @@ export const ItemDetailPane: React.FC = () => {
             ref={titleInputRef}
             rows={1}
             value={title}
+            readOnly={!canEdit}
             onChange={(e) => {
+              if (!canEdit) return;
               setTitle(e.target.value);
               triggerAutoSave({ title: e.target.value });
             }}
@@ -767,7 +789,9 @@ export const ItemDetailPane: React.FC = () => {
             placeholder="Item title..."
             className={`w-full ${
               title.length > 50 ? 'text-[13.5px] font-bold tracking-tight leading-snug' : 'text-[15px] font-bold tracking-tight leading-snug'
-            } text-[#09090b] dark:text-[#fafafa] placeholder:font-normal placeholder:text-[#9ca3af] dark:placeholder:text-[#52525b] focus:outline-none bg-transparent hover:bg-[#f9fafb] dark:hover:bg-[#1f1f23] px-1.5 py-0.5 rounded-[5px] transition-colors resize-none [field-sizing:content] max-h-[140px] overflow-y-auto custom-scrollbar m-0 block`}
+            } text-[#09090b] dark:text-[#fafafa] placeholder:font-normal placeholder:text-[#9ca3af] dark:placeholder:text-[#52525b] focus:outline-none bg-transparent hover:bg-[#f9fafb] dark:hover:bg-[#1f1f23] px-1.5 py-0.5 rounded-[5px] transition-colors resize-none [field-sizing:content] max-h-[140px] overflow-y-auto custom-scrollbar m-0 block ${
+              !canEdit ? 'cursor-default select-text' : ''
+            }`}
           />
 
           {/* Metadata Badges Row with Icons & Color Dots */}
@@ -776,8 +800,9 @@ export const ItemDetailPane: React.FC = () => {
             <div className="relative">
               <button
                 type="button"
+                disabled={!canEdit}
                 onClick={() => setOpenMenu(openMenu === 'project' ? null : 'project')}
-                className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-[#f4f4f5] border border-transparent hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-colors"
+                className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-[#f4f4f5] border border-transparent hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 <div className="flex items-center gap-1.5 truncate">
                   <Folder
@@ -891,8 +916,9 @@ export const ItemDetailPane: React.FC = () => {
             <div className="relative">
               <button
                 type="button"
+                disabled={!canEdit}
                 onClick={() => setOpenMenu(openMenu === 'type' ? null : 'type')}
-                className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-[#f4f4f5] border border-transparent hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-colors"
+                className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-[#f4f4f5] border border-transparent hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 <div className="flex items-center gap-1.5 truncate">
                   <TypeIcon className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa] shrink-0" />
@@ -936,8 +962,9 @@ export const ItemDetailPane: React.FC = () => {
             <div className="relative">
               <button
                 type="button"
+                disabled={!canEdit}
                 onClick={() => setOpenMenu(openMenu === 'priority' ? null : 'priority')}
-                className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-[#f4f4f5] border border-transparent hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-colors"
+                className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-[#f4f4f5] border border-transparent hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 <div className="flex items-center gap-1.5 truncate">
                   <span className={`w-2 h-2 rounded-full shrink-0 ${priorityConfig.dotColor}`} />
@@ -980,8 +1007,9 @@ export const ItemDetailPane: React.FC = () => {
             <div className="relative">
               <button
                 type="button"
+                disabled={!canEdit}
                 onClick={() => setOpenMenu(openMenu === 'status' ? null : 'status')}
-                className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-[#f4f4f5] border border-transparent hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-colors"
+                className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-[#f4f4f5] border border-transparent hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 <div className="flex items-center gap-1.5 truncate">
                   <span className={`w-2 h-2 rounded-full shrink-0 ${statusConfig.dotColor}`} />
@@ -1024,8 +1052,9 @@ export const ItemDetailPane: React.FC = () => {
             <div className="relative">
               <button
                 type="button"
+                disabled={!canEdit}
                 onClick={() => setOpenMenu(openMenu === 'assignee' ? null : 'assignee')}
-                className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-[#f4f4f5] border border-transparent hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-colors"
+                className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-[#f4f4f5] border border-transparent hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 <div className="flex items-center gap-1.5 truncate">
                   {assigneeId ? (
@@ -1113,8 +1142,9 @@ export const ItemDetailPane: React.FC = () => {
             <div className="relative">
               <button
                 type="button"
+                disabled={!canEdit}
                 onClick={() => setOpenMenu(openMenu === 'dueDate' ? null : 'dueDate')}
-                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] bg-[#f4f5f6] dark:bg-[#27272a] border border-transparent hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-colors ${
+                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] bg-[#f4f5f6] dark:bg-[#27272a] border border-transparent hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-colors disabled:opacity-70 disabled:cursor-not-allowed ${
                   dueAt
                     ? 'text-indigo-600 dark:text-indigo-400 font-medium'
                     : 'text-[#111827] dark:text-[#f4f4f5]'
@@ -1224,156 +1254,158 @@ export const ItemDetailPane: React.FC = () => {
         {/* Editor & Content Area */}
         <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
           {/* Markdown & Rich Text Toolbar */}
-          <div className="flex items-center gap-1 py-1 px-1.5 bg-[#f9fafb] dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] text-[#4b5563] dark:text-[#a1a1aa]">
-            {/* Undo / Redo Actions */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  onClick={handleUndo}
-                  disabled={!canUndo}
-                  className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
-                >
-                  <Undo2 className="w-3.5 h-3.5" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Undo (Ctrl+Z)</p>
-              </TooltipContent>
-            </Tooltip>
+          {canEdit && (
+            <div className="flex items-center gap-1 py-1 px-1.5 bg-[#f9fafb] dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] text-[#4b5563] dark:text-[#a1a1aa]">
+              {/* Undo / Redo Actions */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={handleUndo}
+                    disabled={!canUndo}
+                    className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                  >
+                    <Undo2 className="w-3.5 h-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Undo (Ctrl+Z)</p>
+                </TooltipContent>
+              </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  onClick={handleRedo}
-                  disabled={!canRedo}
-                  className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
-                >
-                  <Redo2 className="w-3.5 h-3.5" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Redo (Ctrl+Y)</p>
-              </TooltipContent>
-            </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={handleRedo}
+                    disabled={!canRedo}
+                    className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                  >
+                    <Redo2 className="w-3.5 h-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Redo (Ctrl+Y)</p>
+                </TooltipContent>
+              </Tooltip>
 
-            <div className="w-px h-3 bg-[#e5e7eb] dark:bg-[#27272a] mx-0.5" />
+              <div className="w-px h-3 bg-[#e5e7eb] dark:bg-[#27272a] mx-0.5" />
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  onClick={() => applyRichCommand('formatBlock', '<h3>')}
-                  className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs"
-                >
-                  <Heading className="w-3.5 h-3.5" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Heading</p>
-              </TooltipContent>
-            </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => applyRichCommand('formatBlock', '<h3>')}
+                    className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs"
+                  >
+                    <Heading className="w-3.5 h-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Heading (###)</p>
+                </TooltipContent>
+              </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  onClick={() => applyRichCommand('bold')}
-                  className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs"
-                >
-                  <Bold className="w-3.5 h-3.5" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Bold (Ctrl+B)</p>
-              </TooltipContent>
-            </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => applyRichCommand('bold')}
+                    className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs"
+                  >
+                    <Bold className="w-3.5 h-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Bold (Ctrl+B)</p>
+                </TooltipContent>
+              </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  onClick={() => applyRichCommand('italic')}
-                  className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs"
-                >
-                  <Italic className="w-3.5 h-3.5" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Italic (Ctrl+I)</p>
-              </TooltipContent>
-            </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => applyRichCommand('italic')}
+                    className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs"
+                  >
+                    <Italic className="w-3.5 h-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Italic (Ctrl+I)</p>
+                </TooltipContent>
+              </Tooltip>
 
-            <div className="w-px h-3 bg-[#e5e7eb] dark:bg-[#27272a] mx-0.5" />
+              <div className="w-px h-3 bg-[#e5e7eb] dark:bg-[#27272a] mx-0.5" />
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  onClick={() => applyRichCommand('insertUnorderedList')}
-                  className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs"
-                >
-                  <List className="w-3.5 h-3.5" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Bullet list</p>
-              </TooltipContent>
-            </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => applyRichCommand('insertUnorderedList')}
+                    className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs"
+                  >
+                    <List className="w-3.5 h-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Bullet list</p>
+                </TooltipContent>
+              </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  onClick={() => applyRichCommand('insertOrderedList')}
-                  className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs"
-                >
-                  <ListOrdered className="w-3.5 h-3.5" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Numbered list</p>
-              </TooltipContent>
-            </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => applyRichCommand('insertOrderedList')}
+                    className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs"
+                  >
+                    <ListOrdered className="w-3.5 h-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Numbered list</p>
+                </TooltipContent>
+              </Tooltip>
 
-            <div className="w-px h-3 bg-[#e5e7eb] dark:bg-[#27272a] mx-0.5" />
+              <div className="w-px h-3 bg-[#e5e7eb] dark:bg-[#27272a] mx-0.5" />
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  onClick={handleLinkButtonClick}
-                  className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs transition-colors"
-                >
-                  <Link className="w-3.5 h-3.5" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Link (Ctrl+K)</p>
-              </TooltipContent>
-            </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={handleLinkButtonClick}
+                    className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs transition-colors"
+                  >
+                    <Link className="w-3.5 h-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Link (Ctrl+K)</p>
+                </TooltipContent>
+              </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  onClick={() => applyRichCommand('code')}
-                  className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs"
-                >
-                  <Code className="w-3.5 h-3.5" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Inline code</p>
-              </TooltipContent>
-            </Tooltip>
-          </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => applyRichCommand('code')}
+                    className="p-1 hover:bg-[#ebecee] dark:hover:bg-[#27272a] rounded text-xs"
+                  >
+                    <Code className="w-3.5 h-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Inline code</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          )}
 
           {/* Rich Content WYSIWYG Editor */}
           <div
             ref={editorRef}
-            contentEditable
+            contentEditable={canEdit}
             suppressContentEditableWarning
             onClick={handleEditorClick}
             onMouseDown={handleEditorMouseDown}
@@ -1390,7 +1422,9 @@ export const ItemDetailPane: React.FC = () => {
               }
             }}
             data-placeholder="Add details, notes, links, or markdown content..."
-            className="w-full min-h-[140px] max-h-[220px] p-2.5 bg-transparent text-[#111827] dark:text-[#f4f4f5] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] text-xs focus:outline-none focus:border-[#9ca3af] dark:focus:border-[#52525b] overflow-y-auto custom-scrollbar leading-relaxed empty:before:content-[attr(data-placeholder)] empty:before:text-[#9ca3af] dark:empty:before:text-[#71717a] empty:before:pointer-events-none max-w-none [&_b]:font-bold [&_strong]:font-bold [&_i]:italic [&_em]:italic [&_h1]:text-base [&_h1]:font-bold [&_h1]:my-1.5 [&_h2]:text-sm [&_h2]:font-bold [&_h2]:my-1 [&_h3]:text-xs [&_h3]:font-bold [&_h3]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-1 [&_a]:text-blue-500 [&_a]:underline [&_a]:cursor-pointer [&_a:hover]:text-blue-400 [&_a]:relative [&_a]:z-10 cursor-text [&_pre]:bg-black/10 dark:[&_pre]:bg-white/10 [&_pre]:p-2 [&_pre]:rounded [&_pre]:font-mono [&_code]:bg-black/10 dark:[&_code]:bg-white/10 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:font-mono"
+            className={`w-full min-h-[140px] max-h-[220px] p-2.5 bg-transparent text-[#111827] dark:text-[#f4f4f5] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] text-xs focus:outline-none focus:border-[#9ca3af] dark:focus:border-[#52525b] overflow-y-auto custom-scrollbar leading-relaxed empty:before:content-[attr(data-placeholder)] empty:before:text-[#9ca3af] dark:empty:before:text-[#71717a] empty:before:pointer-events-none max-w-none [&_b]:font-bold [&_strong]:font-bold [&_i]:italic [&_em]:italic [&_h1]:text-base [&_h1]:font-bold [&_h1]:my-1.5 [&_h2]:text-sm [&_h2]:font-bold [&_h2]:my-1 [&_h3]:text-xs [&_h3]:font-bold [&_h3]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-1 [&_a]:text-blue-500 [&_a]:underline [&_a]:cursor-pointer [&_a:hover]:text-blue-400 [&_a]:relative [&_a]:z-10 [&_pre]:bg-black/10 dark:[&_pre]:bg-white/10 [&_pre]:p-2 [&_pre]:rounded [&_pre]:font-mono [&_code]:bg-black/10 dark:[&_code]:bg-white/10 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:font-mono ${
+              !canEdit ? 'cursor-default select-text' : 'cursor-text'
+            }`}
           />
 
           {/* Checklist Section */}
@@ -1411,6 +1445,7 @@ export const ItemDetailPane: React.FC = () => {
                   <div className="flex items-start gap-2 flex-1 min-w-0">
                     <Checkbox
                       checked={item.isCompleted}
+                      disabled={!canEdit}
                       onChange={() => toggleChecklist(item.id)}
                     >
                       <span
@@ -1424,51 +1459,58 @@ export const ItemDetailPane: React.FC = () => {
                       </span>
                     </Checkbox>
                   </div>
-                  <button
-                    onClick={() => removeChecklistItem(item.id)}
-                    className="opacity-0 group-hover:opacity-100 p-0.5 text-[#9ca3af] hover:text-rose-600 transition-opacity shrink-0 mt-0.5"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </button>
+                  {canEdit && (
+                    <button
+                      onClick={() => removeChecklistItem(item.id)}
+                      className="opacity-0 group-hover:opacity-100 p-0.5 text-[#9ca3af] hover:text-rose-600 transition-opacity shrink-0 mt-0.5"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  )}
                 </div>
               ))}
 
               {/* Add checklist input */}
-              <div className="flex items-center gap-1.5 pt-1">
-                <input
-                  type="text"
-                  value={newChecklistText}
-                  onChange={(e) => setNewChecklistText(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      addChecklistItem();
-                    }
-                  }}
-                  placeholder="Add checklist item..."
-                  className="flex-1 h-[28px] bg-[#f9fafb] dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[4px] px-2 text-xs text-[#111827] dark:text-[#f4f4f5] focus:outline-none focus:border-[#9ca3af] dark:focus:border-[#52525b]"
-                />
-                <button
-                  onClick={addChecklistItem}
-                  className="w-[28px] h-[28px] flex items-center justify-center bg-[#f3f4f6] dark:bg-[#27272a] text-[#374151] dark:text-[#d4d4d8] hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] rounded-[4px] text-xs transition-colors shrink-0"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                </button>
-              </div>
+              {canEdit && (
+                <div className="flex items-center gap-1.5 pt-1">
+                  <input
+                    type="text"
+                    value={newChecklistText}
+                    onChange={(e) => setNewChecklistText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addChecklistItem();
+                      }
+                    }}
+                    placeholder="Add checklist item..."
+                    className="flex-1 h-[28px] bg-[#f9fafb] dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[4px] px-2 text-xs text-[#111827] dark:text-[#f4f4f5] focus:outline-none focus:border-[#9ca3af] dark:focus:border-[#52525b]"
+                  />
+                  <button
+                    onClick={addChecklistItem}
+                    className="w-[28px] h-[28px] flex items-center justify-center bg-[#f3f4f6] dark:bg-[#27272a] text-[#374151] dark:text-[#d4d4d8] hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] rounded-[4px] text-xs transition-colors shrink-0"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Attachments Section */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs font-semibold text-[#111827] dark:text-[#f4f4f5]">
-              <span>Attachments</span>
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-1 text-[11px] font-normal text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white"
-              >
-                <Plus className="w-3 h-3" />
-                <span>Upload</span>
-              </button>
+              <span>Attachments ({attachments.length})</span>
+              {canEdit && (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-1 text-[11px] font-normal text-blue-600 dark:text-blue-400 hover:underline"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>Upload</span>
+                </button>
+              )}
               <input
                 type="file"
                 ref={fileInputRef}
@@ -1479,15 +1521,21 @@ export const ItemDetailPane: React.FC = () => {
             </div>
 
             {attachments.length === 0 ? (
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className="border border-dashed border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] p-3 text-center cursor-pointer hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-colors"
-              >
-                <Paperclip className="w-4 h-4 mx-auto text-[#9ca3af] mb-1" />
-                <span className="text-[11px] text-[#6b7280] dark:text-[#a1a1aa]">
-                  Drop files or click to attach
-                </span>
-              </div>
+              canEdit ? (
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border border-dashed border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] p-3 text-center cursor-pointer hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-colors"
+                >
+                  <Paperclip className="w-4 h-4 mx-auto text-[#9ca3af] mb-1" />
+                  <span className="text-[11px] text-[#6b7280] dark:text-[#a1a1aa]">
+                    Drop files or click to attach
+                  </span>
+                </div>
+              ) : (
+                <div className="p-2 text-center text-[11px] text-[#9ca3af] dark:text-[#71717a] italic">
+                  No attachments
+                </div>
+              )
             ) : (
               <div className="space-y-1.5">
                 {attachments.map((att) => {
@@ -1547,12 +1595,14 @@ export const ItemDetailPane: React.FC = () => {
                             <Download className="w-3 h-3" />
                           </a>
                         )}
-                        <button
-                          onClick={() => removeAttachment(att.id)}
-                          className="p-1 text-[#9ca3af] hover:text-rose-600"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
+                        {canEdit && (
+                          <button
+                            onClick={() => removeAttachment(att.id)}
+                            className="p-1 text-[#9ca3af] hover:text-rose-600"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
@@ -1570,25 +1620,29 @@ export const ItemDetailPane: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => handleFieldChange('status', 'archived')}
-              className="px-2.5 py-1 text-xs text-[#6b7280] dark:text-[#a1a1aa] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] rounded-[4px] transition-colors"
-            >
-              Archive
-            </button>
-            <button
-              onClick={() => {
-                const confirmPref = localStorage.getItem('leaf_pref_confirm_delete') !== 'false';
-                if (!confirmPref) {
-                  deleteItem(itemToRender.id);
-                } else {
-                  setItemToDelete(itemToRender);
-                }
-              }}
-              className="px-2.5 py-1 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-[4px] transition-colors"
-            >
-              Delete
-            </button>
+            {canEdit && (
+              <button
+                onClick={() => handleFieldChange('status', 'archived')}
+                className="px-2.5 py-1 text-xs text-[#6b7280] dark:text-[#a1a1aa] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] rounded-[4px] transition-colors"
+              >
+                Archive
+              </button>
+            )}
+            {canDelete && (
+              <button
+                onClick={() => {
+                  const confirmPref = localStorage.getItem('leaf_pref_confirm_delete') !== 'false';
+                  if (!confirmPref) {
+                    deleteItem(itemToRender.id);
+                  } else {
+                    setItemToDelete(itemToRender);
+                  }
+                }}
+                className="px-2.5 py-1 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-[4px] transition-colors"
+              >
+                Delete
+              </button>
+            )}
           </div>
         </div>
       </aside>

@@ -23,6 +23,7 @@ import { ITEM_TYPE_CONFIG, PRIORITY_CONFIG } from '../utils/format';
 import { WindowControls } from './WindowControls';
 import { SearchInput } from './ui/SearchInput';
 import { Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
+import { getUserPermissions } from '../utils/permissions';
 import { toast } from '../store/useToastStore';
 
 const TYPE_ICONS: Record<ItemType, React.FC<{ className?: string }>> = {
@@ -64,11 +65,11 @@ export const HeaderBar: React.FC = () => {
   const filterDropdownRef = useRef<HTMLDivElement>(null);
   const sortDropdownRef = useRef<HTMLDivElement>(null);
 
+  const permissions = getUserPermissions(workspace?.id);
+  const isCurrentUserAdmin = permissions.isAdmin;
+
   const supabaseUrl = workspace ? localStorage.getItem(`leeflet_supabase_url_${workspace.id}`) : null;
   const isCloudSync = workspace ? localStorage.getItem(`leeflet_sync_mode_${workspace.id}`) === 'cloud' && Boolean(supabaseUrl) : false;
-  const isJoinedWorkspace = workspace?.id ? localStorage.getItem(`leeflet_is_joined_workspace_${workspace.id}`) === 'true' : false;
-  const workspaceRole = workspace?.id ? localStorage.getItem(`leeflet_workspace_role_${workspace.id}`) : null;
-  const isCurrentUserAdmin = !isJoinedWorkspace || workspaceRole === 'Admin' || workspaceRole === 'Owner' || workspaceRole === 'admin' || workspaceRole === 'owner';
 
   const handleRefresh = async (silent = false) => {
     if (isRefreshing) return;
@@ -628,14 +629,20 @@ export const HeaderBar: React.FC = () => {
           </Tooltip>
         )}
 
-        {/* + New Button */}
-        <button
-          onClick={() => setQuickCaptureOpen(true)}
-          className="flex items-center gap-1 px-3 py-1 bg-[#111827] dark:bg-[#f4f4f5] hover:bg-[#1f2937] dark:hover:bg-white text-white dark:text-[#18181b] rounded-[6px] text-xs font-semibold shadow-subtle shrink-0 whitespace-nowrap transition-all active:scale-[0.98]"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>New</span>
-        </button>
+        {/* + New Button or View Only Badge */}
+        {permissions.canCreateItems ? (
+          <button
+            onClick={() => setQuickCaptureOpen(true)}
+            className="flex items-center gap-1 px-3 py-1 bg-[#111827] dark:bg-[#f4f4f5] hover:bg-[#1f2937] dark:hover:bg-white text-white dark:text-[#18181b] rounded-[6px] text-xs font-semibold shadow-subtle shrink-0 whitespace-nowrap transition-all active:scale-[0.98] cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>New</span>
+          </button>
+        ) : (
+          <span className="flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 border border-amber-500/25 text-amber-600 dark:text-amber-400 rounded-[6px] text-[11px] font-semibold shrink-0 select-none">
+            <span>View Only</span>
+          </span>
+        )}
 
         {/* Window Controls */}
         <div className="ml-0.5 pl-1 border-l border-[#e5e7eb] dark:border-[#27272a] shrink-0">

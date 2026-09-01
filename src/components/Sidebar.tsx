@@ -35,6 +35,7 @@ import { enterMiniMode } from '../utils/window';
 import { Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
 import { toast } from '../store/useToastStore';
 import { resolveAvatarUrl } from '../utils/avatars';
+import { getUserPermissions } from '../utils/permissions';
 
 export const Sidebar: React.FC = () => {
   const {
@@ -102,9 +103,8 @@ export const Sidebar: React.FC = () => {
   const [isProjectsCollapsed, setIsProjectsCollapsed] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
 
-  const isCurrentWsJoined = workspace?.id ? localStorage.getItem(`leeflet_is_joined_workspace_${workspace.id}`) === 'true' : false;
-  const currentWsRole = workspace?.id ? localStorage.getItem(`leeflet_workspace_role_${workspace.id}`) : null;
-  const isCurrentUserAdmin = !isCurrentWsJoined || currentWsRole === 'Admin' || currentWsRole === 'Owner' || currentWsRole === 'admin' || currentWsRole === 'owner';
+  const permissions = getUserPermissions(workspace?.id);
+  const isCurrentUserAdmin = permissions.isAdmin;
 
   // Workspace Switcher State
   const [isWorkspaceMenuOpen, setIsWorkspaceMenuOpen] = useState(false);

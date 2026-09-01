@@ -22,6 +22,7 @@ import { ITEM_TYPE_CONFIG, PRIORITY_CONFIG } from '../utils/format';
 import { getStoredTeamMembers, matchesAssignee, normalizeAssigneeId } from '../utils/team';
 import { resolveAvatarUrl } from '../utils/avatars';
 import { Calendar } from './ui/calendar';
+import { getUserPermissions } from '../utils/permissions';
 
 const TYPE_ICONS: Record<ItemType, React.FC<{ className?: string }>> = {
   task: CheckSquare,
@@ -429,6 +430,11 @@ export const QuickCaptureModal: React.FC = () => {
   const typeConfig = ITEM_TYPE_CONFIG[type] || ITEM_TYPE_CONFIG.task;
   const priorityConfig = PRIORITY_CONFIG[priority] || PRIORITY_CONFIG.none;
   const hasContent = Boolean(title.trim() || description.trim());
+
+  const workspace = useLeafStore((s) => s.workspace);
+  const permissions = getUserPermissions(workspace?.id);
+
+  if (!isQuickCaptureOpen || !permissions.canCreateItems) return null;
 
   return (
     <div

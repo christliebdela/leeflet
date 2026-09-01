@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useLeafStore } from '../store/useLeafStore';
 import { Item, Project, Priority, ItemType } from '../types';
 import { Plus, Circle, CheckCircle2, X, Sparkles } from 'lucide-react';
+import { getUserPermissions } from '../utils/permissions';
 
 type SectionKey = 'critical' | 'high' | 'medium' | 'low' | 'ideas' | 'inbox';
 
@@ -16,6 +17,9 @@ const SECTION_EMPTY_MESSAGES: Record<SectionKey, string> = {
 
 export const MyQueueView: React.FC = () => {
   const { items, projects, selectedItemId, setSelectedItemId, filterOptions, setQuickCaptureOpen, updateItem, createItem } = useLeafStore();
+  const workspace = useLeafStore((s) => s.workspace);
+  const permissions = getUserPermissions(workspace?.id);
+
   const [addingSection, setAddingSection] = useState<SectionKey | null>(null);
   const [newTitle, setNewTitle] = useState('');
   const inlineInputRef = useRef<HTMLInputElement>(null);
@@ -101,12 +105,14 @@ export const MyQueueView: React.FC = () => {
             <span className="text-[9.5px] font-semibold text-[#6b7280] dark:text-[#a1a1aa] bg-[#f3f4f6] dark:bg-[#27272a] px-1.5 py-0 leading-[14px] rounded-full">
               {activeCount > 0 ? `${activeCount} / ${list.length}` : list.length}
             </span>
-            <button
-              onClick={() => handleStartAdding(sectionKey)}
-              className="p-1 hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] rounded text-[#9ca3af] hover:text-[#111827] dark:hover:text-white transition-colors"
-            >
-              <Plus className="w-3 h-3" />
-            </button>
+            {permissions.canCreateItems && (
+              <button
+                onClick={() => handleStartAdding(sectionKey)}
+                className="p-1 hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] rounded text-[#9ca3af] hover:text-[#111827] dark:hover:text-white transition-colors"
+              >
+                <Plus className="w-3 h-3" />
+              </button>
+            )}
           </div>
         </div>
 
@@ -168,8 +174,9 @@ export const MyQueueView: React.FC = () => {
                   <div className="flex items-center gap-2.5 min-w-0 flex-1">
                     <button
                       type="button"
+                      disabled={!permissions.canMoveItemStatus(item)}
                       onClick={(e) => handleToggleStatus(e, item)}
-                      className="p-0.5 text-[#9ca3af] hover:text-emerald-500 transition-colors shrink-0"
+                      className="p-0.5 text-[#9ca3af] hover:text-emerald-500 transition-colors shrink-0 disabled:opacity-40 disabled:hover:text-[#9ca3af] disabled:cursor-not-allowed"
                     >
                       {isDone ? (
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
