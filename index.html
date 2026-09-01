@@ -13,24 +13,50 @@
         height: 100%;
         overflow: hidden;
       }
+      /* Landing page needs scrolling, natural height, and dark background matching the design */
+      html.is-landing {
+        scroll-behavior: smooth;
+      }
+      html.is-landing, html.is-landing body {
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        height: auto !important;
+        min-height: 100% !important;
+        background-color: #08090a !important;
+        user-select: text !important;
+        -webkit-user-select: text !important;
+      }
+      html.is-landing #root {
+        height: auto !important;
+        min-height: 100% !important;
+      }
       /* Floating popup widgets (quick capture, sticky note, queue widget) require transparent body */
       html.is-popup-window, html.is-popup-window body {
         background-color: transparent !important;
       }
-      html.dark:not(.is-popup-window), html.dark:not(.is-popup-window) body {
+      html.dark:not(.is-popup-window):not(.is-landing), html.dark:not(.is-popup-window):not(.is-landing) body {
         background-color: #0f0f11 !important;
       }
-      html:not(.dark):not(.is-popup-window), html:not(.dark):not(.is-popup-window) body {
+      html:not(.dark):not(.is-popup-window):not(.is-landing), html:not(.dark):not(.is-popup-window):not(.is-landing) body {
         background-color: #f8f9fa !important;
       }
     </style>
     <script>
       (function() {
         try {
-          var isPopup = window.location.search.includes('window=');
+          var search = window.location.search;
+          var isPopup = search.includes('window=');
+          var isApp = search.includes('app=true');
+          var isTauri = !!(window.__TAURI_INTERNALS__ || window.__TAURI__);
+          var isLanding = !isPopup && !isApp && !isTauri;
+
           if (isPopup) {
             document.documentElement.classList.add('is-popup-window');
           }
+          if (isLanding) {
+            document.documentElement.classList.add('is-landing');
+          }
+
           var saved = localStorage.getItem('leaf_theme');
           var isDark = saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
           if (isDark) {
