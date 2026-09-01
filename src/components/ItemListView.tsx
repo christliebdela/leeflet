@@ -18,6 +18,9 @@ import {
   Archive,
   Search,
   Calendar,
+  ChevronDown,
+  ChevronRight,
+  TrendingUp,
 } from 'lucide-react';
 import { Item, ChecklistItem, Project } from '../types';
 import { formatDate, formatDueDateLabel } from '../utils/format';
@@ -84,6 +87,7 @@ export const ItemListView: React.FC = () => {
 
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
   const [dragOverInfo, setDragOverInfo] = useState<{ id: string; position: 'before' | 'after' } | null>(null);
+  const [isCompletedSectionOpen, setIsCompletedSectionOpen] = useState(false);
 
   // Filter items based on active view mode and filter options
   const displayItems = items.filter((item: Item) => {
@@ -335,8 +339,266 @@ export const ItemListView: React.FC = () => {
 
   const isPaneOpen = Boolean(selectedItemId);
 
+  // Project-specific metrics & separation
+  const activeProject = viewMode.type === 'project' ? projects.find((p) => p.id === viewMode.projectId) : null;
+  const allProjectItems = activeProject ? items.filter((i) => i.projectId === activeProject.id && i.status !== 'archived') : [];
+  const totalProjectCount = allProjectItems.length;
+  const doneProjectCount = allProjectItems.filter((i) => i.status === 'done').length;
+  const activeProjectCount = allProjectItems.filter((i) => i.status !== 'done').length;
+  const urgentProjectCount = allProjectItems.filter((i) => (i.priority === 'high' || i.priority === 'critical') && i.status !== 'done').length;
+  const progressPct = totalProjectCount > 0 ? Math.round((doneProjectCount / totalProjectCount) * 100) : 0;
+
+  // Backlog metrics
+  const inboxItems = viewMode.type === 'inbox' ? items.filter((i) => i.status === 'inbox') : [];
+  const urgentInboxCount = viewMode.type === 'inbox' ? inboxItems.filter((i) => i.priority === 'high' || i.priority === 'critical').length : 0;
+
+  // Split displayItems for project view (active vs completed)
+  const activeProjectDisplayItems = viewMode.type === 'project' ? displayItems.filter((i) => i.status !== 'done') : displayItems;
+  const completedProjectDisplayItems = viewMode.type === 'project' ? displayItems.filter((i) => i.status === 'done') : [];
+
+  const renderItemCard = (item: Item) => {
+    const isSelected = selectedItemId === item.id;
+    const isDragged = draggedItemId === item.id;
+    const isDragOverBefore = dragOverInfo?.id === item.id && dragOverInfo.position === 'before';
+    const isDragOverAfter = dragOverInfo?.id === item.id && dragOverInfo.position === 'after';
+    const project = projects.find((p: Project) => p.id === item.projectId);
+
+    return (
+      <div
+        key={item.id}
+        data-item-card="true"
+        draggable={permissions.canMoveItemStatus(item)}
+        onDragStart={(e) => {
+          if (!permissions.canMoveItemStatus(item)) {
+            e.preventDefault();
+            return;
+          }
+          e.dataTransfer.setData('text/plain', item.id);
+          e.dataTransfer.effectAllowed = 'move';
+          setDraggedItemId(item.id);
+        }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          e.dataTransfer.dropEffect = 'move';
+          const rect = e.currentTarget.getBoundingClientRect();
+          const isTopHalf = (e.clientY - rect.top) < (rect.height / 2);
+          const position = isTopHalf ? 'before' : 'after';
+          if (!dragOverInfo || dragOverInfo.id !== item.id || dragOverInfo.position !== position) {
+            setDragOverInfo({ id: item.id, position });
+          }
+        }}
+        onDragLeave={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+            if (dragOverInfo?.id === item.id) {
+              setDragOverInfo(null);
+            }
+          }
+        }}
+        onDragEnd={() => {
+          setDraggedItemId(null);
+          setDragOverInfo(null);
+        }}
+        onDrop={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const sourceId = e.dataTransfer.getData('text/plain') || draggedItemId;
+          const position = dragOverInfo?.id === item.id ? dragOverInfo.position : 'before';
+          if (sourceId && sourceId !== item.id) {
+            reorderItems(sourceId, item.id, position);
+          }
+          setDraggedItemId(null);
+          setDragOverInfo(null);
+        }}
+        onClick={() => setSelectedItemId(isSelected ? null : item.id)}
+        className={`group relative flex items-center justify-between p-2.5 sm:p-3 rounded-[6px] border transition-all cursor-pointer select-none min-w-0 ${
+          isSelected
+            ? 'border-[#9ca3af] dark:border-[#52525b] bg-[#f9fafb] dark:bg-[#1f1f23] shadow-sm'
+            : 'border-[#e5e7eb] dark:border-[#27272a] bg-white dark:bg-[#18181b] hover:border-[#d1d5db] dark:hover:border-[#3f3f46]'
+        } ${isDragged ? 'opacity-30 scale-[0.99]' : ''}`}
+      >
+        {/* Floating Insertion Indicator Line (positioned in-between cards) */}
+        {isDragOverBefore && (
+          <div className="absolute -top-1.5 left-1 right-1 h-0.5 bg-[#111827] dark:bg-white rounded-full z-20 pointer-events-none flex items-center shadow-xs">
+            <div className="w-1.5 h-1.5 rounded-full bg-[#111827] dark:bg-white -ml-0.5 shadow-sm" />
+          </div>
+        )}
+        {isDragOverAfter && (
+          <div className="absolute -bottom-1.5 left-1 right-1 h-0.5 bg-[#111827] dark:bg-white rounded-full z-20 pointer-events-none flex items-center shadow-xs">
+            <div className="w-1.5 h-1.5 rounded-full bg-[#111827] dark:bg-white -ml-0.5 shadow-sm" />
+          </div>
+        )}
+
+        {/* Left Section: Drag handle + Priority Icon + Optional Type Icon + Title & Checklist */}
+        <div className="flex items-center gap-2.5 min-w-0 flex-1 mr-3 overflow-hidden">
+          <div
+            className="cursor-grab active:cursor-grabbing text-[#d1d5db] dark:text-[#52525b] group-hover:text-[#9ca3af] dark:group-hover:text-[#a1a1aa] transition-colors shrink-0"
+          >
+            <GripVertical className="w-3.5 h-3.5" />
+          </div>
+
+          {/* Priority Icon (Linear-style) */}
+          <LinearPriorityIcon priority={item.priority} />
+
+          {/* Non-task item type indicator (subtle icon only for bug/idea/improvement) */}
+          {item.type !== 'task' && (
+            <span className="shrink-0 flex items-center">
+              {item.type === 'bug' && <Bug className="w-3.5 h-3.5 text-rose-500" />}
+              {item.type === 'idea' && <Lightbulb className="w-3.5 h-3.5 text-amber-500" />}
+              {item.type === 'improvement' && <Sparkles className="w-3.5 h-3.5 text-purple-500" />}
+              {item.type === 'research' && <BookOpen className="w-3.5 h-3.5 text-teal-500" />}
+              {item.type === 'question' && <HelpCircle className="w-3.5 h-3.5 text-sky-500" />}
+              {item.type === 'note' && <FileText className="w-3.5 h-3.5 text-slate-400" />}
+            </span>
+          )}
+
+          {/* Title */}
+          <div className="min-w-0 flex-1 overflow-hidden">
+            <span
+              className={`text-xs font-semibold truncate block ${
+                item.status === 'done'
+                  ? 'line-through text-[#6b7280] dark:text-[#a1a1aa]'
+                  : 'text-[#111827] dark:text-[#f4f4f5]'
+              }`}
+            >
+              {item.title}
+            </span>
+          </div>
+
+          {/* Checklist count badge */}
+          {item.checklist && item.checklist.length > 0 && (
+            <span className="text-[10px] text-[#9ca3af] dark:text-[#71717a] font-mono shrink-0 bg-[#f3f4f6] dark:bg-[#27272a] px-1 py-0.5 rounded leading-none">
+              {item.checklist.filter((c: ChecklistItem) => c.isCompleted).length}/
+              {item.checklist.length}
+            </span>
+          )}
+        </div>
+
+        {/* Right Columns: Due Date, Assignee, Project & Date */}
+        <div className="flex items-center gap-2.5 shrink-0">
+          {/* Due Date Indicator */}
+          {item.dueAt && (
+            <span
+              className="hidden sm:inline-flex items-center gap-1 text-[10.5px] text-[#6b7280] dark:text-[#a1a1aa] font-medium bg-[#f4f5f6] dark:bg-[#202024] px-1.5 py-0.5 rounded border border-[#e5e7eb] dark:border-[#27272a] shrink-0"
+            >
+              <Calendar className="w-3 h-3 text-indigo-500 shrink-0" />
+              <span>{formatDueDateLabel(item.dueAt)}</span>
+            </span>
+          )}
+
+          {/* Assignee Avatar Indicator */}
+          {item.assigneeId && (() => {
+            const assignedMember = getStoredTeamMembers().find(m => matchesAssignee(m.id, item.assigneeId));
+            return (
+              <span
+                className="w-4 h-4 rounded-full border border-[#e5e7eb] dark:border-[#323238] shrink-0 overflow-hidden shadow-2xs"
+              >
+                <img
+                  src={resolveAvatarUrl(assignedMember?.avatarMascot || assignedMember?.avatarUrl || assignedMember?.avatarColor, assignedMember?.name || item.assigneeId)}
+                  alt={assignedMember?.name || 'Assigned'}
+                  className="w-full h-full object-cover"
+                />
+              </span>
+            );
+          })()}
+
+          {/* Project Column */}
+          {viewMode.type !== 'project' && (
+            <div className={isPaneOpen ? 'max-w-[90px] shrink-0' : 'w-[100px] sm:w-[120px] flex items-center justify-start shrink-0'}>
+              <span
+                className="inline-flex items-center gap-1.5 text-[11px] text-[#6b7280] dark:text-[#a1a1aa] font-medium truncate"
+              >
+                <span
+                  className="w-1.5 h-1.5 rounded-full shrink-0"
+                  style={{ backgroundColor: project?.color || '#9ca3af' }}
+                />
+                <span className="truncate">{project?.name || 'No Project'}</span>
+              </span>
+            </div>
+          )}
+
+          {/* Date Column */}
+          <div className="w-14 text-right text-[11px] text-[#9ca3af] dark:text-[#71717a] font-normal shrink-0">
+            {formatDate(item.createdAt)}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className={`flex-1 h-full overflow-y-auto overflow-x-hidden ${isPaneOpen ? 'pl-3 pr-2 py-3' : 'p-3'} flex flex-col custom-scrollbar`}>
+      {/* 1. PROJECT METRICS STAT BAR */}
+      {viewMode.type === 'project' && activeProject && totalProjectCount > 0 && (
+        <div className="mb-3 p-3 bg-white dark:bg-[#18181b] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-xs flex flex-col gap-2.5">
+          <div className="flex items-center justify-between gap-2 flex-wrap text-xs">
+            {/* Metrics badges */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[5px] bg-[#f4f5f6] dark:bg-[#202024] text-[#374151] dark:text-[#d4d4d8] font-medium text-[11px] border border-[#e5e7eb] dark:border-[#27272a]">
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: activeProject.color || '#10b981' }} />
+                <span>{activeProjectCount} Active</span>
+              </span>
+
+              {urgentProjectCount > 0 && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[5px] bg-rose-500/10 text-rose-600 dark:text-rose-400 font-medium text-[11px] border border-rose-500/20">
+                  <AlertCircle className="w-3 h-3" />
+                  <span>{urgentProjectCount} Urgent</span>
+                </span>
+              )}
+
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[5px] bg-[#f4f5f6] dark:bg-[#202024] text-[#6b7280] dark:text-[#a1a1aa] font-medium text-[11px] border border-[#e5e7eb] dark:border-[#27272a]">
+                <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                <span>{doneProjectCount} Completed</span>
+              </span>
+            </div>
+
+            {/* Progress percentage */}
+            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[#111827] dark:text-white">
+              <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
+              <span>{progressPct}% Done</span>
+              <span className="text-[#9ca3af] dark:text-[#71717a] font-normal">
+                ({doneProjectCount}/{totalProjectCount})
+              </span>
+            </div>
+          </div>
+
+          {/* Progress bar line */}
+          <div className="w-full h-1.5 bg-[#f3f4f6] dark:bg-[#27272a] rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-500 ease-out"
+              style={{
+                width: `${progressPct}%`,
+                backgroundColor: progressPct === 100 ? '#10b981' : (activeProject.color || '#10b981'),
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* 2. BACKLOG STAT BAR */}
+      {viewMode.type === 'inbox' && inboxItems.length > 0 && (
+        <div className="mb-3 px-3 py-2 bg-white dark:bg-[#18181b] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] flex items-center justify-between gap-2 flex-wrap shadow-xs">
+          <div className="flex items-center gap-2 text-xs">
+            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[5px] bg-[#f4f5f6] dark:bg-[#202024] text-[#374151] dark:text-[#d4d4d8] font-medium text-[11px] border border-[#e5e7eb] dark:border-[#27272a]">
+              <Layers className="w-3 h-3 text-[#6b7280] dark:text-[#a1a1aa]" />
+              <span>{inboxItems.length} Backlog Items</span>
+            </span>
+
+            {urgentInboxCount > 0 && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[5px] bg-rose-500/10 text-rose-600 dark:text-rose-400 font-medium text-[11px] border border-rose-500/20">
+                <AlertCircle className="w-3 h-3" />
+                <span>{urgentInboxCount} Need Urgent Triage</span>
+              </span>
+            )}
+          </div>
+
+          <span className="text-[11px] text-[#9ca3af] dark:text-[#71717a]">
+            Capture, categorize, or schedule into projects
+          </span>
+        </div>
+      )}
+
+      {/* 3. ITEMS LIST CONTENT */}
       {displayItems.length === 0 ? (
         <div className="flex-1 min-h-[360px] w-full flex flex-col items-center justify-center text-center p-8 border border-dashed border-[#e5e7eb] dark:border-[#27272a] rounded-[10px] bg-gradient-to-b from-transparent to-[#fafafa]/60 dark:to-[#18181b]/30">
           <div className="w-12 h-12 rounded-2xl bg-white dark:bg-[#27272a] border border-[#e5e7eb] dark:border-[#3f3f46] shadow-xs flex items-center justify-center mb-3 transition-transform hover:scale-105">
@@ -356,176 +618,60 @@ export const ItemListView: React.FC = () => {
             <span>{emptyState.actionLabel}</span>
           </button>
         </div>
+      ) : viewMode.type === 'project' ? (
+        <div className="space-y-3 min-w-0">
+          {/* Active Tasks in Project */}
+          {activeProjectDisplayItems.length === 0 ? (
+            <div className="p-4 rounded-[8px] bg-emerald-500/5 border border-emerald-500/20 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                <span>All active tasks in this project are completed! 🎉</span>
+              </div>
+              {permissions.canCreateItems && (
+                <button
+                  onClick={() => setQuickCaptureOpen(true)}
+                  className="px-2.5 py-1 bg-emerald-600 dark:bg-emerald-500 text-white rounded-[5px] text-xs font-semibold hover:opacity-90 transition-opacity shrink-0"
+                >
+                  + Add Task
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-2 min-w-0">
+              {activeProjectDisplayItems.map(renderItemCard)}
+            </div>
+          )}
+
+          {/* Collapsible Completed Tasks Section */}
+          {completedProjectDisplayItems.length > 0 && (
+            <div className="pt-3 border-t border-[#e5e7eb] dark:border-[#27272a] space-y-2">
+              <button
+                type="button"
+                onClick={() => setIsCompletedSectionOpen(!isCompletedSectionOpen)}
+                className="flex items-center gap-2 text-xs font-semibold text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white transition-colors py-1 px-1 rounded select-none group"
+              >
+                {isCompletedSectionOpen ? (
+                  <ChevronDown className="w-3.5 h-3.5 text-[#9ca3af] group-hover:text-[#111827] dark:group-hover:text-white transition-transform" />
+                ) : (
+                  <ChevronRight className="w-3.5 h-3.5 text-[#9ca3af] group-hover:text-[#111827] dark:group-hover:text-white transition-transform" />
+                )}
+                <span>Completed</span>
+                <span className="text-[10.5px] font-medium bg-[#f3f4f6] dark:bg-[#27272a] text-[#6b7280] dark:text-[#a1a1aa] px-1.5 py-0.5 rounded-full">
+                  {completedProjectDisplayItems.length}
+                </span>
+              </button>
+
+              {isCompletedSectionOpen && (
+                <div className="space-y-2 opacity-80 hover:opacity-100 transition-opacity">
+                  {completedProjectDisplayItems.map(renderItemCard)}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       ) : (
         <div className="space-y-2 min-w-0">
-          {displayItems.map((item: Item) => {
-            const isSelected = selectedItemId === item.id;
-            const isDragged = draggedItemId === item.id;
-            const isDragOverBefore = dragOverInfo?.id === item.id && dragOverInfo.position === 'before';
-            const isDragOverAfter = dragOverInfo?.id === item.id && dragOverInfo.position === 'after';
-            const project = projects.find((p: Project) => p.id === item.projectId);
-
-            return (
-              <div
-                key={item.id}
-                data-item-card="true"
-                draggable={permissions.canMoveItemStatus(item)}
-                onDragStart={(e) => {
-                  if (!permissions.canMoveItemStatus(item)) {
-                    e.preventDefault();
-                    return;
-                  }
-                  e.dataTransfer.setData('text/plain', item.id);
-                  e.dataTransfer.effectAllowed = 'move';
-                  setDraggedItemId(item.id);
-                }}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  e.dataTransfer.dropEffect = 'move';
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  const isTopHalf = (e.clientY - rect.top) < (rect.height / 2);
-                  const position = isTopHalf ? 'before' : 'after';
-                  if (!dragOverInfo || dragOverInfo.id !== item.id || dragOverInfo.position !== position) {
-                    setDragOverInfo({ id: item.id, position });
-                  }
-                }}
-                onDragLeave={(e) => {
-                  if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-                    if (dragOverInfo?.id === item.id) {
-                      setDragOverInfo(null);
-                    }
-                  }
-                }}
-                onDragEnd={() => {
-                  setDraggedItemId(null);
-                  setDragOverInfo(null);
-                }}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  const sourceId = e.dataTransfer.getData('text/plain') || draggedItemId;
-                  const position = dragOverInfo?.id === item.id ? dragOverInfo.position : 'before';
-                  if (sourceId && sourceId !== item.id) {
-                    reorderItems(sourceId, item.id, position);
-                  }
-                  setDraggedItemId(null);
-                  setDragOverInfo(null);
-                }}
-                onClick={() => setSelectedItemId(isSelected ? null : item.id)}
-                className={`group relative flex items-center justify-between p-2.5 sm:p-3 rounded-[6px] border transition-all cursor-pointer select-none min-w-0 ${
-                  isSelected
-                    ? 'border-[#9ca3af] dark:border-[#52525b] bg-[#f9fafb] dark:bg-[#1f1f23] shadow-sm'
-                    : 'border-[#e5e7eb] dark:border-[#27272a] bg-white dark:bg-[#18181b] hover:border-[#d1d5db] dark:hover:border-[#3f3f46]'
-                } ${isDragged ? 'opacity-30 scale-[0.99]' : ''}`}
-              >
-                {/* Floating Insertion Indicator Line (positioned in-between cards) */}
-                {isDragOverBefore && (
-                  <div className="absolute -top-1.5 left-1 right-1 h-0.5 bg-[#111827] dark:bg-white rounded-full z-20 pointer-events-none flex items-center shadow-xs">
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#111827] dark:bg-white -ml-0.5 shadow-sm" />
-                  </div>
-                )}
-                {isDragOverAfter && (
-                  <div className="absolute -bottom-1.5 left-1 right-1 h-0.5 bg-[#111827] dark:bg-white rounded-full z-20 pointer-events-none flex items-center shadow-xs">
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#111827] dark:bg-white -ml-0.5 shadow-sm" />
-                  </div>
-                )}
-                {/* Left Section: Drag handle + Priority Icon + Optional Type Icon + Title & Checklist */}
-                <div className="flex items-center gap-2.5 min-w-0 flex-1 mr-3 overflow-hidden">
-                  <div
-                    className="cursor-grab active:cursor-grabbing text-[#d1d5db] dark:text-[#52525b] group-hover:text-[#9ca3af] dark:group-hover:text-[#a1a1aa] transition-colors shrink-0"
-                  >
-                    <GripVertical className="w-3.5 h-3.5" />
-                  </div>
-
-                  {/* Priority Icon (Linear-style) */}
-                  <LinearPriorityIcon priority={item.priority} />
-
-                  {/* Non-task item type indicator (subtle icon only for bug/idea/improvement) */}
-                  {item.type !== 'task' && (
-                    <span className="shrink-0 flex items-center">
-                      {item.type === 'bug' && <Bug className="w-3.5 h-3.5 text-rose-500" />}
-                      {item.type === 'idea' && <Lightbulb className="w-3.5 h-3.5 text-amber-500" />}
-                      {item.type === 'improvement' && <Sparkles className="w-3.5 h-3.5 text-purple-500" />}
-                      {item.type === 'research' && <BookOpen className="w-3.5 h-3.5 text-teal-500" />}
-                      {item.type === 'question' && <HelpCircle className="w-3.5 h-3.5 text-sky-500" />}
-                      {item.type === 'note' && <FileText className="w-3.5 h-3.5 text-slate-400" />}
-                    </span>
-                  )}
-
-                  {/* Title */}
-                  <div className="min-w-0 flex-1 overflow-hidden">
-                    <span
-                      className={`text-xs font-semibold truncate block ${
-                        item.status === 'done'
-                          ? 'line-through text-[#6b7280] dark:text-[#a1a1aa]'
-                          : 'text-[#111827] dark:text-[#f4f4f5]'
-                      }`}
-                    >
-                      {item.title}
-                    </span>
-                  </div>
-
-                  {/* Checklist count badge */}
-                  {item.checklist && item.checklist.length > 0 && (
-                    <span className="text-[10px] text-[#9ca3af] dark:text-[#71717a] font-mono shrink-0 bg-[#f3f4f6] dark:bg-[#27272a] px-1 py-0.5 rounded leading-none">
-                      {item.checklist.filter((c: ChecklistItem) => c.isCompleted).length}/
-                      {item.checklist.length}
-                    </span>
-                  )}
-                </div>
-
-                {/* Right Columns: Due Date, Assignee, Project & Date */}
-                <div className="flex items-center gap-2.5 shrink-0">
-                  {/* Due Date Indicator */}
-                  {item.dueAt && (
-                    <span
-                      className="hidden sm:inline-flex items-center gap-1 text-[10.5px] text-[#6b7280] dark:text-[#a1a1aa] font-medium bg-[#f4f5f6] dark:bg-[#202024] px-1.5 py-0.5 rounded border border-[#e5e7eb] dark:border-[#27272a] shrink-0"
-                    >
-                      <Calendar className="w-3 h-3 text-indigo-500 shrink-0" />
-                      <span>{formatDueDateLabel(item.dueAt)}</span>
-                    </span>
-                  )}
-
-                  {/* Assignee Avatar Indicator */}
-                  {item.assigneeId && (() => {
-                    const assignedMember = getStoredTeamMembers().find(m => matchesAssignee(m.id, item.assigneeId));
-                    return (
-                      <span
-                        className="w-4 h-4 rounded-full border border-[#e5e7eb] dark:border-[#323238] shrink-0 overflow-hidden shadow-2xs"
-                      >
-                        <img
-                          src={resolveAvatarUrl(assignedMember?.avatarMascot || assignedMember?.avatarUrl || assignedMember?.avatarColor, assignedMember?.name || item.assigneeId)}
-                          alt={assignedMember?.name || 'Assigned'}
-                          className="w-full h-full object-cover"
-                        />
-                      </span>
-                    );
-                  })()}
-
-                  {/* Project Column */}
-                  {viewMode.type !== 'project' && (
-                    <div className={isPaneOpen ? 'max-w-[90px] shrink-0' : 'w-[100px] sm:w-[120px] flex items-center justify-start shrink-0'}>
-                      <span
-                        className="inline-flex items-center gap-1.5 text-[11px] text-[#6b7280] dark:text-[#a1a1aa] font-medium truncate"
-                      >
-                        <span
-                          className="w-1.5 h-1.5 rounded-full shrink-0"
-                          style={{ backgroundColor: project?.color || '#9ca3af' }}
-                        />
-                        <span className="truncate">{project?.name || 'No Project'}</span>
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Date Column */}
-                  <div className="w-14 text-right text-[11px] text-[#9ca3af] dark:text-[#71717a] font-normal shrink-0">
-                    {formatDate(item.createdAt)}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+          {displayItems.map(renderItemCard)}
         </div>
       )}
     </div>

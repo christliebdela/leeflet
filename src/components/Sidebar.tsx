@@ -330,17 +330,17 @@ export const Sidebar: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [projectToDelete]);
 
-  // Compute counts
+  // Compute counts (reflecting active/open items)
   const inboxCount = items.filter((i: Item) => i.status === 'inbox').length;
   const queueCount = items.filter(
     (i: Item) => (i.priority === 'critical' || i.priority === 'high' || i.priority === 'medium' || i.priority === 'low' || i.type === 'idea') && i.status !== 'done' && i.status !== 'archived'
   ).length;
 
-  const bugsCount = items.filter((i: Item) => i.type === 'bug' && i.status !== 'archived').length;
-  const ideasCount = items.filter((i: Item) => i.type === 'idea' && i.status !== 'archived').length;
-  const tasksCount = items.filter((i: Item) => i.type === 'task' && i.status !== 'archived').length;
-  const researchCount = items.filter((i: Item) => i.type === 'research' && i.status !== 'archived').length;
-  const highPriorityCount = items.filter((i: Item) => (i.priority === 'high' || i.priority === 'critical') && i.status !== 'archived').length;
+  const bugsCount = items.filter((i: Item) => i.type === 'bug' && i.status !== 'done' && i.status !== 'archived').length;
+  const ideasCount = items.filter((i: Item) => i.type === 'idea' && i.status !== 'done' && i.status !== 'archived').length;
+  const tasksCount = items.filter((i: Item) => i.type === 'task' && i.status !== 'done' && i.status !== 'archived').length;
+  const researchCount = items.filter((i: Item) => i.type === 'research' && i.status !== 'done' && i.status !== 'archived').length;
+  const highPriorityCount = items.filter((i: Item) => (i.priority === 'high' || i.priority === 'critical') && i.status !== 'done' && i.status !== 'archived').length;
   const completedCount = items.filter((i: Item) => i.status === 'done').length;
   const archivedCount = items.filter((i: Item) => i.status === 'archived').length;
 
@@ -469,7 +469,7 @@ export const Sidebar: React.FC = () => {
               {railProjects.map((project) => {
                 const isActive = viewMode.type === 'project' && viewMode.projectId === project.id;
                 const count = items.filter(
-                  (i: Item) => i.projectId === project.id && i.status !== 'archived'
+                  (i: Item) => i.projectId === project.id && i.status !== 'done' && i.status !== 'archived'
                 ).length;
                 return (
                   <Tooltip key={project.id}>
@@ -834,7 +834,7 @@ export const Sidebar: React.FC = () => {
                 ) : (
                   projects.map((project: Project) => {
                     const count = items.filter(
-                      (i: Item) => i.projectId === project.id && i.status !== 'archived'
+                      (i: Item) => i.projectId === project.id && i.status !== 'done' && i.status !== 'archived'
                     ).length;
                     const active = isViewActive({ type: 'project', projectId: project.id });
 
