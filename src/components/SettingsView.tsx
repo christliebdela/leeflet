@@ -143,7 +143,6 @@ export const SettingsView: React.FC = () => {
     setAutoCheckEnabled,
     checkForUpdates,
     setModalOpen: setUpdateModalOpen,
-    simulateUpdateForTesting,
   } = useUpdaterStore();
 
   const [activeTab, setActiveTab] = useState<SettingsTab>(() => {
