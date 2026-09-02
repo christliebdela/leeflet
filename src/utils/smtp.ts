@@ -147,7 +147,8 @@ export const generateInviteHtmlTemplate = (params: {
   desktopInviteLink?: string;
   inviteCode?: string;
 }): string => {
-  const { workspaceName, inviterName, role, inviteLink } = params;
+  const { workspaceName, inviterName, role, desktopInviteLink, inviteCode, inviteLink } = params;
+  const directJoinPayload = inviteCode || (desktopInviteLink ? desktopInviteLink.replace('leeflet://join#data=', '') : inviteLink);
 
   return `
 <!DOCTYPE html>
@@ -155,25 +156,25 @@ export const generateInviteHtmlTemplate = (params: {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Invitation to collaborate on ${workspaceName}</title>
+  <title>Invitation to join ${workspaceName} on Leeflet</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b; -webkit-font-smoothing: antialiased;">
+<body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0f172a; -webkit-font-smoothing: antialiased;">
   <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 48px 16px;">
     <tr>
       <td align="center">
-        <!-- Main Card -->
-        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 480px; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);">
+        <!-- Main Container Card -->
+        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 480px; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);">
           
           <!-- Brand Header -->
           <tr>
-            <td style="padding: 24px 32px 18px 32px; border-bottom: 1px solid #f1f5f9;">
+            <td style="padding: 24px 32px 20px 32px; border-bottom: 1px solid #f1f5f9;">
               <table width="100%" border="0" cellspacing="0" cellpadding="0">
                 <tr>
                   <td>
                     <table border="0" cellspacing="0" cellpadding="0">
                       <tr>
                         <td style="vertical-align: middle; padding-right: 8px;">
-                          <img src="https://leeflet-cd.vercel.app/leaf_logo.png" width="18" height="18" alt="leeflet logo" style="display: block; width: 18px; height: 18px; object-fit: contain;" />
+                          <img src="https://leeflet-cd.vercel.app/leaf_logo.png" width="20" height="20" alt="leeflet logo" style="display: block; width: 20px; height: 20px; object-fit: contain;" />
                         </td>
                         <td style="vertical-align: middle;">
                           <span style="font-family: Georgia, serif; font-style: italic; font-size: 19px; font-weight: 700; color: #0f172a; letter-spacing: -0.02em;">
@@ -184,7 +185,7 @@ export const generateInviteHtmlTemplate = (params: {
                     </table>
                   </td>
                   <td align="right">
-                    <span style="display: inline-block; padding: 4px 9px; background-color: #f1f5f9; border-radius: 6px; font-size: 11px; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.04em;">
+                    <span style="display: inline-block; padding: 3px 8px; background-color: #f1f5f9; border-radius: 4px; font-size: 11px; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.04em;">
                       ${role}
                     </span>
                   </td>
@@ -195,46 +196,48 @@ export const generateInviteHtmlTemplate = (params: {
 
           <!-- Content Body -->
           <tr>
-            <td style="padding: 32px;">
-              <h1 style="margin: 0 0 12px 0; font-size: 19px; font-weight: 600; color: #0f172a; line-height: 1.35; letter-spacing: -0.01em;">
-                ${inviterName} invited you to collaborate on <strong>${workspaceName}</strong>
+            <td style="padding: 32px 32px 28px 32px;">
+              <h1 style="margin: 0 0 10px 0; font-size: 18px; font-weight: 600; color: #0f172a; line-height: 1.4; letter-spacing: -0.01em;">
+                ${inviterName} invited you to join <strong>${workspaceName}</strong>
               </h1>
               
-              <p style="margin: 0 0 28px 0; font-size: 14px; color: #475569; line-height: 1.6;">
-                Join <strong>${workspaceName}</strong> on Leeflet to manage tasks, track progress, and collaborate in real-time.
+              <p style="margin: 0 0 24px 0; font-size: 13.5px; color: #475569; line-height: 1.6;">
+                You've been invited to collaborate with <strong>${role}</strong> permissions. Copy the invite code below and paste it into the Leeflet desktop application to connect.
               </p>
 
-              <!-- CTA Button -->
-              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 24px;">
+              <!-- Team Invite Code Box -->
+              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 20px;">
                 <tr>
-                  <td>
-                    <a href="${inviteLink}" style="display: block; width: 100%; box-sizing: border-box; background-color: #0f172a; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; padding: 13px 24px; border-radius: 8px; text-align: center; letter-spacing: -0.005em;">
-                      Accept Invitation
-                    </a>
+                  <td style="padding: 14px 16px; background-color: #0f172a; border-radius: 8px;">
+                    <div style="font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #94a3b8; margin-bottom: 6px;">
+                      Team Invite Code
+                    </div>
+                    <div style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11.5px; color: #f8fafc; word-break: break-all; line-height: 1.5; user-select: all; -webkit-user-select: all;">
+                      ${directJoinPayload}
+                    </div>
                   </td>
                 </tr>
               </table>
 
-              <!-- Desktop App / Manual Join Box -->
-              <div style="border-top: 1px solid #f1f5f9; padding-top: 20px;">
-                <p style="margin: 0 0 8px 0; font-size: 12px; font-weight: 600; color: #334155;">
-                  Joining via the Leeflet Desktop App?
+              <p style="margin: 0 0 20px 0; font-size: 12.5px; color: #64748b; line-height: 1.55;">
+                In the Leeflet sidebar, click the workspace dropdown at the top, select <strong>Join Team Workspace</strong>, and paste your code.
+              </p>
+
+              <!-- App Download Link -->
+              <div style="border-top: 1px solid #f1f5f9; padding-top: 16px;">
+                <p style="margin: 0; font-size: 12px; color: #64748b; line-height: 1.5;">
+                  Don't have the desktop client? <a href="https://leeflet-cd.vercel.app" style="color: #0f172a; font-weight: 600; text-decoration: underline;">Download Leeflet for Windows, macOS, or Linux &rarr;</a>
                 </p>
-                <p style="margin: 0 0 10px 0; font-size: 12px; color: #64748b; line-height: 1.5;">
-                  Open the app, select <strong>Join Team Workspace</strong> from the sidebar menu, and paste the link below:
-                </p>
-                <div style="padding: 10px 12px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11px; color: #334155; word-break: break-all; line-height: 1.45; user-select: all; -webkit-user-select: all;">
-                  ${inviteLink}
-                </div>
               </div>
+
             </td>
           </tr>
 
           <!-- Footer -->
           <tr>
-            <td style="padding: 20px 32px; background-color: #f8fafc; border-top: 1px solid #f1f5f9; text-align: center;">
-              <p style="margin: 0 0 4px 0; font-size: 12px; color: #94a3b8;">
-                Leeflet &bull; Local-first workspace for engineering teams
+            <td style="padding: 18px 32px; background-color: #fafbfc; border-top: 1px solid #f1f5f9; text-align: center;">
+              <p style="margin: 0 0 3px 0; font-size: 11.5px; color: #94a3b8;">
+                Leeflet &bull; The open-source workspace for developers and teams
               </p>
               <p style="margin: 0; font-size: 11px; color: #cbd5e1;">
                 If you weren't expecting this invitation, you can safely ignore this email.

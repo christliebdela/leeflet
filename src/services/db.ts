@@ -163,8 +163,10 @@ export class DatabaseService {
     return { projectCount, itemCount };
   }
 
-  public async createWorkspace(name: string, locationPath: string): Promise<Workspace> {
-    const id = crypto.randomUUID();
+  public async createWorkspace(name: string, locationPath: string, explicitId?: string): Promise<Workspace> {
+    const id = explicitId && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(explicitId)
+      ? explicitId
+      : crypto.randomUUID();
     const now = new Date().toISOString();
 
     const workspace: Workspace = {

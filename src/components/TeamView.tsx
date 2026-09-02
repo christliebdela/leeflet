@@ -94,29 +94,63 @@ export const TeamView: React.FC = () => {
     setActiveRoleMemberId(null);
     setActiveActionsMemberId(null);
 
-    import('../services/cloudSync').then(({ pullTeamMembersFromCloud }) => {
-      pullTeamMembersFromCloud(wsId).then((remote) => {
-        if (remote.length > 0) {
-          const local = getStoredTeamMembers(wsId);
-          const memberMap = new Map<string, TeamMember>();
-          for (const m of local) {
+    import('../services/cloudSync').then(({ pullTeamMembersFromCloud, pullWorkspaceInvitesFromCloud, getCloudCredentials }) => {
+      const creds = getCloudCredentials(wsId);
+      if (!creds) return;
+
+      Promise.all([pullTeamMembersFromCloud(wsId), pullWorkspaceInvitesFromCloud(wsId)]).then(([remote, remoteInvites]) => {
+        const local = getStoredTeamMembers(wsId);
+        const memberMap = new Map<string, TeamMember>();
+        
+        // 1. Keep local owner/admin
+        for (const m of local) {
+          if (m.id === '00000000-0000-4000-8000-000000000001' || m.role === 'Admin' || m.role === 'Owner') {
             memberMap.set((m.email || m.name).toLowerCase(), m);
           }
-          for (const rm of remote) {
-            const key = (rm.email || rm.name).toLowerCase();
-            const existing = memberMap.get(key);
-            if (!existing) {
-              memberMap.set(key, rm);
-            } else {
-              if (rm.status === 'active' && existing.status === 'invited') {
-                memberMap.set(key, { ...existing, status: 'active', role: rm.role });
-              }
-            }
-          }
-          const merged = Array.from(memberMap.values());
-          saveStoredTeamMembers(merged, wsId);
-          setMembers(merged);
         }
+
+        // 2. Add remote active members
+        for (const rm of remote) {
+          const key = (rm.email || rm.name).toLowerCase();
+          memberMap.set(key, rm);
+        }
+
+        // 3. Add remote pending invites from cloud
+        for (const inv of remoteInvites) {
+          const key = (inv.email || '').toLowerCase();
+          if (key && !memberMap.has(key)) {
+            const rawRole = (inv.role || 'developer').toLowerCase();
+            let role: RoleId = 'Developer';
+            if (rawRole === 'admin' || rawRole === 'owner') role = 'Admin';
+            else if (rawRole === 'designer') role = 'Designer';
+            else if (rawRole === 'product manager' || rawRole === 'product_manager') role = 'Product Manager';
+            else if (rawRole === 'qa engineer' || rawRole === 'qa_engineer') role = 'QA Engineer';
+            else if (rawRole === 'viewer') role = 'Viewer';
+            else if (rawRole === 'member') role = 'Member';
+
+            memberMap.set(key, {
+              id: inv.id || crypto.randomUUID(),
+              name: key.split('@')[0],
+              email: inv.email,
+              role,
+              status: 'invited',
+              joinedAt: inv.created_at ? `Invited ${new Date(inv.created_at).toLocaleDateString()}` : 'Invited',
+              avatarColor: 'bg-zinc-600',
+            });
+          }
+        }
+
+        // 4. Keep any other local active members that aren't pending invites
+        for (const m of local) {
+          const key = (m.email || m.name).toLowerCase();
+          if (!memberMap.has(key) && m.status === 'active') {
+            memberMap.set(key, m);
+          }
+        }
+
+        const merged = Array.from(memberMap.values());
+        saveStoredTeamMembers(merged, wsId);
+        setMembers(merged);
       });
     });
   }, [workspace?.id]);
@@ -205,6 +239,17 @@ export const TeamView: React.FC = () => {
       return;
     }
 
+    let inviterAdminName = 'Workspace Admin';
+    try {
+      const pRaw = localStorage.getItem('leeflet_user_profile_data') || localStorage.getItem('leaf_user_profile_data');
+      if (pRaw) {
+        const p = JSON.parse(pRaw);
+        if (p.fullName && p.fullName.trim()) {
+          inviterAdminName = p.fullName.trim();
+        }
+      }
+    } catch {}
+
     try {
       setIsSubmitting(true);
       await sendInviteEmail(
@@ -226,6 +271,18 @@ export const TeamView: React.FC = () => {
 
       const updated = [...members, newMember];
       persistMembers(updated);
+
+      if (workspace?.id) {
+        import('../services/cloudSync').then(({ pushWorkspaceInviteToCloud }) => {
+          pushWorkspaceInviteToCloud(workspace.id, {
+            email,
+            role: inviteRole,
+            token: crypto.randomUUID().substring(0, 8),
+            invitedBy: inviterAdminName,
+          });
+        });
+      }
+
       setInviteName('');
       setInviteEmail('');
       setIsInviteModalOpen(false);
@@ -319,8 +376,11 @@ export const TeamView: React.FC = () => {
     const updated = members.filter((m) => m.id !== memberToDelete.id);
     persistMembers(updated);
     if (workspace?.id) {
-      import('../services/cloudSync').then(({ deleteTeamMemberFromCloud }) => {
+      import('../services/cloudSync').then(({ deleteTeamMemberFromCloud, deleteWorkspaceInviteFromCloud }) => {
         deleteTeamMemberFromCloud(workspace.id, memberToDelete.id);
+        if (isInvite && memberToDelete.email) {
+          deleteWorkspaceInviteFromCloud(workspace.id, memberToDelete.email);
+        }
       });
     }
     setMemberToDelete(null);

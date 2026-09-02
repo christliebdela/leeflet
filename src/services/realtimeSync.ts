@@ -191,6 +191,18 @@ export function subscribeToWorkspace(workspaceId: string, callbacks: RealtimeCal
       (payload) => callbacks.onAttachmentDelete?.((payload.old as { id: string }).id)
     )
 
+    // ── Workspace Members & Invites ─────────────────────────────────────────
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'workspace_members', filter: `workspace_id=eq.${workspaceId}` },
+      () => callbacks.onReconnect()
+    )
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'workspace_invites', filter: `workspace_id=eq.${workspaceId}` },
+      () => callbacks.onReconnect()
+    )
+
     .subscribe((status) => {
       if (status === 'SUBSCRIBED') {
         if (_reconnectTimer) {

@@ -172,6 +172,8 @@ export const Sidebar: React.FC = () => {
     let invitedName = '';
     let invitedEmail = '';
 
+    let targetWorkspaceId = '';
+
     try {
       const trimmed = inviteInput.trim();
       let jsonPayload = '';
@@ -188,6 +190,7 @@ export const Sidebar: React.FC = () => {
       if (jsonPayload) {
         const parsed = JSON.parse(jsonPayload);
         teamName = parsed.workspaceName || parsed.wsName || teamName;
+        targetWorkspaceId = parsed.workspaceId || parsed.wsId || '';
         supabaseUrl = parsed.supabaseUrl || parsed.url || '';
         supabaseKey = parsed.supabaseAnonKey || parsed.key || '';
         userRole = parsed.role || 'member';
@@ -198,6 +201,7 @@ export const Sidebar: React.FC = () => {
         const url = new URL(trimmed.replace('leeflet://', 'http://'));
         supabaseUrl = url.searchParams.get('server') || '';
         supabaseKey = url.searchParams.get('key') || '';
+        targetWorkspaceId = url.searchParams.get('ws') || '';
         teamName = url.searchParams.get('name') || teamName;
         userRole = url.searchParams.get('role') || 'member';
       }
@@ -207,7 +211,7 @@ export const Sidebar: React.FC = () => {
 
     const sanitized = teamName.toLowerCase().replace(/[^a-z0-9]/g, '-');
     const defaultPath = `C:\\leeflet\\workspaces\\team-${sanitized}-${Date.now()}`;
-    const newWs = await createWorkspace(teamName, defaultPath);
+    const newWs = await createWorkspace(teamName, defaultPath, targetWorkspaceId || undefined);
 
     if (newWs && newWs.id) {
       if (supabaseUrl && supabaseKey) {
@@ -287,6 +291,10 @@ export const Sidebar: React.FC = () => {
 
       if (supabaseUrl && supabaseKey) {
         await pushTeamMemberToCloud(newWs.id, selfMember);
+        const { deleteWorkspaceInviteFromCloud } = await import('../services/cloudSync');
+        if (myProfileEmail) {
+          await deleteWorkspaceInviteFromCloud(newWs.id, myProfileEmail);
+        }
         const remoteMembers = await pullTeamMembersFromCloud(newWs.id);
         if (remoteMembers.length > 0) {
           saveStoredTeamMembers(remoteMembers, newWs.id);

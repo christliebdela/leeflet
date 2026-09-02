@@ -95,12 +95,13 @@ export const App: React.FC = () => {
 
           if (payload.workspaceName || payload.wsName) {
             const teamName = payload.workspaceName || payload.wsName;
+            const targetWorkspaceId = payload.workspaceId || payload.wsId;
             const supabaseUrl = payload.supabaseUrl || payload.url;
             const supabaseKey = payload.supabaseAnonKey || payload.key;
             const userRole = payload.role || 'member';
 
             const defaultPath = `leeflet://workspaces/team-${Date.now()}`;
-            const newWs = await useLeafStore.getState().createWorkspace(teamName, defaultPath);
+            const newWs = await useLeafStore.getState().createWorkspace(teamName, defaultPath, targetWorkspaceId);
             if (newWs && newWs.id) {
               if (supabaseUrl && supabaseKey) {
                 localStorage.setItem(`leeflet_supabase_url_${newWs.id}`, supabaseUrl);
@@ -150,7 +151,7 @@ export const App: React.FC = () => {
               } catch {}
 
               const { OWNER_MEMBER_UUID, saveStoredTeamMembers } = await import('./utils/team');
-              const { pushTeamMemberToCloud, pullTeamMembersFromCloud } = await import('./services/cloudSync');
+              const { pushTeamMemberToCloud, pullTeamMembersFromCloud, deleteWorkspaceInviteFromCloud } = await import('./services/cloudSync');
 
               const adminMember = {
                 id: OWNER_MEMBER_UUID,
@@ -178,6 +179,9 @@ export const App: React.FC = () => {
 
               if (supabaseUrl && supabaseKey) {
                 await pushTeamMemberToCloud(newWs.id, selfMember);
+                if (myProfileEmail) {
+                  await deleteWorkspaceInviteFromCloud(newWs.id, myProfileEmail);
+                }
                 const remoteMembers = await pullTeamMembersFromCloud(newWs.id);
                 if (remoteMembers.length > 0) {
                   saveStoredTeamMembers(remoteMembers, newWs.id);

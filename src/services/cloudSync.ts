@@ -492,41 +492,64 @@ export async function syncWorkspaceWithCloud(
       }
     }
 
-    // 6. Merge Team Members
+    // 6. Merge Team Members & Invites
     try {
       const localMembers = getStoredTeamMembers(ws.id);
-      const remoteMembers = await pullTeamMembersFromCloud(ws.id);
-      
+      const [remoteMembers, remoteInvites] = await Promise.all([
+        pullTeamMembersFromCloud(ws.id),
+        pullWorkspaceInvitesFromCloud(ws.id),
+      ]);
+
       const memberMap = new Map<string, TeamMember>();
+      
+      // Keep local admin/owner
       for (const m of localMembers) {
-        const key = (m.email || m.name).toLowerCase();
-        memberMap.set(key, m);
+        if (m.id === '00000000-0000-4000-8000-000000000001' || m.role === 'Admin' || m.role === 'Owner') {
+          memberMap.set((m.email || m.name).toLowerCase(), m);
+        }
       }
 
+      // Add remote active members
       for (const rm of remoteMembers) {
         const key = (rm.email || rm.name).toLowerCase();
-        const existing = memberMap.get(key);
-        if (!existing) {
-          memberMap.set(key, rm);
-        } else {
-          // If remote has active status, prefer active over invited
-          if (rm.status === 'active' && existing.status === 'invited') {
-            memberMap.set(key, { ...existing, status: 'active', role: rm.role });
-          }
+        memberMap.set(key, rm);
+      }
+
+      // Add remote pending invites
+      for (const inv of remoteInvites) {
+        const key = (inv.email || '').toLowerCase();
+        if (key && !memberMap.has(key)) {
+          const rawRole = (inv.role || 'developer').toLowerCase();
+          let role = 'Developer';
+          if (rawRole === 'admin' || rawRole === 'owner') role = 'Admin';
+          else if (rawRole === 'designer') role = 'Designer';
+          else if (rawRole === 'product manager' || rawRole === 'product_manager') role = 'Product Manager';
+          else if (rawRole === 'qa engineer' || rawRole === 'qa_engineer') role = 'QA Engineer';
+          else if (rawRole === 'viewer') role = 'Viewer';
+          else if (rawRole === 'member') role = 'Member';
+
+          memberMap.set(key, {
+            id: inv.id || crypto.randomUUID(),
+            name: key.split('@')[0],
+            email: inv.email,
+            role: role as any,
+            status: 'invited',
+            joinedAt: inv.created_at ? `Invited ${new Date(inv.created_at).toLocaleDateString()}` : 'Invited',
+            avatarColor: 'bg-zinc-600',
+          });
+        }
+      }
+
+      // Keep any other local active members
+      for (const lm of localMembers) {
+        const key = (lm.email || lm.name).toLowerCase();
+        if (!memberMap.has(key) && lm.status === 'active') {
+          memberMap.set(key, lm);
         }
       }
 
       const mergedMembers = Array.from(memberMap.values());
       saveStoredTeamMembers(mergedMembers, ws.id);
-
-      // Push any active local members that were missing in remote
-      const remoteKeys = new Set(remoteMembers.map((m) => (m.email || m.name).toLowerCase()));
-      for (const lm of localMembers) {
-        const key = (lm.email || lm.name).toLowerCase();
-        if (!remoteKeys.has(key) && lm.status === 'active') {
-          await pushTeamMemberToCloud(ws.id, lm);
-        }
-      }
     } catch {
       // member sync error ignored
     }
@@ -630,6 +653,74 @@ export async function pullTeamMembersFromCloud(wsId: string): Promise<TeamMember
         avatarColor: r.avatar_color || 'bg-violet-600',
       };
     });
+  } catch {
+    return [];
+  }
+}
+
+// ─── Workspace Invites Cloud Sync ──────────────────────────────────────────
+
+export async function pushWorkspaceInviteToCloud(
+  wsId: string,
+  invite: { email: string; role: string; token: string; invitedBy?: string }
+): Promise<void> {
+  const creds = getCloudCredentials(wsId);
+  if (!creds || !isValidUuid(wsId) || !invite.email) return;
+
+  const roleStr = (invite.role || 'developer').toLowerCase();
+  const dbRole = (roleStr === 'admin' || roleStr === 'owner') ? 'admin' : (roleStr === 'viewer' ? 'viewer' : 'developer');
+  const email = invite.email.trim().toLowerCase();
+
+  const body = {
+    workspace_id: wsId,
+    email,
+    role: dbRole,
+    token: invite.token,
+    invited_by: invite.invitedBy || 'Workspace Admin',
+    created_at: new Date().toISOString(),
+  };
+
+  try {
+    await pushWorkspaceStubIfNeeded(creds, wsId);
+    await fetch(`${creds.url}/rest/v1/workspace_invites?on_conflict=workspace_id,email`, {
+      method: 'POST',
+      headers: {
+        ...getAuthHeaders(creds),
+        Prefer: 'resolution=merge-duplicates,return=minimal',
+      },
+      body: JSON.stringify([body]),
+    });
+  } catch (err) {
+    console.warn('Error pushing workspace invite to cloud:', err);
+  }
+}
+
+export async function deleteWorkspaceInviteFromCloud(wsId: string, email: string): Promise<void> {
+  const creds = getCloudCredentials(wsId);
+  if (!creds || !isValidUuid(wsId) || !email) return;
+
+  try {
+    await fetch(`${creds.url}/rest/v1/workspace_invites?workspace_id=eq.${wsId}&email=eq.${encodeURIComponent(email.trim().toLowerCase())}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(creds),
+    });
+  } catch {
+    // swallowed
+  }
+}
+
+export async function pullWorkspaceInvitesFromCloud(wsId: string): Promise<any[]> {
+  const creds = getCloudCredentials(wsId);
+  if (!creds || !isValidUuid(wsId)) return [];
+
+  try {
+    const res = await fetch(
+      `${creds.url}/rest/v1/workspace_invites?workspace_id=eq.${wsId}&select=*`,
+      { headers: getAuthHeaders(creds) }
+    );
+    if (!res.ok) return [];
+    const rows = await res.json();
+    return Array.isArray(rows) ? rows : [];
   } catch {
     return [];
   }

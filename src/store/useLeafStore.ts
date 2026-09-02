@@ -45,7 +45,7 @@ interface LeafState {
   toggleTheme: () => void;
   loadWorkspaces: () => Promise<void>;
   switchWorkspace: (workspaceId: string) => Promise<void>;
-  createWorkspace: (name: string, locationPath: string) => Promise<Workspace>;
+  createWorkspace: (name: string, locationPath: string, explicitId?: string) => Promise<Workspace>;
   renameWorkspace: (workspaceId: string, newName: string) => Promise<void>;
   deleteWorkspace: (workspaceId: string) => Promise<void>;
   loadProjects: () => Promise<void>;
@@ -321,10 +321,10 @@ export const useLeafStore = create<LeafState>((set, get) => ({
     }
   },
 
-  createWorkspace: async (name: string, locationPath: string) => {
+  createWorkspace: async (name: string, locationPath: string, explicitId?: string) => {
     set({ isLoading: true, loadingMessage: 'creating workspace...' });
     try {
-      const ws = await dbService.createWorkspace(name, locationPath);
+      const ws = await dbService.createWorkspace(name, locationPath, explicitId);
       await get().loadWorkspaces();
       set({ workspace: ws, isOnboardingOpen: false, selectedItemId: null, selectedProjectId: null });
       await get().loadProjects();
