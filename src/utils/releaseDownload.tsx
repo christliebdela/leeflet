@@ -62,10 +62,12 @@ export interface UseReleaseDownloadResult {
   isLoading: boolean;
 }
 
+const FALLBACK_VERSION = 'v0.1.0';
+
 const DEFAULT_DOWNLOADS: ReleaseAssetUrls = {
-  windows: `${GITHUB_RELEASES}/latest`,
-  mac: `${GITHUB_RELEASES}/latest`,
-  linux: `${GITHUB_RELEASES}/latest`,
+  windows: `${GITHUB_RELEASES}/download/${FALLBACK_VERSION}/leeflet_0.1.0_x64-setup.exe`,
+  mac: `${GITHUB_RELEASES}/download/${FALLBACK_VERSION}/leeflet_0.1.0_aarch64.dmg`,
+  linux: `${GITHUB_RELEASES}/download/${FALLBACK_VERSION}/leeflet_0.1.0_amd64.AppImage`,
 };
 
 export function useReleaseDownload(): UseReleaseDownloadResult {
@@ -78,17 +80,25 @@ export function useReleaseDownload(): UseReleaseDownloadResult {
     const detected = detectUserOS();
     setOS(detected);
 
-    // Try to fetch latest release assets from GitHub API or session cache
-    const cacheKey = 'leeflet_latest_release_assets';
+    const isArmMac = typeof window !== 'undefined' && 
+      (navigator.userAgent.includes('Macintosh') || navigator.platform.includes('Mac')) &&
+      (navigator.userAgent.includes('ARM') || (navigator as any).userAgentData?.architecture === 'arm');
+
+    // Try to fetch latest release assets from GitHub API or session cache (with 5-minute TTL)
+    const cacheKey = 'leeflet_latest_release_assets_v2';
     const cached = sessionStorage.getItem(cacheKey);
 
     if (cached) {
       try {
         const parsed = JSON.parse(cached);
-        setVersion(parsed.version || 'v0.1.0');
-        setDownloads(parsed.downloads || DEFAULT_DOWNLOADS);
-        setIsLoading(false);
-        return;
+        const age = Date.now() - (parsed.timestamp || 0);
+        // If cache is less than 5 minutes old and contains actual asset URLs
+        if (age < 5 * 60 * 1000 && parsed.downloads && (parsed.downloads.windows !== `${GITHUB_RELEASES}/latest` || parsed.downloads.mac !== `${GITHUB_RELEASES}/latest`)) {
+          setVersion(parsed.version || 'v0.1.0');
+          setDownloads(parsed.downloads);
+          setIsLoading(false);
+          return;
+        }
       } catch {
         // invalid cache, continue fetch
       }
@@ -105,14 +115,25 @@ export function useReleaseDownload(): UseReleaseDownloadResult {
 
         const assets: Array<{ name: string; browser_download_url: string }> = data.assets || [];
 
+        // 1. Windows: Prefer setup .exe or .msi
         const winAsset = assets.find(
           (a) => a.name.endsWith('.exe') || a.name.endsWith('.msi')
         );
-        const macAsset = assets.find(
-          (a) => a.name.endsWith('.dmg') || a.name.endsWith('.app.tar.gz')
-        );
+
+        // 2. macOS: Match architecture (aarch64 for Apple Silicon, x64 for Intel) or any .dmg
+        let macAsset = isArmMac
+          ? assets.find((a) => a.name.includes('aarch64') && a.name.endsWith('.dmg'))
+          : assets.find((a) => a.name.includes('x64') && a.name.endsWith('.dmg'));
+        
+        if (!macAsset) {
+          macAsset = assets.find(
+            (a) => a.name.endsWith('.dmg') || a.name.endsWith('.app.tar.gz')
+          );
+        }
+
+        // 3. Linux: Prefer AppImage or deb
         const linuxAsset = assets.find(
-          (a) => a.name.endsWith('.AppImage') || a.name.endsWith('.deb')
+          (a) => a.name.endsWith('.AppImage') || a.name.endsWith('.deb') || a.name.endsWith('.rpm')
         );
 
         const resolvedDownloads: ReleaseAssetUrls = {
@@ -128,6 +149,7 @@ export function useReleaseDownload(): UseReleaseDownloadResult {
           JSON.stringify({
             version: tagName,
             downloads: resolvedDownloads,
+            timestamp: Date.now(),
           })
         );
       })

@@ -63,8 +63,8 @@ export default {
       keyframes: {
         "aurora-flow": {
           "0%": { backgroundPosition: "0% 50%, 0% 50%", opacity: "0" },
-          "12%": { opacity: "0.5" },
-          "88%": { opacity: "0.5" },
+          "12%": { opacity: "0.38" },
+          "88%": { opacity: "0.38" },
           "100%": { backgroundPosition: "200% 50%, 200% 50%", opacity: "0" },
         },
         "aurora-flow-after": {

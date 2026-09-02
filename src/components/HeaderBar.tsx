@@ -617,7 +617,6 @@ export const HeaderBar: React.FC = () => {
               <button
                 type="button"
                 onClick={() => handleRefresh(false)}
-                title="Cloud synchronization status"
                 className={`flex items-center justify-center p-1.5 md:px-2.5 md:py-1 rounded-[6px] border text-xs font-medium shrink-0 whitespace-nowrap transition-colors cursor-pointer select-none ${
                   !isOnline
                     ? 'bg-[#f4f5f6] dark:bg-[#1c1c1f] border-[#e5e7eb] dark:border-[#27272a] text-[#9ca3af] dark:text-[#52525b]'

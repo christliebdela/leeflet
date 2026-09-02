@@ -672,9 +672,9 @@ export const ItemListView: React.FC = () => {
         <div className="space-y-3 min-w-0">
           {/* Active Tasks in Project */}
           {activeProjectDisplayItems.length === 0 ? (
-            <div className="p-4 rounded-[8px] bg-emerald-500/5 border border-emerald-500/20 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+            <div className="p-3.5 rounded-[8px] bg-[#f9fafb] dark:bg-[#18181b]/50 border border-[#e5e7eb] dark:border-[#27272a] flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-xs font-medium text-[#374151] dark:text-[#ededef]">
+                <CheckCircle2 className="w-4 h-4 text-[#6b7280] dark:text-[#a1a1aa] shrink-0" />
                 <span>
                   {isUrgentFilterActive
                     ? 'No urgent tasks match the filter!'
@@ -684,7 +684,7 @@ export const ItemListView: React.FC = () => {
               {isUrgentFilterActive ? (
                 <button
                   onClick={clearPriorityFilters}
-                  className="px-2.5 py-1 bg-[#f3f4f6] dark:bg-[#27272a] text-[#374151] dark:text-[#d4d4d8] border border-[#e5e7eb] dark:border-[#3f3f46] rounded-[5px] text-xs font-medium hover:bg-[#e5e7eb] transition-colors shrink-0"
+                  className="px-2.5 py-1 bg-[#f3f4f6] dark:bg-[#27272a] text-[#374151] dark:text-[#d4d4d8] border border-[#e5e7eb] dark:border-[#3f3f46] rounded-[5px] text-xs font-medium hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] transition-colors shrink-0"
                 >
                   Show All Tasks
                 </button>
@@ -692,9 +692,10 @@ export const ItemListView: React.FC = () => {
                 permissions.canCreateItems && (
                   <button
                     onClick={() => setQuickCaptureOpen(true)}
-                    className="px-2.5 py-1 bg-emerald-600 dark:bg-emerald-500 text-white rounded-[5px] text-xs font-semibold hover:opacity-90 transition-opacity shrink-0"
+                    className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-[#ededef] bg-transparent hover:bg-black/[0.04] dark:hover:bg-white/[0.06] border border-[#e5e7eb] dark:border-[#27272a] hover:border-[#d1d5db] dark:hover:border-[#3f3f46] rounded-[6px] transition-colors shrink-0 whitespace-nowrap active:scale-95 cursor-pointer"
                   >
-                    + Add Task
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Task</span>
                   </button>
                 )
               )}

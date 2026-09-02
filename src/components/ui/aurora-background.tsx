@@ -29,11 +29,11 @@ export const AuroraBackground = ({
         style={
           {
             "--aurora-1":
-              "repeating-linear-gradient(100deg,rgba(255,255,255,0.4) 0%,rgba(161,161,170,0.2) 10%,rgba(63,63,70,0.05) 20%,rgba(255,255,255,0.4) 30%)",
+              "repeating-linear-gradient(100deg,rgba(255,255,255,0.28) 0%,rgba(161,161,170,0.14) 10%,rgba(63,63,70,0.03) 20%,rgba(255,255,255,0.28) 30%)",
             "--aurora-2":
-              "repeating-linear-gradient(130deg,rgba(255,255,255,0.35) 0%,rgba(113,113,122,0.15) 12%,rgba(24,24,27,0.02) 22%,rgba(255,255,255,0.35) 32%)",
+              "repeating-linear-gradient(130deg,rgba(255,255,255,0.22) 0%,rgba(113,113,122,0.10) 12%,rgba(24,24,27,0.01) 22%,rgba(255,255,255,0.22) 32%)",
             "--dark-stripes":
-              "repeating-linear-gradient(100deg,rgba(8,9,10,0.8) 0%,rgba(8,9,10,0.8) 7%,transparent 10%,transparent 14%,rgba(8,9,10,0.8) 18%)",
+              "repeating-linear-gradient(100deg,rgba(8,9,10,0.92) 0%,rgba(8,9,10,0.92) 7%,transparent 10%,transparent 14%,rgba(8,9,10,0.92) 18%)",
           } as React.CSSProperties
         }
       >
