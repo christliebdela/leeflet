@@ -25,6 +25,7 @@ import { useLeafStore } from '../store/useLeafStore';
 import { toast } from '../store/useToastStore';
 import { getStoredTeamMembers, saveStoredTeamMembers } from '../utils/team';
 import { isSmtpConfigured, sendInviteEmail, generateInviteDeepLink } from '../utils/smtp';
+import { getCloudCredentials } from '../services/cloudSync';
 import { resolveAvatarUrl } from '../utils/avatars';
 import { TeamMember, RoleId, MemberStatus } from '../types';
 
@@ -66,6 +67,17 @@ export const TeamView: React.FC = () => {
   const { workspace, setViewMode } = useLeafStore();
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [showSmtpRequiredModal, setShowSmtpRequiredModal] = useState(false);
+  const [showDbRequiredModal, setShowDbRequiredModal] = useState(false);
+  const hasCloudDb = Boolean(workspace && getCloudCredentials(workspace.id));
+
+  const handleOpenInviteModal = () => {
+    if (!hasCloudDb) {
+      setShowDbRequiredModal(true);
+      return;
+    }
+    setIsInviteModalOpen(true);
+  };
+
   const [inviteName, setInviteName] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<RoleId>('Developer');
@@ -218,6 +230,13 @@ export const TeamView: React.FC = () => {
     const roleConfig = ROLES.find((r) => r.id === inviteRole) || ROLES[1];
     const nameToUse = name;
 
+    if (!hasCloudDb) {
+      setIsInviteModalOpen(false);
+      setShowDbRequiredModal(true);
+      toast.error('Connect a cloud database in Settings > Sync before inviting teammates.');
+      return;
+    }
+
     if (!isSmtpConfigured()) {
       // Create pending invitation anyway and offer link copy
       const newMember: TeamMember = {
@@ -298,6 +317,12 @@ export const TeamView: React.FC = () => {
 
   const handleCopyInviteLink = (targetRole: RoleId = inviteRole) => {
     if (!workspace) return;
+    if (!hasCloudDb) {
+      setIsInviteModalOpen(false);
+      setShowDbRequiredModal(true);
+      toast.error('Cloud database required to generate team invite links');
+      return;
+    }
     const dynamicLink = generateInviteDeepLink(
       workspace,
       targetRole,
@@ -457,7 +482,7 @@ export const TeamView: React.FC = () => {
 
         {isCurrentUserAdmin ? (
           <button
-            onClick={() => setIsInviteModalOpen(true)}
+            onClick={handleOpenInviteModal}
             className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[#f4f5f6] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#323238] text-[#374151] dark:text-[#f4f4f5] hover:bg-[#ebecee] dark:hover:bg-[#27272a] hover:border-[#d1d5db] dark:hover:border-[#3f3f46] rounded-[6px] text-xs font-medium transition-colors shrink-0 shadow-2xs active:scale-95 cursor-pointer"
           >
             <UserPlus className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
@@ -474,6 +499,31 @@ export const TeamView: React.FC = () => {
           </button>
         )}
       </div>
+
+      {/* Prerequisite: Cloud Database Required Banner */}
+      {!hasCloudDb && (
+        <div className="p-3.5 rounded-[8px] border border-amber-500/20 bg-amber-500/5 dark:bg-amber-500/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-start sm:items-center gap-2.5">
+            <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5 sm:mt-0" />
+            <div>
+              <div className="font-semibold text-amber-800 dark:text-amber-300">
+                Cloud Database Required for Team Collaboration
+              </div>
+              <p className="text-[11px] text-amber-700/80 dark:text-amber-400/80 mt-0.5">
+                Team collaboration requires a shared Supabase database so all members can synchronize tasks, projects, and comments in real time.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setViewMode({ type: 'settings', tab: 'sync' })}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-[6px] bg-amber-600 hover:bg-amber-500 text-white transition-all shadow-xs cursor-pointer shrink-0 self-start sm:self-auto"
+          >
+            <Settings className="w-3.5 h-3.5" />
+            <span>Configure Database</span>
+          </button>
+        </div>
+      )}
 
       {/* Workspace Members Section */}
       <div
@@ -1048,6 +1098,63 @@ export const TeamView: React.FC = () => {
               >
                 <Settings className="w-3.5 h-3.5" />
                 <span>Setup SMTP in Settings</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cloud Database Required Modal */}
+      {showDbRequiredModal && (
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowDbRequiredModal(false);
+          }}
+          className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 select-none"
+        >
+          <div className="w-full max-w-md bg-white dark:bg-[#18181b] rounded-[10px] border border-[#e5e7eb] dark:border-[#27272a] shadow-modal p-5 space-y-4 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-[#f3f4f6] dark:border-[#27272a] pb-2.5">
+              <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                <AlertTriangle className="w-4 h-4" />
+                <h2 className="text-xs font-semibold text-[#111827] dark:text-[#f4f4f5]">Database Required for Team Invites</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDbRequiredModal(false)}
+                className="p-1 rounded-[4px] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] text-[#6b7280] dark:text-[#a1a1aa] cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-xs text-[#6b7280] dark:text-[#a1a1aa] leading-relaxed">
+                This workspace is currently running in local-only mode. To invite teammates and collaborate, your workspace must be connected to a shared Supabase database.
+              </p>
+              <div className="p-3 rounded-[6px] bg-[#f9fafb] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#27272a] text-[11px] text-[#4b5563] dark:text-[#d4d4d8]">
+                Without a database connected, invited teammates would only join an isolated, empty local workspace without syncing tasks.
+              </div>
+            </div>
+
+            <div className="pt-2 flex items-center justify-end gap-2 border-t border-[#f3f4f6] dark:border-[#27272a]">
+              <button
+                type="button"
+                onClick={() => setShowDbRequiredModal(false)}
+                className="px-3 py-1.5 text-xs font-medium text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] rounded-[6px] transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDbRequiredModal(false);
+                  setViewMode({ type: 'settings', tab: 'sync' });
+                }}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold bg-[#111827] dark:bg-white text-white dark:text-[#111827] rounded-[6px] hover:bg-[#1f2937] dark:hover:bg-[#e4e4e7] transition-all shadow-subtle cursor-pointer"
+              >
+                <Settings className="w-3.5 h-3.5" />
+                <span>Configure in Settings</span>
               </button>
             </div>
           </div>

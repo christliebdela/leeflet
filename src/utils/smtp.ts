@@ -1,5 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { Workspace, RoleId } from '../types';
+import { getCloudCredentials } from '../services/cloudSync';
 
 export interface SmtpConfig {
   host: string;
@@ -64,8 +65,9 @@ export const generateInvitePayload = (
   invitedEmail?: string,
   invitedName?: string
 ): InvitePayload => {
-  const supabaseUrl = localStorage.getItem(`leeflet_supabase_url_${workspace.id}`) || undefined;
-  const supabaseAnonKey = localStorage.getItem(`leeflet_supabase_anon_key_${workspace.id}`) || undefined;
+  const creds = getCloudCredentials(workspace.id);
+  const supabaseUrl = creds?.url;
+  const supabaseAnonKey = creds?.anonKey;
 
   let profileName = 'Workspace Admin';
   try {

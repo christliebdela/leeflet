@@ -5,6 +5,7 @@ import { broadcastSync, subscribeToSync } from '../utils/sync';
 import { toast } from './useToastStore';
 import { soundService } from '../utils/audio';
 import { subscribeToWorkspace, unsubscribe as realtimeUnsubscribe } from '../services/realtimeSync';
+import { getDefaultCloudCredentials } from '../services/cloudSync';
 
 interface LeafState {
   workspace: Workspace | null;
@@ -325,10 +326,23 @@ export const useLeafStore = create<LeafState>((set, get) => ({
     set({ isLoading: true, loadingMessage: 'creating workspace...' });
     try {
       const ws = await dbService.createWorkspace(name, locationPath, explicitId);
+
+      // Auto-inherit default cloud database if configured
+      const defaultCreds = getDefaultCloudCredentials();
+      if (defaultCreds && ws?.id && !localStorage.getItem(`leeflet_sync_mode_${ws.id}`)) {
+        localStorage.setItem(`leeflet_sync_mode_${ws.id}`, 'cloud');
+      }
+
       await get().loadWorkspaces();
       set({ workspace: ws, isOnboardingOpen: false, selectedItemId: null, selectedProjectId: null });
       await get().loadProjects();
       await get().loadItems();
+
+      // If connected to default database, sync the new workspace to cloud
+      if (defaultCreds && ws?.id) {
+        get().syncCloudData(true).catch(() => {});
+      }
+
       toast.success(`Created workspace "${name}"`);
       return ws;
     } finally {

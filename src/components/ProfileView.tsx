@@ -18,6 +18,7 @@ import { useLeafStore } from '../store/useLeafStore';
 import { toast } from '../store/useToastStore';
 import { dbService } from '../services/db';
 import { getStoredTeamMembers, saveStoredTeamMembers } from '../utils/team';
+import { isWorkspaceCloudSync, getCloudCredentials } from '../services/cloudSync';
 import {
   MASCOT_PRESETS,
   resolveAvatarUrl,
@@ -110,8 +111,8 @@ const ToggleSwitch: React.FC<ToggleSwitchProps> = ({ checked, onChange, ariaLabe
 
 export const ProfileView: React.FC = () => {
   const { workspace, items, setViewMode } = useLeafStore();
-  const supabaseUrl = workspace ? localStorage.getItem(`leeflet_supabase_url_${workspace.id}`) : null;
-  const isCloudSync = workspace ? localStorage.getItem(`leeflet_sync_mode_${workspace.id}`) === 'cloud' && Boolean(supabaseUrl) : false;
+  const isCloudSync = workspace ? isWorkspaceCloudSync(workspace.id) : false;
+  const supabaseUrl = workspace ? getCloudCredentials(workspace.id)?.url || null : null;
 
   const [initialProfile, setInitialProfile] = useState<ProfileData>(() => {
     try {

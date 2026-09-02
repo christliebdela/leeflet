@@ -6,13 +6,100 @@ export interface CloudCredentials {
   anonKey: string;
 }
 
+export const DEFAULT_DB_URL_KEY = 'leeflet_default_supabase_url';
+export const DEFAULT_DB_KEY_KEY = 'leeflet_default_supabase_anon_key';
+
+export function getDefaultCloudCredentials(): CloudCredentials | null {
+  try {
+    const url = (localStorage.getItem(DEFAULT_DB_URL_KEY) || '').trim().replace(/\/$/, '');
+    const anonKey = (localStorage.getItem(DEFAULT_DB_KEY_KEY) || '').trim();
+    if (url && anonKey) {
+      return { url, anonKey };
+    }
+
+    // Check for legacy un-suffixed keys
+    const legacyUrl = (localStorage.getItem('leeflet_supabase_url') || localStorage.getItem('leaf_supabase_url') || '').trim().replace(/\/$/, '');
+    const legacyKey = (localStorage.getItem('leeflet_supabase_anon_key') || localStorage.getItem('leaf_supabase_anon_key') || '').trim();
+    if (legacyUrl && legacyKey) {
+      setDefaultCloudCredentials({ url: legacyUrl, anonKey: legacyKey });
+      return { url: legacyUrl, anonKey: legacyKey };
+    }
+
+    // Auto-discover from any previously configured workspace so existing setups carry over seamlessly
+    if (typeof window !== 'undefined' && window.localStorage) {
+      // 1st priority: look for an owned workspace with credentials
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('leeflet_supabase_url_') && !key.includes('leeflet_default')) {
+          const wsId = key.replace('leeflet_supabase_url_', '');
+          const isJoined = localStorage.getItem(`leeflet_is_joined_workspace_${wsId}`) === 'true';
+          const candidateUrl = (localStorage.getItem(key) || '').trim().replace(/\/$/, '');
+          const candidateKey = (localStorage.getItem(`leeflet_supabase_anon_key_${wsId}`) || '').trim();
+          if (candidateUrl && candidateKey && !isJoined) {
+            setDefaultCloudCredentials({ url: candidateUrl, anonKey: candidateKey });
+            return { url: candidateUrl, anonKey: candidateKey };
+          }
+        }
+      }
+      // 2nd priority: any workspace with credentials
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('leeflet_supabase_url_') && !key.includes('leeflet_default')) {
+          const wsId = key.replace('leeflet_supabase_url_', '');
+          const candidateUrl = (localStorage.getItem(key) || '').trim().replace(/\/$/, '');
+          const candidateKey = (localStorage.getItem(`leeflet_supabase_anon_key_${wsId}`) || '').trim();
+          if (candidateUrl && candidateKey) {
+            setDefaultCloudCredentials({ url: candidateUrl, anonKey: candidateKey });
+            return { url: candidateUrl, anonKey: candidateKey };
+          }
+        }
+      }
+    }
+  } catch {}
+  return null;
+}
+
+export function setDefaultCloudCredentials(creds: CloudCredentials | null): void {
+  try {
+    if (creds && creds.url && creds.anonKey) {
+      localStorage.setItem(DEFAULT_DB_URL_KEY, creds.url.trim().replace(/\/$/, ''));
+      localStorage.setItem(DEFAULT_DB_KEY_KEY, creds.anonKey.trim());
+    } else {
+      localStorage.removeItem(DEFAULT_DB_URL_KEY);
+      localStorage.removeItem(DEFAULT_DB_KEY_KEY);
+    }
+  } catch {}
+}
+
+export function isWorkspaceCloudSync(workspaceId: string): boolean {
+  if (!workspaceId) return false;
+  try {
+    const mode = localStorage.getItem(`leeflet_sync_mode_${workspaceId}`);
+    if (mode === 'local') return false;
+    return Boolean(getCloudCredentials(workspaceId));
+  } catch {
+    return false;
+  }
+}
+
 export function getCloudCredentials(workspaceId: string): CloudCredentials | null {
   try {
-    const isCloud = localStorage.getItem(`leeflet_sync_mode_${workspaceId}`) === 'cloud';
-    const url = (localStorage.getItem(`leeflet_supabase_url_${workspaceId}`) || '').trim().replace(/\/$/, '');
-    const anonKey = (localStorage.getItem(`leeflet_supabase_anon_key_${workspaceId}`) || '').trim();
-    if (url && anonKey && isCloud !== false) {
-      return { url, anonKey };
+    const isLocal = localStorage.getItem(`leeflet_sync_mode_${workspaceId}`) === 'local';
+    if (isLocal) {
+      return null;
+    }
+
+    // 1. Workspace-specific credentials
+    const wsUrl = (localStorage.getItem(`leeflet_supabase_url_${workspaceId}`) || '').trim().replace(/\/$/, '');
+    const wsAnonKey = (localStorage.getItem(`leeflet_supabase_anon_key_${workspaceId}`) || '').trim();
+    if (wsUrl && wsAnonKey) {
+      return { url: wsUrl, anonKey: wsAnonKey };
+    }
+
+    // 2. Fall back to application-wide default database credentials
+    const defaultCreds = getDefaultCloudCredentials();
+    if (defaultCreds) {
+      return defaultCreds;
     }
   } catch {
     // Storage access error

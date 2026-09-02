@@ -1,5 +1,6 @@
 import { createClient, RealtimeChannel, SupabaseClient } from '@supabase/supabase-js';
 import { Item, Project, ChecklistItem, Attachment } from '../types';
+import { getCloudCredentials } from './cloudSync';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -25,15 +26,7 @@ let _reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function getStoredCredentials(workspaceId: string): { url: string; anonKey: string } | null {
-  try {
-    const isCloud = localStorage.getItem(`leeflet_sync_mode_${workspaceId}`) === 'cloud';
-    const url = (localStorage.getItem(`leeflet_supabase_url_${workspaceId}`) || '').trim().replace(/\/$/, '');
-    const anonKey = (localStorage.getItem(`leeflet_supabase_anon_key_${workspaceId}`) || '').trim();
-    if (isCloud && url && anonKey) return { url, anonKey };
-  } catch {
-    // storage unavailable
-  }
-  return null;
+  return getCloudCredentials(workspaceId);
 }
 
 // Map a raw PostgREST row to our Item shape (without hardcoded empty arrays for relations)

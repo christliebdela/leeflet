@@ -25,6 +25,7 @@ import { SearchInput } from './ui/SearchInput';
 import { Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
 import { getUserPermissions } from '../utils/permissions';
 import { toast } from '../store/useToastStore';
+import { isWorkspaceCloudSync } from '../services/cloudSync';
 
 const TYPE_ICONS: Record<ItemType, React.FC<{ className?: string }>> = {
   task: CheckSquare,
@@ -69,8 +70,7 @@ export const HeaderBar: React.FC = () => {
   const permissions = getUserPermissions(workspace?.id);
   const isCurrentUserAdmin = permissions.isAdmin;
 
-  const supabaseUrl = workspace ? localStorage.getItem(`leeflet_supabase_url_${workspace.id}`) : null;
-  const isCloudSync = workspace ? localStorage.getItem(`leeflet_sync_mode_${workspace.id}`) === 'cloud' && Boolean(supabaseUrl) : false;
+  const isCloudSync = workspace ? isWorkspaceCloudSync(workspace.id) : false;
 
   const handleRefresh = async (silent = false) => {
     if (isRefreshing) return;

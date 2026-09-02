@@ -50,6 +50,11 @@ import { getStoredSmtpConfig, saveStoredSmtpConfig, isSmtpConfigured, sendTestEm
 import { getDiceBearSvgUrl } from '../utils/avatars';
 import { Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
 import { useUpdaterStore } from '../store/useUpdaterStore';
+import {
+  getDefaultCloudCredentials,
+  setDefaultCloudCredentials,
+  isWorkspaceCloudSync,
+} from '../services/cloudSync';
 
 type SettingsTab = 'preferences' | 'shortcuts' | 'sync' | 'data' | 'about';
 
@@ -243,32 +248,44 @@ export const SettingsView: React.FC = () => {
   const userRole = (wsId ? localStorage.getItem(`leeflet_workspace_role_${wsId}`) : null) || 'owner';
   const isOwnerOrAdmin = !isJoinedWorkspace || userRole === 'owner' || userRole === 'admin';
 
-  const [supabaseUrl, setSupabaseUrl] = useState(() => {
-    return wsId ? localStorage.getItem(`leeflet_supabase_url_${wsId}`) || '' : '';
-  });
-  const [supabaseAnonKey, setSupabaseAnonKey] = useState(() => {
-    return wsId ? localStorage.getItem(`leeflet_supabase_anon_key_${wsId}`) || '' : '';
-  });
-  const [syncMode, setSyncMode] = useState<'cloud' | 'local'>(() => {
-    if (!wsId) return 'local';
-    return (localStorage.getItem(`leeflet_sync_mode_${wsId}`) as any) || (localStorage.getItem(`leeflet_supabase_url_${wsId}`) ? 'cloud' : 'local');
-  });
+  const defaultCreds = getDefaultCloudCredentials();
+  const wsExplicitLocal = wsId ? localStorage.getItem(`leeflet_sync_mode_${wsId}`) === 'local' : false;
+  const wsSpecificUrl = wsId ? localStorage.getItem(`leeflet_supabase_url_${wsId}`) || '' : '';
+  const wsSpecificAnonKey = wsId ? localStorage.getItem(`leeflet_supabase_anon_key_${wsId}`) || '' : '';
+  const isUsingDefault = !wsExplicitLocal && !wsSpecificUrl && Boolean(defaultCreds);
+  const isWorkspaceConnected = isWorkspaceCloudSync(wsId);
+
+  const initialUrl = wsSpecificUrl || (isUsingDefault ? defaultCreds?.url || '' : '');
+  const initialKey = wsSpecificAnonKey || (isUsingDefault ? defaultCreds?.anonKey || '' : '');
+
+  const [supabaseUrl, setSupabaseUrl] = useState(initialUrl);
+  const [supabaseAnonKey, setSupabaseAnonKey] = useState(initialKey);
+  const [saveAsDefault, setSaveAsDefault] = useState(true);
+  const [syncMode, setSyncMode] = useState<'cloud' | 'local'>(() => (isWorkspaceConnected ? 'cloud' : 'local'));
   const [showAnonKey, setShowAnonKey] = useState(false);
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
   const [inviteCopied, setInviteCopied] = useState(false);
 
-  const [savedDbUrl, setSavedDbUrl] = useState(() => wsId ? localStorage.getItem(`leeflet_supabase_url_${wsId}`) || '' : '');
-  const [savedDbAnonKey, setSavedDbAnonKey] = useState(() => wsId ? localStorage.getItem(`leeflet_supabase_anon_key_${wsId}`) || '' : '');
+  const [savedDbUrl, setSavedDbUrl] = useState(initialUrl);
+  const [savedDbAnonKey, setSavedDbAnonKey] = useState(initialKey);
 
   // Keep saved state in sync if workspace changes
   useEffect(() => {
     if (wsId) {
-      const url = localStorage.getItem(`leeflet_supabase_url_${wsId}`) || '';
-      const key = localStorage.getItem(`leeflet_supabase_anon_key_${wsId}`) || '';
-      setSavedDbUrl(url);
-      setSavedDbAnonKey(key);
-      setSupabaseUrl(url);
-      setSupabaseAnonKey(key);
+      const explicitLocal = localStorage.getItem(`leeflet_sync_mode_${wsId}`) === 'local';
+      const specUrl = localStorage.getItem(`leeflet_supabase_url_${wsId}`) || '';
+      const specKey = localStorage.getItem(`leeflet_supabase_anon_key_${wsId}`) || '';
+      const def = getDefaultCloudCredentials();
+      const usingDef = !explicitLocal && !specUrl && Boolean(def);
+
+      const activeUrl = specUrl || (usingDef ? def?.url || '' : '');
+      const activeKey = specKey || (usingDef ? def?.anonKey || '' : '');
+
+      setSavedDbUrl(activeUrl);
+      setSavedDbAnonKey(activeKey);
+      setSupabaseUrl(activeUrl);
+      setSupabaseAnonKey(activeKey);
+      setSyncMode(isWorkspaceCloudSync(wsId) ? 'cloud' : 'local');
     }
   }, [wsId]);
 
@@ -413,10 +430,19 @@ export const SettingsView: React.FC = () => {
       localStorage.setItem(`leeflet_supabase_anon_key_${wsId}`, key);
       localStorage.setItem(`leeflet_sync_mode_${wsId}`, 'cloud');
     }
+
+    if (saveAsDefault) {
+      setDefaultCloudCredentials({ url, anonKey: key });
+    }
+
     setSavedDbUrl(url);
     setSavedDbAnonKey(key);
     setSyncMode('cloud');
-    toast.success('Database connected. Syncing workspace data to Supabase...');
+    toast.success(
+      saveAsDefault
+        ? 'Database connected and set as default for all workspaces.'
+        : 'Database connected for this workspace.'
+    );
 
     // Immediately push existing projects & items to Supabase
     try {
@@ -424,6 +450,23 @@ export const SettingsView: React.FC = () => {
     } catch {
       // handled
     }
+  };
+
+  const handleApplyDefaultDatabase = async () => {
+    const def = getDefaultCloudCredentials();
+    if (!def || !wsId) return;
+    localStorage.removeItem(`leeflet_supabase_url_${wsId}`);
+    localStorage.removeItem(`leeflet_supabase_anon_key_${wsId}`);
+    localStorage.setItem(`leeflet_sync_mode_${wsId}`, 'cloud');
+    setSupabaseUrl(def.url);
+    setSupabaseAnonKey(def.anonKey);
+    setSavedDbUrl(def.url);
+    setSavedDbAnonKey(def.anonKey);
+    setSyncMode('cloud');
+    toast.success('Connected to default database. Syncing workspace data...');
+    try {
+      await useLeafStore.getState().syncCloudData(false);
+    } catch {}
   };
 
   const handleConfirmDisconnect = () => {
@@ -1437,9 +1480,47 @@ export const SettingsView: React.FC = () => {
               <>
             {/* Connection Credentials Form */}
             <div className="space-y-1.5">
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-[#9ca3af] dark:text-[#71717a] px-1">
-                Supabase Credentials
+              <div className="flex items-center justify-between px-1">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#9ca3af] dark:text-[#71717a]">
+                  Supabase Credentials
+                </span>
+                {isUsingDefault ? (
+                  <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                    <Globe className="w-3 h-3" /> Inherited Default Database
+                  </span>
+                ) : wsSpecificUrl && syncMode === 'cloud' ? (
+                  <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20 flex items-center gap-1">
+                    <Sliders className="w-3 h-3" /> Workspace Override
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border border-zinc-500/20 flex items-center gap-1">
+                    <CloudOff className="w-3 h-3" /> Local Only
+                  </span>
+                )}
               </div>
+
+              {/* Quick connect to default database banner if workspace is local-only */}
+              {syncMode === 'local' && defaultCreds && (
+                <div className="p-3.5 rounded-[8px] border border-emerald-500/20 bg-emerald-500/5 dark:bg-emerald-500/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs mb-2">
+                  <div className="space-y-0.5">
+                    <div className="font-semibold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+                      <Globe className="w-3.5 h-3.5" />
+                      <span>Default Database Available</span>
+                    </div>
+                    <p className="text-[11px] text-emerald-700/80 dark:text-emerald-400/80">
+                      Connect this workspace to your default Supabase database ({defaultCreds.url.replace(/^https?:\/\//, '').split('.')[0]}.supabase.co).
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleApplyDefaultDatabase}
+                    className="px-3 py-1.5 text-xs font-semibold rounded-[6px] bg-emerald-600 hover:bg-emerald-500 text-white transition-all shadow-xs cursor-pointer shrink-0 self-start sm:self-auto"
+                  >
+                    Connect to Default Database
+                  </button>
+                </div>
+              )}
+
               <div className="border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] bg-white dark:bg-[#18181b] p-4 space-y-4 text-xs">
                 {/* Project URL Field */}
                 <div>
@@ -1494,6 +1575,24 @@ export const SettingsView: React.FC = () => {
                   </p>
                 </div>
 
+                {/* Set as Default Database Checkbox */}
+                <div className="pt-1">
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={saveAsDefault}
+                      onChange={(e) => setSaveAsDefault(e.target.checked)}
+                      className="w-3.5 h-3.5 rounded border-[#d1d5db] dark:border-[#3f3f46] text-[#111827] dark:text-white focus:ring-0 cursor-pointer accent-[#111827] dark:accent-white"
+                    />
+                    <span className="text-xs text-[#374151] dark:text-[#d4d4d8]">
+                      Set as default database for all my workspaces
+                    </span>
+                  </label>
+                  <p className="text-[10.5px] text-[#9ca3af] dark:text-[#71717a] ml-5.5 mt-0.5">
+                    When enabled, any new workspaces you create will automatically connect to this Supabase database.
+                  </p>
+                </div>
+
                 {/* Form Action Buttons */}
                 <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#f3f4f6] dark:border-[#27272a]">
                   <button
@@ -1507,6 +1606,16 @@ export const SettingsView: React.FC = () => {
                   </button>
 
                   <div className="flex items-center gap-2">
+                    {wsSpecificUrl && defaultCreds && (
+                      <button
+                        type="button"
+                        onClick={handleApplyDefaultDatabase}
+                        className="px-2.5 py-1.5 text-xs font-medium rounded-[6px] text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#f4f5f6] dark:hover:bg-[#27272a] transition-all cursor-pointer"
+                      >
+                        Reset to Default
+                      </button>
+                    )}
+
                     {syncMode === 'cloud' && (
                       <button
                         type="button"
