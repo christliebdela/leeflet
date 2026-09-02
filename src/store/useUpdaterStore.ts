@@ -44,7 +44,7 @@ const getStoredLastChecked = (): string | null => {
 
 export const useUpdaterStore = create<UpdaterState>((set, get) => ({
   status: 'idle',
-  currentVersion: '0.1.0',
+  currentVersion: '0.2.0',
   availableVersion: null,
   releaseDate: null,
   releaseNotes: null,
@@ -142,3 +142,17 @@ export const useUpdaterStore = create<UpdaterState>((set, get) => ({
     });
   },
 }));
+
+// Automatically detect runtime native application version from Tauri
+if (typeof window !== 'undefined' && Boolean((window as any).__TAURI_INTERNALS__)) {
+  import('@tauri-apps/api/app')
+    .then(({ getVersion }) => {
+      getVersion()
+        .then((v) => {
+          if (v) useUpdaterStore.setState({ currentVersion: v });
+        })
+        .catch(() => {});
+    })
+    .catch(() => {});
+}
+

@@ -11,13 +11,28 @@ const isTauriApp = (): boolean => {
   return typeof window !== 'undefined' && Boolean((window as any).__TAURI_INTERNALS__);
 };
 
+export async function getAppVersion(): Promise<string> {
+  if (isTauriApp()) {
+    try {
+      const { getVersion } = await import('@tauri-apps/api/app');
+      const v = await getVersion();
+      if (v) return v;
+    } catch {
+      // fallback
+    }
+  }
+  return '0.2.0';
+}
+
 export async function checkForUpdate(): Promise<UpdateInfo | null> {
+  const currentAppVersion = await getAppVersion();
+
   if (!isTauriApp()) {
     // In web browser / dev preview without native backend
     return {
       available: false,
-      currentVersion: '0.1.0',
-      version: '0.1.0',
+      currentVersion: currentAppVersion,
+      version: currentAppVersion,
     };
   }
 
@@ -28,7 +43,7 @@ export async function checkForUpdate(): Promise<UpdateInfo | null> {
     if (update) {
       return {
         available: true,
-        currentVersion: update.currentVersion || '0.1.0',
+        currentVersion: update.currentVersion || currentAppVersion,
         version: update.version,
         date: update.date,
         body: update.body,
@@ -38,16 +53,16 @@ export async function checkForUpdate(): Promise<UpdateInfo | null> {
 
     return {
       available: false,
-      currentVersion: '0.1.0',
-      version: '0.1.0',
+      currentVersion: currentAppVersion,
+      version: currentAppVersion,
     };
   } catch (err: any) {
     console.warn('Tauri updater check error (e.g. no remote release manifest published yet):', err);
     // If endpoint is not found or in dev mode without manifest
     return {
       available: false,
-      currentVersion: '0.1.0',
-      version: '0.1.0',
+      currentVersion: currentAppVersion,
+      version: currentAppVersion,
     };
   }
 }

@@ -2427,7 +2427,7 @@ export const SettingsView: React.FC = () => {
                     leeflet
                   </h2>
                   <span className="px-2 py-0.5 rounded-full bg-[#f4f5f6] dark:bg-[#27272a] border border-[#e5e7eb] dark:border-[#3f3f46] text-[11px] font-mono text-[#374151] dark:text-[#d4d4d8]">
-                    v0.1.0
+                    v{currentVersion}
                   </span>
                 </div>
                 <p className="text-xs text-[#6b7280] dark:text-[#a1a1aa] max-w-sm mx-auto leading-normal">
@@ -2467,17 +2467,6 @@ export const SettingsView: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => {
-                    simulateUpdateForTesting();
-                    toast.info('Simulating update availability for testing');
-                  }}
-                  className="text-xs text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white hover:underline transition-colors px-1.5 py-1 cursor-pointer"
-                >
-                  Preview Dialog
-                </button>
-
                 <button
                   type="button"
                   disabled={updateStatus === 'checking'}

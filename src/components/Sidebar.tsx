@@ -595,13 +595,13 @@ export const Sidebar: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setUpdateModalOpen(true)}
-                  className="w-9 h-9 flex items-center justify-center rounded-[6px] bg-[#111827] dark:bg-[#f4f4f5] text-white dark:text-[#18181b] hover:bg-[#1f2937] dark:hover:bg-white transition-all shadow-xs cursor-pointer relative active:scale-[0.96]"
+                  className="w-9 h-9 flex items-center justify-center rounded-[6px] bg-[#111827] dark:bg-white text-white dark:text-[#18181b] hover:opacity-90 transition-all shadow-xs cursor-pointer relative active:scale-[0.96]"
                 >
                   <ArrowUpCircle className="w-4 h-4" />
-                  <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-white dark:bg-[#18181b]" />
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-400 dark:bg-emerald-500 animate-pulse" />
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="right">Update Available (v{availableVersion || 'new'})</TooltipContent>
+              <TooltipContent side="right">Update to v{availableVersion || 'new'}</TooltipContent>
             </Tooltip>
           )}
 
@@ -1213,14 +1213,14 @@ export const Sidebar: React.FC = () => {
             <button
               type="button"
               onClick={() => setUpdateModalOpen(true)}
-              className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] bg-[#111827] dark:bg-[#f4f4f5] text-white dark:text-[#18181b] hover:bg-[#1f2937] dark:hover:bg-white transition-all text-xs font-semibold shadow-xs cursor-pointer select-none active:scale-[0.98] mb-1"
+              className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] bg-[#111827] dark:bg-white text-white dark:text-[#111827] hover:opacity-90 transition-all text-xs font-semibold shadow-subtle cursor-pointer select-none active:scale-[0.98] mb-1.5 group"
             >
               <div className="flex items-center gap-2 min-w-0">
-                <ArrowUpCircle className="w-3.5 h-3.5 text-white dark:text-[#18181b] shrink-0" />
-                <span className="truncate">Update Available</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-400 dark:bg-emerald-500 animate-pulse shrink-0" />
+                <span className="font-semibold text-xs whitespace-nowrap">Update to v{availableVersion || 'new'}</span>
               </div>
-              <span className="text-[10px] font-mono bg-white/20 dark:bg-black/10 text-white dark:text-[#18181b] px-1.5 py-0.5 rounded font-bold shrink-0">
-                v{availableVersion || 'new'}
+              <span className="text-[11px] opacity-70 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all shrink-0">
+                →
               </span>
             </button>
           )}

@@ -25,6 +25,7 @@ import {
 import { Item, Attachment } from '../types';
 import { formatFileSize } from '../utils/format';
 import { toast } from '../store/useToastStore';
+import { useUpdaterStore } from '../store/useUpdaterStore';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 type Tab = 'preferences' | 'shortcuts';
@@ -65,6 +66,8 @@ export const WorkspaceModal: React.FC = () => {
     setStandbyJokesEnabled,
     initialize,
   } = useLeafStore();
+
+  const currentVersion = useUpdaterStore((state) => state.currentVersion);
 
   const [activeTab, setActiveTab] = useState<Tab>('preferences');
   const [copiedPath, setCopiedPath] = useState(false);
@@ -593,7 +596,7 @@ export const WorkspaceModal: React.FC = () => {
                       <div className="text-[10.5px] text-[#6b7280] dark:text-[#71717a]">Local-First Desktop Workspace</div>
                     </div>
                     <span className="px-1.5 py-0.5 rounded bg-[#f4f5f6] dark:bg-[#27272a] border border-[#e5e7eb] dark:border-[#3f3f46] font-mono text-[10px] font-semibold text-[#6b7280] dark:text-[#a1a1aa]">
-                      v0.1.0 Beta
+                      v{currentVersion}
                     </span>
                   </div>
 
