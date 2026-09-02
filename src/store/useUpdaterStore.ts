@@ -44,7 +44,7 @@ const getStoredLastChecked = (): string | null => {
 
 export const useUpdaterStore = create<UpdaterState>((set, get) => ({
   status: 'idle',
-  currentVersion: '0.2.0',
+  currentVersion: '0.3.0',
   availableVersion: null,
   releaseDate: null,
   releaseNotes: null,
@@ -129,14 +129,13 @@ export const useUpdaterStore = create<UpdaterState>((set, get) => ({
   simulateUpdateForTesting: () => {
     set({
       status: 'available',
-      currentVersion: '0.1.0',
-      availableVersion: '0.2.0',
+      currentVersion: '0.2.0',
+      availableVersion: '0.3.0',
       releaseDate: new Date().toLocaleDateString(),
-      releaseNotes: `### What's New in v0.2.0
-- **Auto-updater & In-App Alerts**: Seamless one-click updates directly inside Leeflet.
-- **Dynamic Stat Badge Animations**: Smooth, responsive header metrics that adjust seamlessly to search.
-- **Sleek Backlog Metrics Strip**: Streamlined dashboard filter ribbon above task items.
-- **Role-Based Access Control**: Enhanced security and permission gates for team workspaces.`,
+      releaseNotes: `### What's New in v0.3.0
+- **Cross-Workspace Database Inheritance**: Seamless global database credentials across all workspaces.
+- **Team Collaboration Guards**: Clear prerequisites preventing broken invites without cloud connectivity.
+- **Auto-Updater Stability**: Complete bundle updater artifacts with zero-friction updates.`,
       isModalOpen: true,
       error: null,
     });

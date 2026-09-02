@@ -21,7 +21,7 @@ export async function getAppVersion(): Promise<string> {
       // fallback
     }
   }
-  return '0.2.0';
+  return '0.3.0';
 }
 
 export async function checkForUpdate(): Promise<UpdateInfo | null> {
