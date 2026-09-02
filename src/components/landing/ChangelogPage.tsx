@@ -36,7 +36,7 @@ export const ChangelogPage: React.FC = () => {
             <img
               src="/logo_alpha.png"
               alt="Leeflet"
-              className="w-5 h-5 rounded object-contain opacity-90 group-hover:opacity-100 transition-opacity"
+              className="w-7 h-7 rounded object-contain opacity-90 group-hover:opacity-100 transition-opacity"
             />
             <span className="font-brand text-2xl font-normal tracking-tight text-[#ededef]">
               leeflet
@@ -129,75 +129,83 @@ export const ChangelogPage: React.FC = () => {
                 v0.1.0
               </span>
               <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                Initial Public Launch · Today
+                Initial Release
               </span>
               <span className="text-xs font-mono text-[#71717a]">
-                September 1, 2026
+                Initial Public Release
               </span>
             </div>
 
             <h2 className="text-xl font-semibold text-[#ededef] tracking-tight mt-3 mb-4">
-              Inaugural Release — Local-First Workspace, Global Quick Capture & BYOD Supabase Sync
+              Hello world — Introducing Leeflet v0.1.0
             </h2>
 
-            <div className="p-6 rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl space-y-4 hover:border-white/[0.14] transition-colors">
-              <p className="text-xs text-[#a1a1aa] leading-relaxed">
-                Welcome to the very first public release of <strong className="text-white font-medium">Leeflet</strong>. Designed from the ground up for developers who demand keyboard velocity, data sovereignty, and zero cloud lock-in.
+            <div className="p-6 rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl space-y-6 hover:border-white/[0.14] transition-colors">
+              <p className="text-sm text-[#a1a1aa] leading-relaxed">
+                This is the first public release of <strong className="text-white font-medium">Leeflet</strong>. It was built out of a desire for a fast, keyboard-first task tracker that stays completely out of the way, doesn’t require another monthly subscription, and gives you total ownership over your data.
               </p>
 
-              <ul className="space-y-3 text-sm text-[#8a8f98]">
-                <li className="flex items-start gap-2.5">
-                  <span className="text-emerald-400 mt-1 shrink-0">•</span>
-                  <span>
-                    <strong className="text-[#ededef] font-medium">Local-First SQLite Core:</strong> Sub-100ms startup times, zero network dependency, and 100% offline data persistence stored directly on your SSD.
-                  </span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <span className="text-emerald-400 mt-1 shrink-0">•</span>
-                  <span>
-                    <strong className="text-[#ededef] font-medium">Global Quick Capture (<kbd className="font-mono text-xs bg-white/[0.06] px-1.5 py-0.5 rounded border border-white/[0.08]">Alt+L</kbd>):</strong> Native system-wide floating capture bar that saves tasks instantly without context switching out of your IDE or browser.
-                  </span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <span className="text-emerald-400 mt-1 shrink-0">•</span>
-                  <span>
-                    <strong className="text-[#ededef] font-medium">Personal Focus Queue:</strong> Drag-and-drop execution queue designed for deep work and tackling high-priority items one by one.
-                  </span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <span className="text-emerald-400 mt-1 shrink-0">•</span>
-                  <span>
-                    <strong className="text-[#ededef] font-medium">Bring Your Own Database (BYOD) Sync:</strong> Connect your personal Supabase project in 60 seconds for secure, encrypted real-time cloud backup and multi-device sync with zero intermediary servers.
-                  </span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <span className="text-emerald-400 mt-1 shrink-0">•</span>
-                  <span>
-                    <strong className="text-[#ededef] font-medium">Detachable Companion Widgets:</strong> Float your active queue or detach task items as always-on-top transparent sticky notes.
-                  </span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <span className="text-emerald-400 mt-1 shrink-0">•</span>
-                  <span>
-                    <strong className="text-[#ededef] font-medium">16 OLED & Modern Dark Themes:</strong> Tailored palettes including Noir, Charcoal, Tokyo Night, Catppuccin, Gruvbox, and Monokai.
-                  </span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <span className="text-emerald-400 mt-1 shrink-0">•</span>
-                  <span>
-                    <strong className="text-[#ededef] font-medium">Auto-Updater Integration:</strong> Built-in GitHub releases verification with automatic in-app upgrade alerts.
-                  </span>
-                </li>
-              </ul>
+              <div className="space-y-3">
+                <div className="text-xs font-mono uppercase tracking-wider text-[#ededef] mb-2">
+                  What’s in this release
+                </div>
 
-              <div className="pt-4 border-t border-white/[0.06] flex items-center gap-4">
+                <div className="grid gap-2.5 text-sm text-[#8a8f98]">
+                  <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.05]">
+                    <div className="text-[#ededef] font-medium text-xs mb-1">Local-First Storage</div>
+                    <p className="text-xs text-[#8a8f98] leading-relaxed">
+                      Powered by an embedded SQLite database. Instant startup, zero network latency, and complete offline functionality without requiring an account.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.05]">
+                    <div className="text-[#ededef] font-medium text-xs mb-1">Projects & Task Organization</div>
+                    <p className="text-xs text-[#8a8f98] leading-relaxed">
+                      Create workspaces, organize items with statuses, tags, priority levels, and write notes with markdown support.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.05]">
+                    <div className="text-[#ededef] font-medium text-xs mb-1">Global Quick Capture (<kbd className="font-mono text-[11px] bg-white/[0.06] px-1.5 py-0.5 rounded border border-white/[0.08]">Alt+L</kbd>)</div>
+                    <p className="text-xs text-[#8a8f98] leading-relaxed">
+                      A lightweight floating capture prompt accessible anywhere on your desktop to record thoughts without context switching.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.05]">
+                    <div className="text-[#ededef] font-medium text-xs mb-1">Focus Queue & Companion Widgets</div>
+                    <p className="text-xs text-[#8a8f98] leading-relaxed">
+                      Keep your active priorities in view with a dedicated focus queue and pin items as compact, always-on-top desktop widgets.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.05]">
+                    <div className="text-[#ededef] font-medium text-xs mb-1">Optional BYOD Cloud Sync</div>
+                    <p className="text-xs text-[#8a8f98] leading-relaxed">
+                      Sync across machines by plugging in your own Supabase credentials. Your device communicates directly with your database with no middleman.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.05]">
+                    <div className="text-[#ededef] font-medium text-xs mb-1">Cross-Platform Desktop Apps</div>
+                    <p className="text-xs text-[#8a8f98] leading-relaxed">
+                      Lightweight desktop builds for macOS, Windows, and Linux with customizable themes and seamless keyboard navigation.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <p className="text-xs text-[#71717a]">
+                  Feedback, bug reports, and contributions are welcome on GitHub.
+                </p>
                 <a
                   href={GITHUB_RELEASES}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 text-xs text-[#8a8f98] hover:text-[#ededef] transition-colors"
+                  className="inline-flex items-center gap-1.5 text-xs text-[#a1a1aa] hover:text-[#ededef] transition-colors shrink-0"
                 >
-                  <span>View releases on GitHub</span>
+                  <span>Release assets &amp; downloads</span>
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
                     <polyline points="15 3 21 3 21 9" />
@@ -216,10 +224,10 @@ export const ChangelogPage: React.FC = () => {
           <div className="col-span-2 space-y-3">
             <button
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-              className="flex items-center gap-2 group cursor-pointer text-left focus:outline-hidden transition-transform active:scale-[0.98]"
+              className="flex items-center gap-2.5 group cursor-pointer text-left focus:outline-hidden transition-transform active:scale-[0.98]"
               title="Scroll to top"
             >
-              <img src="/logo_alpha.png" alt="Leeflet" className="w-5 h-5 rounded opacity-90 group-hover:opacity-100 transition-opacity" />
+              <img src="/logo_alpha.png" alt="Leeflet" className="w-7 h-7 rounded object-contain opacity-90 group-hover:opacity-100 transition-opacity" />
               <span className="font-brand text-2xl text-[#ededef] group-hover:text-white transition-colors">leeflet</span>
             </button>
             <p className="text-xs text-[#71717a] leading-relaxed max-w-sm">

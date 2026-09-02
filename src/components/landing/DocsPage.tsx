@@ -85,7 +85,7 @@ export const DocsPage: React.FC = () => {
                 <img
                   src="/logo_alpha.png"
                   alt="Leeflet"
-                  className="w-5 h-5 rounded object-contain opacity-90 group-hover:opacity-100 transition-opacity"
+                  className="w-6 h-6 rounded object-contain opacity-90 group-hover:opacity-100 transition-opacity"
                 />
                 <span className="font-semibold text-sm tracking-tight text-[#ededef]">Docs</span>
               </a>

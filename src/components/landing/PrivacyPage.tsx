@@ -35,7 +35,7 @@ export const PrivacyPage: React.FC = () => {
             <img
               src="/logo_alpha.png"
               alt="Leeflet"
-              className="w-5 h-5 rounded object-contain opacity-90 group-hover:opacity-100 transition-opacity"
+              className="w-7 h-7 rounded object-contain opacity-90 group-hover:opacity-100 transition-opacity"
             />
             <span className="font-brand text-2xl font-normal tracking-tight text-[#ededef]">
               leeflet
@@ -59,9 +59,9 @@ export const PrivacyPage: React.FC = () => {
               <a href="/docs" className="px-3 py-1.5 hover:text-[#ededef] transition-colors rounded-lg hover:bg-white/[0.04]">
                 Docs
               </a>
-              <a href="/changelog" className="px-3 py-1.5 hover:text-[#ededef] transition-colors rounded-lg hover:bg-white/[0.04]">
+              {/* <a href="/changelog" className="px-3 py-1.5 hover:text-[#ededef] transition-colors rounded-lg hover:bg-white/[0.04]">
                 Changelog
-              </a>
+              </a> */}
               <a
                 href={GITHUB_REPO}
                 target="_blank"
@@ -160,10 +160,10 @@ export const PrivacyPage: React.FC = () => {
           <div className="col-span-2 space-y-3">
             <button
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-              className="flex items-center gap-2 group cursor-pointer text-left focus:outline-hidden transition-transform active:scale-[0.98]"
+              className="flex items-center gap-2.5 group cursor-pointer text-left focus:outline-hidden transition-transform active:scale-[0.98]"
               title="Scroll to top"
             >
-              <img src="/logo_alpha.png" alt="Leeflet" className="w-5 h-5 rounded opacity-90 group-hover:opacity-100 transition-opacity" />
+              <img src="/logo_alpha.png" alt="Leeflet" className="w-7 h-7 rounded object-contain opacity-90 group-hover:opacity-100 transition-opacity" />
               <span className="font-brand text-2xl text-[#ededef] group-hover:text-white transition-colors">leeflet</span>
             </button>
             <p className="text-xs text-[#71717a] leading-relaxed max-w-sm">
@@ -182,7 +182,7 @@ export const PrivacyPage: React.FC = () => {
               <li><a href="/#manifesto" className="hover:text-white transition-colors">Manifesto</a></li>
               <li><a href="/#faq" className="hover:text-white transition-colors">FAQ</a></li>
               <li><a href="/docs" className="hover:text-white transition-colors">Docs</a></li>
-              <li><a href="/changelog" className="hover:text-white transition-colors">Changelog</a></li>
+              {/* <li><a href="/changelog" className="hover:text-white transition-colors">Changelog</a></li> */}
             </ul>
           </div>
 

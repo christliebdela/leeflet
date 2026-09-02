@@ -5,7 +5,7 @@ import { StandaloneQuickCapture } from './components/standalone/StandaloneQuickC
 import { StandaloneStickyNote } from './components/standalone/StandaloneStickyNote';
 import { StandaloneQueueWidget } from './components/standalone/StandaloneQueueWidget';
 import { LandingPage } from './components/landing/LandingPage';
-import { ChangelogPage } from './components/landing/ChangelogPage';
+// import { ChangelogPage } from './components/landing/ChangelogPage';
 import { PrivacyPage } from './components/landing/PrivacyPage';
 import { TermsPage } from './components/landing/TermsPage';
 import { DocsPage } from './components/landing/DocsPage';
@@ -59,10 +59,10 @@ function RootRouter() {
     return <DocsPage />;
   }
 
-  // Web visitors: dedicated changelog page
-  if (pathname === '/changelog' || pathname === '/changelog/' || page === 'changelog') {
-    return <ChangelogPage />;
-  }
+  // Web visitors: dedicated changelog page (temporarily disabled)
+  // if (pathname === '/changelog' || pathname === '/changelog/' || page === 'changelog') {
+  //   return <ChangelogPage />;
+  // }
 
   // Web visitors: dedicated privacy policy page
   if (pathname === '/privacy' || pathname === '/privacy/' || page === 'privacy') {

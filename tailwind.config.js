@@ -61,13 +61,21 @@ export default {
         '2xl': '12px',
       },
       keyframes: {
-        aurora: {
-          from: { backgroundPosition: "50% 50%, 50% 50%" },
-          to:   { backgroundPosition: "350% 50%, 350% 50%" },
+        "aurora-flow": {
+          "0%": { backgroundPosition: "0% 50%, 0% 50%", opacity: "0" },
+          "12%": { opacity: "0.5" },
+          "88%": { opacity: "0.5" },
+          "100%": { backgroundPosition: "200% 50%, 200% 50%", opacity: "0" },
+        },
+        "aurora-flow-after": {
+          "0%": { backgroundPosition: "50% 50%, 50% 50%" },
+          "100%": { backgroundPosition: "250% 50%, 250% 50%" },
         },
       },
       animation: {
-        aurora: "aurora 24s linear infinite",
+        "aurora-1": "aurora-flow 24s linear infinite",
+        "aurora-2": "aurora-flow 24s linear infinite -12s",
+        "aurora-after": "aurora-flow-after 24s linear infinite",
       },
     },
   },

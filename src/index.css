@@ -17,17 +17,45 @@
   }
 }
 
-@keyframes aurora {
+@keyframes aurora-flow {
+  0% {
+    background-position: 0% 50%, 0% 50%;
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.55;
+  }
+  88% {
+    opacity: 0.55;
+  }
+  100% {
+    background-position: 200% 50%, 200% 50%;
+    opacity: 0;
+  }
+}
+
+@keyframes aurora-flow-after {
   0% {
     background-position: 50% 50%, 50% 50%;
   }
   100% {
-    background-position: 350% 50%, 350% 50%;
+    background-position: 250% 50%, 250% 50%;
   }
 }
 
-.animate-aurora {
-  animation: aurora 24s linear infinite !important;
+.animate-aurora-1 {
+  animation: aurora-flow 24s linear infinite !important;
+  will-change: background-position, opacity;
+}
+
+.animate-aurora-2 {
+  animation: aurora-flow 24s linear infinite -12s !important;
+  will-change: background-position, opacity;
+}
+
+.animate-aurora-after {
+  animation: aurora-flow-after 24s linear infinite !important;
+  will-change: background-position;
 }
 
 @layer base {

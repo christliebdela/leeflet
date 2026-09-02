@@ -21,7 +21,11 @@ export const AuroraBackground = ({
       {...props}
     >
       <div
-        className="fixed inset-0 overflow-hidden pointer-events-none z-0"
+        className={cn(
+          "fixed inset-0 overflow-hidden pointer-events-none z-0",
+          showRadialGradient &&
+            "[mask-image:radial-gradient(ellipse_120%_80%_at_50%_0%,black_35%,transparent_85%)]",
+        )}
         style={
           {
             "--aurora-1":
@@ -33,15 +37,23 @@ export const AuroraBackground = ({
           } as React.CSSProperties
         }
       >
+        {/* Layer A */}
         <div
           className={cn(
-            "animate-aurora pointer-events-none absolute -inset-[10px] opacity-50 blur-[20px] will-change-transform",
+            "animate-aurora-1 pointer-events-none absolute -inset-[20px] blur-[20px] will-change-transform",
             "[background-image:var(--dark-stripes),var(--aurora-1)] [background-size:300%,_200%]",
-            "after:content-[''] after:absolute after:inset-0 after:[background-image:var(--dark-stripes),var(--aurora-2)] after:[background-size:200%,_100%] after:animate-aurora after:mix-blend-screen",
-            showRadialGradient &&
-              "[mask-image:radial-gradient(ellipse_120%_80%_at_50%_0%,black_35%,transparent_85%)]",
+            "after:content-[''] after:absolute after:inset-0 after:[background-image:var(--dark-stripes),var(--aurora-2)] after:[background-size:200%,_100%] after:animate-aurora-after after:mix-blend-screen",
           )}
-        ></div>
+        />
+
+        {/* Layer B (Offset 12s for seamless cross-fade loop) */}
+        <div
+          className={cn(
+            "animate-aurora-2 pointer-events-none absolute -inset-[20px] blur-[20px] will-change-transform",
+            "[background-image:var(--dark-stripes),var(--aurora-1)] [background-size:300%,_200%]",
+            "after:content-[''] after:absolute after:inset-0 after:[background-image:var(--dark-stripes),var(--aurora-2)] after:[background-size:200%,_100%] after:animate-aurora-after after:mix-blend-screen",
+          )}
+        />
       </div>
       <div className="relative z-10 w-full">
         {children}

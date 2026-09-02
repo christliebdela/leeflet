@@ -61,7 +61,7 @@ const FaqItem: React.FC<FaqItemProps> = ({ question, answer }) => {
 export const LandingPage: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [starCount, setStarCount] = useState<number>(0);
-  const { os, osName, osExtension, downloadUrl, allDownloads } = useReleaseDownload();
+  const { os, osName, downloadUrl, allDownloads } = useReleaseDownload();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -126,7 +126,7 @@ export const LandingPage: React.FC = () => {
             <img
               src="/logo_alpha.png"
               alt="Leeflet"
-              className="w-5 h-5 rounded object-contain opacity-90 group-hover:opacity-100 transition-opacity"
+              className="w-7 h-7 rounded object-contain opacity-90 group-hover:opacity-100 transition-opacity"
             />
             <span className="font-brand text-2xl font-normal tracking-tight text-[#ededef]">
               leeflet
@@ -172,12 +172,12 @@ export const LandingPage: React.FC = () => {
               >
                 Docs
               </a>
-              <a
+              {/* <a
                 href="/changelog"
                 className="px-3 py-1.5 hover:text-[#ededef] transition-colors rounded-lg hover:bg-white/[0.04]"
               >
                 Changelog
-              </a>
+              </a> */}
               <a
                 href={GITHUB_REPO}
                 target="_blank"
@@ -235,12 +235,12 @@ export const LandingPage: React.FC = () => {
 
             {/* Left-Aligned Headline - One Line */}
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-normal tracking-[-0.04em] text-[#ededef] leading-[1.1]">
-              The open-source project &amp; task tracker for solo devs and teams.
+              The open-source workspace for developers and teams.
             </h1>
 
             {/* Subtitle */}
             <p className="mt-4 text-sm text-[#8a8f98] leading-relaxed max-w-xl">
-              Local SQLite by default, with a one-click BYOD flow to sync with your own Supabase. No subscriptions, no accounts, no telemetry.
+              Local by default, optional BYOD sync. No subscriptions, no accounts, no telemetry.
             </p>
 
             {/* Glass Download Action Button */}
@@ -253,7 +253,6 @@ export const LandingPage: React.FC = () => {
               >
                 <OSIcon os={os} className="w-4 h-4 text-[#ededef] group-hover:text-white" />
                 <span>Download <span className="font-brand text-lg font-normal">leeflet</span> for {osName}</span>
-                <span className="text-[11px] font-mono text-[#71717a] ml-0.5">{osExtension}</span>
               </a>
 
               {/* Other OS quick links */}
@@ -943,10 +942,10 @@ export const LandingPage: React.FC = () => {
           <div className="col-span-2 space-y-3">
             <button
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-              className="flex items-center gap-2 group cursor-pointer text-left focus:outline-hidden transition-transform active:scale-[0.98]"
+              className="flex items-center gap-2.5 group cursor-pointer text-left focus:outline-hidden transition-transform active:scale-[0.98]"
               title="Scroll to top"
             >
-              <img src="/logo_alpha.png" alt="Leeflet" className="w-5 h-5 rounded opacity-90 group-hover:opacity-100 transition-opacity" />
+              <img src="/logo_alpha.png" alt="Leeflet" className="w-7 h-7 rounded object-contain opacity-90 group-hover:opacity-100 transition-opacity" />
               <span className="font-brand text-2xl text-[#ededef] group-hover:text-white transition-colors">leeflet</span>
             </button>
             <p className="text-xs text-[#71717a] leading-relaxed max-w-sm">
@@ -1002,11 +1001,11 @@ export const LandingPage: React.FC = () => {
                   Docs
                 </a>
               </li>
-              <li>
+              {/* <li>
                 <a href="/changelog" className="hover:text-white transition-colors">
                   Changelog
                 </a>
-              </li>
+              </li> */}
             </ul>
           </div>
 
