@@ -61,21 +61,21 @@ interface ShortcutItem {
 }
 
 const SHORTCUTS_DATA: ShortcutItem[] = [
-  { id: '1', label: 'New Item (In-App)', category: 'Creation & Global', keys: ['N', 'Ctrl + N'] },
-  { id: '2', label: 'Quick Capture (Desktop Floating Panel)', category: 'Creation & Global', keys: ['Alt + L', 'Alt + N'] },
+  { id: '1', label: 'New Item (In-App)', category: 'Creation & Global', keys: ['N', 'C', 'Ctrl + N'] },
+  { id: '2', label: 'Global Quick Capture', category: 'Creation & Global', keys: ['Alt + L'] },
   { id: '3', label: 'Search Workspace', category: 'Creation & Global', keys: ['Ctrl + K', '/'] },
   { id: '3a', label: 'Refresh / Sync Workspace Data', category: 'Creation & Global', keys: ['Ctrl + R', 'F5'] },
   { id: '4', label: 'Coffee Break / Standby', category: 'Creation & Global', keys: ['Z'] },
-  { id: '4a', label: 'Next / Previous Joke (Standby)', category: 'Creation & Global', keys: ['> / ArrowRight', '< / ArrowLeft'] },
-  { id: '5', label: 'Go to Settings', category: 'Creation & Global', keys: ['S', 'Ctrl + ,'] },
+  { id: '4a', label: 'Next / Previous Joke (Standby)', category: 'Creation & Global', keys: ['ArrowRight', 'ArrowLeft'] },
+  { id: '5', label: 'Settings & Preferences', category: 'Creation & Global', keys: ['Ctrl + ,'] },
   { id: '6', label: 'Close Detail Pane / Modal', category: 'Creation & Global', keys: ['Esc'] },
   { id: '6a', label: 'Toggle Sidebar', category: 'Creation & Global', keys: ['Ctrl + B'] },
-  { id: '7', label: 'Go to Backlog', category: 'Views & Projects', keys: ['Ctrl + I'] },
+  { id: '7', label: 'Go to Backlog (Inbox)', category: 'Views & Projects', keys: ['Ctrl + I'] },
   { id: '8', label: 'Go to My Queue', category: 'Views & Projects', keys: ['Ctrl + Q'] },
   { id: '10', label: 'Switch Projects (1-9)', category: 'Views & Projects', keys: ['1 - 9'] },
-  { id: '11', label: 'Mini Mode (Queue Card)', category: 'Views & Projects', keys: ['M'] },
+  { id: '11', label: 'Mini Mode (Queue Widget)', category: 'Views & Projects', keys: ['M'] },
   { id: '12', label: 'Pin on Top (Mini Mode)', category: 'Views & Projects', keys: ['P'] },
-  { id: '13', label: 'Delete Selected Card', category: 'Item Actions', keys: ['Del / Backspace'] },
+  { id: '13', label: 'Delete Selected Card', category: 'Item Actions', keys: ['Delete'] },
   { id: '14', label: 'Add Checklist Item', category: 'Item Actions', keys: ['Enter'] },
 ];
 

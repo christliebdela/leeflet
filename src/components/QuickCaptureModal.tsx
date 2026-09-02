@@ -259,7 +259,14 @@ export const QuickCaptureModal: React.FC = () => {
         localStorage.removeItem('leaf_capture_draft_description');
       }
     } catch {}
-  }, [description]);
+
+    if (descriptionRef.current) {
+      descriptionRef.current.style.height = 'auto';
+      const scrollHeight = descriptionRef.current.scrollHeight;
+      const targetHeight = Math.min(Math.max(scrollHeight, 44), 220);
+      descriptionRef.current.style.height = `${targetHeight}px`;
+    }
+  }, [description, isQuickCaptureOpen]);
 
   useEffect(() => {
     try {
@@ -485,7 +492,7 @@ export const QuickCaptureModal: React.FC = () => {
         </div>
 
         {/* Editor Body: Title, Description, Checklist */}
-        <div ref={bodyScrollRef} className="px-4 pt-3.5 pb-2 overflow-y-auto custom-scrollbar flex-1 flex flex-col space-y-2.5 max-h-[340px] transition-all duration-200 ease-out">
+        <div ref={bodyScrollRef} className="px-4 pt-3.5 pb-2 overflow-y-auto custom-scrollbar flex-1 flex flex-col space-y-2.5 max-h-[460px] transition-all duration-200 ease-out">
           {/* Prominent Title Line */}
           <input
             ref={titleInputRef}
@@ -506,9 +513,13 @@ export const QuickCaptureModal: React.FC = () => {
           {/* Description Area */}
           <textarea
             ref={descriptionRef}
-            rows={showChecklist || checklist.length > 0 ? 2 : Math.min(Math.max((description || '').split('\n').length, 2), 6)}
             value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            onChange={(e) => {
+              setDescription(e.target.value);
+              e.target.style.height = 'auto';
+              const targetHeight = Math.min(Math.max(e.target.scrollHeight, 44), 220);
+              e.target.style.height = `${targetHeight}px`;
+            }}
             onKeyDown={(e) => {
               if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
                 e.preventDefault();
@@ -516,7 +527,7 @@ export const QuickCaptureModal: React.FC = () => {
               }
             }}
             placeholder="Add description or notes... (Ctrl+Enter to save)"
-            className="w-full bg-transparent text-xs text-[#374151] dark:text-[#d4d4d8] placeholder-[#9ca3af] dark:placeholder-[#52525b] outline-none focus:outline-none border-none p-0 resize-none leading-relaxed min-h-[44px] max-h-[88px] custom-scrollbar"
+            className="w-full bg-transparent text-xs text-[#374151] dark:text-[#d4d4d8] placeholder-[#9ca3af] dark:placeholder-[#52525b] outline-none focus:outline-none border-none p-0 resize-none leading-relaxed min-h-[44px] max-h-[220px] overflow-y-auto custom-scrollbar transition-[height] duration-75"
           />
 
           {/* Checklist Area */}

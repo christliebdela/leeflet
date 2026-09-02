@@ -247,30 +247,25 @@ export const App: React.FC = () => {
         return;
       }
 
-      // 1. Quick capture shortcut (Alt+L or Alt+N)
+      // 1. Quick capture shortcut (Alt+L or Ctrl+Shift+L)
       if (
-        (e.altKey && (e.key === 'l' || e.key === 'L' || e.key === 'n' || e.key === 'N')) ||
-        ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'l' || e.key === 'L' || e.key === 'n' || e.key === 'N'))
+        (e.altKey && (e.key === 'l' || e.key === 'L')) ||
+        ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'l' || e.key === 'L'))
       ) {
         e.preventDefault();
         openQuickCaptureWindow();
         return;
       }
 
-      // 2. Open Settings: 's' / 'S' (when not typing in input) or Ctrl + ,
-      if (!isInput && (e.key === 's' || e.key === 'S') && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        e.preventDefault();
-        setViewMode({ type: 'settings' });
-        return;
-      }
+      // 2. Open Settings: Ctrl + , / Cmd + ,
       if ((e.ctrlKey || e.metaKey) && (e.key === ',' || e.key === '<')) {
         e.preventDefault();
         setViewMode({ type: 'settings' });
         return;
       }
 
-      // 3. New Item In-App: 'n', 'N' or 'Ctrl+N' (when not in text input)
-      if (!isInput && (e.key === 'n' || e.key === 'N') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      // 3. New Item In-App: 'n', 'N', 'c', 'C' or 'Ctrl+N' (when not in text input)
+      if (!isInput && (e.key === 'n' || e.key === 'N' || e.key === 'c' || e.key === 'C') && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
         setQuickCaptureOpen(true);
         return;

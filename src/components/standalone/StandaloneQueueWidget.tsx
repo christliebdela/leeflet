@@ -360,18 +360,29 @@ export const StandaloneQueueWidget: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem('leaf_theme') as 'light' | 'dark' | null;
-    const isDark = savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-    // Apply color theme from Settings
-    const savedColorTheme = localStorage.getItem('leaf_color_theme');
-    if (savedColorTheme) {
+    const applyCurrentTheme = () => {
+      const savedTheme = localStorage.getItem('leaf_theme') as 'light' | 'dark' | null;
+      const isDark = savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      if (isDark) {
+        document.documentElement.classList.add('dark');
+        document.documentElement.classList.remove('light');
+      } else {
+        document.documentElement.classList.add('light');
+        document.documentElement.classList.remove('dark');
+      }
+      // Apply color theme from Settings
+      const savedColorTheme = localStorage.getItem('leaf_color_theme') || 'default';
       document.documentElement.setAttribute('data-color-theme', savedColorTheme);
-    }
+    };
+
+    applyCurrentTheme();
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'leaf_theme' || e.key === 'leaf_color_theme') {
+        applyCurrentTheme();
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
 
     loadData();
 
@@ -390,7 +401,10 @@ export const StandaloneQueueWidget: React.FC = () => {
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
   // Close project selector menu when clicking outside

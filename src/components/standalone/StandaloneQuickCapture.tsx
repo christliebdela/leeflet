@@ -54,14 +54,24 @@ export const StandaloneQuickCapture: React.FC = () => {
     const isDark = savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches);
     if (isDark) {
       document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light');
     } else {
+      document.documentElement.classList.add('light');
       document.documentElement.classList.remove('dark');
     }
-    const savedColorTheme = localStorage.getItem('leaf_color_theme');
-    if (savedColorTheme) {
-      document.documentElement.setAttribute('data-color-theme', savedColorTheme);
-    }
+    const savedColorTheme = localStorage.getItem('leaf_color_theme') || 'default';
+    document.documentElement.setAttribute('data-color-theme', savedColorTheme);
   };
+
+  // Auto-resize description textarea on text change or wrap
+  useEffect(() => {
+    if (descTextareaRef.current) {
+      descTextareaRef.current.style.height = 'auto';
+      const scrollHeight = descTextareaRef.current.scrollHeight;
+      const targetHeight = Math.min(Math.max(scrollHeight, 44), 180);
+      descTextareaRef.current.style.height = `${targetHeight}px`;
+    }
+  }, [description]);
 
   // Adjust window dimensions dynamically to content
   useEffect(() => {
@@ -80,14 +90,16 @@ export const StandaloneQuickCapture: React.FC = () => {
         const logicalW = 440;
         const physicalW = Math.round(logicalW * scaleFactor);
 
-        const lines = (description || '').split('\n').length;
-        const descHeight = Math.min(Math.max(lines, 2) * 20, 140);
+        const descHeight = descTextareaRef.current
+          ? Math.min(Math.max(descTextareaRef.current.scrollHeight, 44), 180)
+          : Math.min(Math.max((description || '').split('\n').length * 20, 44), 180);
+          
         const checklistHeight = (showChecklist || checklist.length > 0)
           ? 36 + Math.min(checklist.length * 28, 120)
           : 0;
 
-        const logicalH = 175 + descHeight + checklistHeight;
-        const clampedH = Math.min(Math.max(logicalH, 240), 420);
+        const logicalH = 145 + descHeight + checklistHeight;
+        const clampedH = Math.min(Math.max(logicalH, 220), 480);
         const physicalH = Math.round(clampedH * scaleFactor);
 
         const marginY = Math.round(58 * scaleFactor);
@@ -114,17 +126,69 @@ export const StandaloneQuickCapture: React.FC = () => {
     let hasGainedFocus = false;
     const mountTime = Date.now();
 
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const handleKeyDown = async (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         closeWindow();
       } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
         handleSave();
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
+        const active = document.activeElement;
+        const isInputOrTextarea = active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement;
+        if (!isInputOrTextarea) {
+          try {
+            const text = await navigator.clipboard.readText();
+            if (text) {
+              e.preventDefault();
+              if (!titleRef.current) {
+                const lines = text.split('\n');
+                if (lines.length === 1 && lines[0].length <= 80) {
+                  setTitle(lines[0]);
+                  titleInputRef.current?.focus();
+                } else {
+                  setDescription(text);
+                  descTextareaRef.current?.focus();
+                }
+              } else {
+                setDescription((prev) => (prev ? `${prev}\n${text}` : text));
+                descTextareaRef.current?.focus();
+              }
+            }
+          } catch {}
+        }
+      }
+    };
+
+    const handleGlobalPaste = (e: ClipboardEvent) => {
+      const active = document.activeElement;
+      const isInputOrTextarea = active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement;
+      if (!isInputOrTextarea) {
+        const text = e.clipboardData?.getData('text') || '';
+        if (text) {
+          e.preventDefault();
+          if (!titleRef.current) {
+            const lines = text.split('\n');
+            if (lines.length === 1 && lines[0].length <= 80) {
+              setTitle(lines[0]);
+              titleInputRef.current?.focus();
+            } else {
+              setDescription(text);
+              descTextareaRef.current?.focus();
+            }
+          } else {
+            setDescription((prev) => (prev ? `${prev}\n${text}` : text));
+            descTextareaRef.current?.focus();
+          }
+        }
       }
     };
 
     const handleFocus = () => {
       hasGainedFocus = true;
+      applyCurrentTheme();
+      if (!titleRef.current) {
+        titleInputRef.current?.focus();
+      }
     };
 
     const handleBlur = () => {
@@ -133,9 +197,17 @@ export const StandaloneQuickCapture: React.FC = () => {
       }
     };
 
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'leaf_theme' || e.key === 'leaf_color_theme') {
+        applyCurrentTheme();
+      }
+    };
+
     window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('paste', handleGlobalPaste);
     window.addEventListener('focus', handleFocus);
     window.addEventListener('blur', handleBlur);
+    window.addEventListener('storage', handleStorageChange);
 
     // Tauri-native focus listener
     let unlistenFocus: (() => void) | undefined;
@@ -143,6 +215,8 @@ export const StandaloneQuickCapture: React.FC = () => {
       getCurrentWindow().onFocusChanged(({ payload: focused }) => {
         if (focused) {
           hasGainedFocus = true;
+          applyCurrentTheme();
+          titleInputRef.current?.focus();
         } else if (hasGainedFocus && Date.now() - mountTime > 300) {
           closeWindow();
         }
@@ -158,8 +232,10 @@ export const StandaloneQuickCapture: React.FC = () => {
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('paste', handleGlobalPaste);
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('blur', handleBlur);
+      window.removeEventListener('storage', handleStorageChange);
       if (unlistenFocus) unlistenFocus();
     };
   }, []);
@@ -233,9 +309,9 @@ export const StandaloneQuickCapture: React.FC = () => {
   const hasContent = Boolean(title.trim() || description.trim());
 
   return (
-    <div className="w-screen h-screen bg-white dark:bg-[#18181b] border border-[#e5e7eb] dark:border-[#27272a] rounded-[12px] shadow-2xl relative flex flex-col overflow-hidden select-none font-sans animate-capture-bounce">
+    <div className="w-screen h-screen bg-white dark:bg-[var(--theme-bg-card,#18181b)] border border-[#e5e7eb] dark:border-[var(--theme-border,#27272a)] rounded-[12px] shadow-2xl relative flex flex-col overflow-hidden select-none font-sans animate-capture-bounce">
       {/* Top Header Row with Title Badge and Actions */}
-      <div className="flex items-center justify-between px-4 pt-3 pb-2.5 border-b border-[#f3f4f6] dark:border-[#27272a] shrink-0" data-tauri-drag-region>
+      <div className="flex items-center justify-between px-4 pt-3 pb-2.5 border-b border-[#f3f4f6] dark:border-[var(--theme-border,#27272a)] shrink-0" data-tauri-drag-region>
         <div className="flex items-center gap-2 text-xs" data-tauri-drag-region>
           <img src="/leaf_logo.png" alt="leeflet" className="w-4 h-4 object-contain shrink-0 invert dark:invert-0" data-tauri-drag-region />
           <span className="font-brand text-[15px] italic text-[#111827] dark:text-[#f4f4f5] tracking-tight leading-none select-none" data-tauri-drag-region>
@@ -253,8 +329,8 @@ export const StandaloneQuickCapture: React.FC = () => {
             onClick={toggleChecklist}
             className={`flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-[5px] transition-colors cursor-pointer ${
               showChecklist || checklist.length > 0
-                ? 'text-[#111827] dark:text-white bg-[#f3f4f6] dark:bg-[#27272a]'
-                : 'text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white hover:bg-[#f3f4f6] dark:hover:bg-[#27272a]'
+                ? 'text-[#111827] dark:text-white bg-[#f3f4f6] dark:bg-[var(--theme-bg-card-elevated,#27272a)]'
+                : 'text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white hover:bg-[#f3f4f6] dark:hover:bg-[var(--theme-bg-card-elevated,#27272a)]'
             }`}
           >
             <CheckSquare className="w-3.5 h-3.5" />
@@ -264,7 +340,7 @@ export const StandaloneQuickCapture: React.FC = () => {
           <button
             onClick={closeWindow}
             title="Close (Esc)"
-            className="text-[10px] font-semibold bg-[#f3f4f6] dark:bg-[#27272a] text-[#6b7280] dark:text-[#a1a1aa] px-1.5 py-0.5 rounded-[5px] border border-[#e5e7eb] dark:border-[#3f3f46] hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] transition-colors cursor-pointer"
+            className="text-[10px] font-semibold bg-[#f3f4f6] dark:bg-[var(--theme-bg-card-elevated,#27272a)] text-[#6b7280] dark:text-[#a1a1aa] px-1.5 py-0.5 rounded-[5px] border border-[#e5e7eb] dark:border-[var(--theme-border,#3f3f46)] hover:bg-[#e5e7eb] dark:hover:bg-[var(--theme-bg-card,#3f3f46)] transition-colors cursor-pointer"
           >
             Esc
           </button>
@@ -290,21 +366,25 @@ export const StandaloneQuickCapture: React.FC = () => {
           autoFocus
         />
 
-          {/* Description Area */}
-          <textarea
-            ref={descTextareaRef}
-            rows={showChecklist || checklist.length > 0 ? 2 : Math.min(Math.max((description || '').split('\n').length, 2), 6)}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            onKeyDown={(e) => {
-              if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-                e.preventDefault();
-                handleSave();
-              }
-            }}
-            placeholder="Add description or notes... (Ctrl+Enter to save)"
-            className="w-full bg-transparent text-xs text-[#374151] dark:text-[#d4d4d8] placeholder-[#9ca3af] dark:placeholder-[#52525b] outline-none focus:outline-none border-none p-0 resize-none leading-relaxed min-h-[44px] custom-scrollbar transition-all duration-200 ease-out"
-          />
+        {/* Description Area */}
+        <textarea
+          ref={descTextareaRef}
+          value={description}
+          onChange={(e) => {
+            setDescription(e.target.value);
+            e.target.style.height = 'auto';
+            const targetHeight = Math.min(Math.max(e.target.scrollHeight, 44), 180);
+            e.target.style.height = `${targetHeight}px`;
+          }}
+          onKeyDown={(e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+              e.preventDefault();
+              handleSave();
+            }
+          }}
+          placeholder="Add description or notes... (Ctrl+Enter to save)"
+          className="w-full bg-transparent text-xs text-[#374151] dark:text-[#d4d4d8] placeholder-[#9ca3af] dark:placeholder-[#52525b] outline-none focus:outline-none border-none p-0 resize-none leading-relaxed min-h-[44px] max-h-[180px] overflow-y-auto custom-scrollbar transition-[height] duration-75"
+        />
 
           {/* Checklist Area */}
           {(showChecklist || checklist.length > 0) && (
