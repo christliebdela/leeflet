@@ -19,6 +19,8 @@ import { ToastContainer } from './components/ui/ToastContainer';
 import { fetchRandomDevJoke, warmJokePool } from './utils/jokes';
 import { UpdateModal } from './components/UpdateModal';
 import { useUpdaterStore } from './store/useUpdaterStore';
+import { useComponentStore } from './store/useComponentStore';
+import { toast } from './store/useToastStore';
 
 export const App: React.FC = () => {
   const {
@@ -264,8 +266,19 @@ export const App: React.FC = () => {
         return;
       }
 
-      // 3. New Item In-App: 'n', 'N', 'c', 'C' or 'Ctrl+N' (when not in text input)
-      if (!isInput && (e.key === 'n' || e.key === 'N' || e.key === 'c' || e.key === 'C') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      // 3. Create Module In-App: 'm' / 'M' or 'c' / 'C' (when not in text input)
+      if (!isInput && (e.key === 'm' || e.key === 'M' || e.key === 'c' || e.key === 'C') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        if (viewMode.type === 'project' && viewMode.projectId) {
+          useComponentStore.getState().openComponentModal();
+        } else {
+          toast.info('Select a project to create a module');
+        }
+        return;
+      }
+
+      // 4. Quick Capture In-App: 'n', 'N' or 'Ctrl+N' (when not in text input)
+      if (!isInput && (e.key === 'n' || e.key === 'N') && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
         setQuickCaptureOpen(true);
         return;
@@ -416,12 +429,12 @@ export const App: React.FC = () => {
 
   return (
     <TooltipProvider delayDuration={150}>
-      <div className="h-screen w-screen flex bg-[#f8f9fa] dark:bg-[#0f0f11] text-[#111827] dark:text-[#f4f4f5] overflow-hidden select-none">
+      <div className="h-screen w-screen flex bg-[#e8e9eb] dark:bg-[#0a0a0c] text-[#111827] dark:text-[#f4f4f5] overflow-hidden select-none">
         {/* Left Sidebar */}
         <Sidebar />
 
-        {/* Main Content Area */}
-        <div className="flex-1 h-full flex flex-col min-w-0 overflow-hidden relative">
+        {/* Main Content Area — card with rounded-l curves over the sidebar */}
+        <div className="flex-1 h-full flex flex-col min-w-0 relative z-10 -ml-4 bg-[#f8f9fa] dark:bg-[#0f0f11] rounded-l-[12px] border-l border-y border-[#e5e7eb] dark:border-[#27272a] shadow-xs overflow-hidden">
           {/* Fixed Unified Header */}
           <HeaderBar />
 

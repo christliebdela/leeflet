@@ -212,7 +212,7 @@ export const MyQueueView: React.FC = () => {
 
   if (queueItems.length === 0 && !addingSection) {
     return (
-      <div className={`flex-1 h-full overflow-y-auto ${isPaneOpen ? 'pl-3 pr-2 py-3' : 'p-3'} flex flex-col custom-scrollbar`}>
+      <div className={`flex-1 h-full overflow-y-auto ${isPaneOpen ? 'pl-6 pr-4 py-3' : 'px-6 py-3'} flex flex-col custom-scrollbar`}>
         <div className="flex-1 min-h-[360px] w-full flex flex-col items-center justify-center text-center p-8 border border-dashed border-[#e5e7eb] dark:border-[#27272a] rounded-[10px] bg-gradient-to-b from-transparent to-[#fafafa]/60 dark:to-[#18181b]/30">
           <div className="w-12 h-12 rounded-2xl bg-white dark:bg-[#27272a] border border-[#e5e7eb] dark:border-[#3f3f46] shadow-xs flex items-center justify-center mb-3 transition-transform hover:scale-105">
             <Sparkles className="w-6 h-6 text-[#6b7280] dark:text-[#a1a1aa]" />
@@ -236,7 +236,7 @@ export const MyQueueView: React.FC = () => {
   }
 
   return (
-    <div className={`flex-1 overflow-y-auto ${isPaneOpen ? 'pl-3 pr-2 py-3' : 'p-3'} space-y-3 select-none custom-scrollbar`}>
+    <div className={`flex-1 overflow-y-auto ${isPaneOpen ? 'pl-6 pr-4 py-3' : 'px-6 py-3'} space-y-3 select-none custom-scrollbar`}>
       <div className="flex flex-col gap-3">
         {renderSection('Urgent', 'critical', criticalItems, 'bg-rose-500')}
         {renderSection('High', 'high', highItems, 'bg-orange-500')}

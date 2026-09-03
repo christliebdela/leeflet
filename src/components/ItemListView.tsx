@@ -6,6 +6,7 @@ import {
   Plus,
   Inbox,
   Folder,
+  FolderOpen,
   Bug,
   Lightbulb,
   CheckSquare,
@@ -21,8 +22,11 @@ import {
   ChevronDown,
   ChevronRight,
   X,
+  Info,
 } from 'lucide-react';
 import { Item, ChecklistItem, Project } from '../types';
+import { useComponentStore } from '../store/useComponentStore';
+import { ComponentModal } from './ComponentModal';
 import { formatDate, formatDueDateLabel } from '../utils/format';
 import { getStoredTeamMembers, matchesAssignee } from '../utils/team';
 import { resolveAvatarUrl } from '../utils/avatars';
@@ -89,6 +93,67 @@ export const ItemListView: React.FC = () => {
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
   const [dragOverInfo, setDragOverInfo] = useState<{ id: string; position: 'before' | 'after' } | null>(null);
   const [isCompletedSectionOpen, setIsCompletedSectionOpen] = useState(false);
+
+  // Component store
+  const {
+    getComponentsForProject,
+    selectedComponentId,
+    setSelectedComponentId,
+    loadComponents,
+    isComponentModalOpen,
+    editingComponent,
+    openComponentModal,
+    closeComponentModal,
+  } = useComponentStore();
+  const activeProjectId = viewMode.type === 'project' ? viewMode.projectId : null;
+  const projectComponents = activeProjectId ? getComponentsForProject(activeProjectId) : [];
+
+  // Persistent right-click hint state (stored in localStorage)
+  const [hasDismissedComponentHint, setHasDismissedComponentHint] = useState(() => {
+    try {
+      return localStorage.getItem('leeflet_component_right_click_hint_dismissed') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const [hoveredComponentId, setHoveredComponentId] = useState<string | null>(null);
+  const leaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleMouseEnterComp = (id: string) => {
+    if (leaveTimerRef.current) {
+      clearTimeout(leaveTimerRef.current);
+      leaveTimerRef.current = null;
+    }
+    if (!hasDismissedComponentHint) {
+      setHoveredComponentId(id);
+    }
+  };
+
+  const handleMouseLeaveComp = () => {
+    if (leaveTimerRef.current) clearTimeout(leaveTimerRef.current);
+    leaveTimerRef.current = setTimeout(() => {
+      setHoveredComponentId(null);
+    }, 250);
+  };
+
+  const handleDismissComponentHint = () => {
+    if (leaveTimerRef.current) clearTimeout(leaveTimerRef.current);
+    try {
+      localStorage.setItem('leeflet_component_right_click_hint_dismissed', 'true');
+    } catch {}
+    setHasDismissedComponentHint(true);
+    setHoveredComponentId(null);
+  };
+
+  // Load components when project changes
+  React.useEffect(() => {
+    if (activeProjectId) {
+      loadComponents(activeProjectId);
+    } else {
+      setSelectedComponentId(null);
+    }
+  }, [activeProjectId, loadComponents, setSelectedComponentId]);
 
   // Filter items based on active view mode and filter options
   const displayItems = items.filter((item: Item) => {
@@ -193,13 +258,16 @@ export const ItemListView: React.FC = () => {
     return 0;
   });
 
-  // Dynamic context-aware empty state icon, title, and action
+  // Dynamic context-aware playful empty states with short, punchy subtexts
   const getEmptyState = () => {
     if (filterOptions.searchQuery.trim()) {
       return {
         Icon: Search,
-        title: 'Zero results found',
-        description: `No items match "${filterOptions.searchQuery}". Try adjusting your keywords or filters.`,
+        emoji: '🔍',
+        badgeBg: 'bg-amber-500/10 text-amber-500 border-amber-500/25',
+        glowColor: 'from-amber-500/20 to-orange-500/20',
+        title: 'No clues found',
+        description: 'Try different keywords or check spelling.',
         actionLabel: 'Clear Search',
         onAction: () => setFilterOptions({ searchQuery: '' }),
       };
@@ -209,27 +277,64 @@ export const ItemListView: React.FC = () => {
       case 'inbox':
         return {
           Icon: Inbox,
-          title: 'Inbox Zero — clear desk, clear focus',
-          description: 'Your backlog is clear. Capture your next thought or task whenever ready.',
+          emoji: '☕',
+          badgeBg: 'bg-indigo-500/10 text-indigo-500 border-indigo-500/25',
+          glowColor: 'from-indigo-500/20 to-purple-500/20',
+          title: 'Inbox zero. Time for coffee?',
+          description: 'Your backlog is clear. Enjoy the focus.',
           actionLabel: 'Capture Thought',
           onAction: () => setQuickCaptureOpen(true),
         };
       case 'all':
         return {
           Icon: Layers,
+          emoji: '🌱',
+          badgeBg: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/25',
+          glowColor: 'from-emerald-500/20 to-teal-500/20',
           title: 'A fresh canvas',
-          description: 'Nothing captured in this workspace yet. Dump your thoughts, track bugs, or organize tasks.',
+          description: 'Ready whenever inspiration strikes.',
           actionLabel: 'Create First Item',
           onAction: () => setQuickCaptureOpen(true),
         };
       case 'project': {
-        const proj = projects.find((p) => p.id === viewMode.projectId);
-        const name = proj?.name || 'This project';
+        const project = projects.find((p) => p.id === viewMode.projectId);
+        const name = project?.name || 'Project';
+        const activeComp = selectedComponentId && selectedComponentId !== 'unassigned'
+          ? projectComponents.find((c) => c.id === selectedComponentId)
+          : null;
+        if (activeComp) {
+          return {
+            Icon: Layers,
+            emoji: '',
+            badgeBg: 'bg-white dark:bg-[#202024] text-[#6b7280] dark:text-[#a1a1aa] border-[#e5e7eb] dark:border-[#27272a]',
+            glowColor: 'from-zinc-500/10 to-stone-500/10',
+            title: `${activeComp.name} is a blank slate`,
+            description: 'Add the first piece of this module.',
+            actionLabel: `Add to ${activeComp.name}`,
+            onAction: () => setQuickCaptureOpen(true),
+          };
+        }
+        if (selectedComponentId === 'unassigned') {
+          return {
+            Icon: Layers,
+            emoji: '',
+            badgeBg: 'bg-white dark:bg-[#202024] text-[#6b7280] dark:text-[#a1a1aa] border-[#e5e7eb] dark:border-[#27272a]',
+            glowColor: 'from-zinc-500/10 to-stone-500/10',
+            title: 'All squared away',
+            description: 'Every task is neatly sorted in a module.',
+            actionLabel: 'Add Task',
+            onAction: () => setQuickCaptureOpen(true),
+          };
+        }
         return {
           Icon: Folder,
+          HoverIcon: FolderOpen,
+          emoji: '',
+          badgeBg: 'bg-white dark:bg-[#202024] text-[#6b7280] dark:text-[#a1a1aa] border-[#e5e7eb] dark:border-[#27272a] hover:border-[#d1d5db] dark:hover:border-[#3f3f46]',
+          glowColor: 'from-zinc-500/10 to-stone-500/10',
           title: `${name} is ready for action`,
-          description: `No tasks or notes inside this project yet. Start tracking items to get organized.`,
-          actionLabel: `Add to ${name}`,
+          description: 'Every great project starts with step one.',
+          actionLabel: `Add First Task`,
           onAction: () => setQuickCaptureOpen(true),
         };
       }
@@ -238,64 +343,88 @@ export const ItemListView: React.FC = () => {
           case 'bug':
             return {
               Icon: Bug,
-              title: 'Zero bugs reported',
-              description: 'No issues or defects on the log. Everything is running smoothly.',
+              emoji: '🐞',
+              badgeBg: 'bg-rose-500/10 text-rose-500 border-rose-500/25',
+              glowColor: 'from-rose-500/20 to-pink-500/20',
+              title: 'Bug-free paradise',
+              description: 'Zero defects reported. Smooth sailing!',
               actionLabel: 'Report a Bug',
               onAction: () => setQuickCaptureOpen(true),
             };
           case 'idea':
             return {
               Icon: Lightbulb,
-              title: 'No ideas captured yet',
-              description: 'Have a feature concept or workflow thought? Jot it down before it slips away.',
+              emoji: '💡',
+              badgeBg: 'bg-amber-500/10 text-amber-500 border-amber-500/25',
+              glowColor: 'from-amber-500/20 to-yellow-500/20',
+              title: 'Waiting for the spark',
+              description: 'Jot it down before inspiration fades.',
               actionLabel: 'Jot an Idea',
               onAction: () => setQuickCaptureOpen(true),
             };
           case 'task':
             return {
               Icon: CheckSquare,
-              title: 'No pending tasks',
-              description: 'Your to-do list is clear. Add an action item or take a quick breather.',
+              emoji: '🎯',
+              badgeBg: 'bg-blue-500/10 text-blue-500 border-blue-500/25',
+              glowColor: 'from-blue-500/20 to-indigo-500/20',
+              title: 'All caught up!',
+              description: 'Nothing pending on your plate right now.',
               actionLabel: 'New Task',
               onAction: () => setQuickCaptureOpen(true),
             };
           case 'improvement':
             return {
               Icon: Sparkles,
-              title: 'No improvements logged',
-              description: 'Spot something to refine or level up? Capture enhancements right here.',
+              emoji: '✨',
+              badgeBg: 'bg-violet-500/10 text-violet-500 border-violet-500/25',
+              glowColor: 'from-violet-500/20 to-purple-500/20',
+              title: 'Polished to a shine',
+              description: 'Spot something to level up next?',
               actionLabel: 'Log Improvement',
               onAction: () => setQuickCaptureOpen(true),
             };
           case 'research':
             return {
               Icon: BookOpen,
-              title: 'No research notes',
-              description: 'Keep track of articles, bookmarks, and deep dives here.',
+              emoji: '🐇',
+              badgeBg: 'bg-teal-500/10 text-teal-500 border-teal-500/25',
+              glowColor: 'from-teal-500/20 to-emerald-500/20',
+              title: 'Down the rabbit hole',
+              description: 'Save bookmarks, reads, and deep dives.',
               actionLabel: 'Add Research Note',
               onAction: () => setQuickCaptureOpen(true),
             };
           case 'question':
             return {
               Icon: HelpCircle,
-              title: 'No open questions',
-              description: 'Open questions, investigations, and follow-ups will appear here.',
+              emoji: '🕵️',
+              badgeBg: 'bg-fuchsia-500/10 text-fuchsia-500 border-fuchsia-500/25',
+              glowColor: 'from-fuchsia-500/20 to-pink-500/20',
+              title: 'Zero mysteries today',
+              description: 'No open questions on the radar.',
               actionLabel: 'Ask a Question',
               onAction: () => setQuickCaptureOpen(true),
             };
           case 'note':
             return {
               Icon: FileText,
-              title: 'Blank notepad',
-              description: 'Meeting notes, code snippets, and scratchpad thoughts live here.',
-              actionLabel: 'Quick Note',
+              emoji: '📝',
+              badgeBg: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/25',
+              glowColor: 'from-zinc-500/20 to-slate-500/20',
+              title: 'Fresh notepad',
+              description: 'Snippets, notes, and quick thoughts.',
+              actionLabel: 'Take a Note',
               onAction: () => setQuickCaptureOpen(true),
             };
           default:
             return {
               Icon: Layers,
+              emoji: '🪴',
+              badgeBg: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/25',
+              glowColor: 'from-emerald-500/20 to-teal-500/20',
               title: 'All caught up',
-              description: 'No items matching this view. Ready to add something new?',
+              description: 'Ready whenever inspiration strikes.',
               actionLabel: 'New Item',
               onAction: () => setQuickCaptureOpen(true),
             };
@@ -303,32 +432,44 @@ export const ItemListView: React.FC = () => {
       case 'priority_filter':
         return {
           Icon: AlertCircle,
-          title: 'No urgent priorities',
-          description: 'Nothing critical currently flagged. Enjoy the calm focus.',
+          emoji: '⛵',
+          badgeBg: 'bg-orange-500/10 text-orange-500 border-orange-500/25',
+          glowColor: 'from-orange-500/20 to-amber-500/20',
+          title: 'Smooth sailing',
+          description: 'No urgent fires to put out right now.',
           actionLabel: 'Add Priority Task',
           onAction: () => setQuickCaptureOpen(true),
         };
       case 'completed':
         return {
           Icon: CheckCircle2,
-          title: 'No completed items yet',
-          description: 'Checked-off tasks and resolved bugs will stack up here.',
+          emoji: '🏆',
+          badgeBg: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/25',
+          glowColor: 'from-emerald-500/20 to-teal-500/20',
+          title: 'Trophies go here',
+          description: 'Check off tasks to watch them stack up.',
           actionLabel: 'Go to Queue',
           onAction: () => useLeafStore.getState().setViewMode({ type: 'my_queue' }),
         };
       case 'archived':
         return {
           Icon: Archive,
-          title: 'Archive is empty',
-          description: 'Archived tasks and retired projects will be preserved here.',
+          emoji: '📦',
+          badgeBg: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/25',
+          glowColor: 'from-zinc-500/20 to-slate-500/20',
+          title: 'The vault is quiet',
+          description: 'Retired items will rest safely here.',
           actionLabel: 'Back to Backlog',
           onAction: () => useLeafStore.getState().setViewMode({ type: 'inbox' }),
         };
       default:
         return {
           Icon: Layers,
+          emoji: '🪴',
+          badgeBg: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/25',
+          glowColor: 'from-emerald-500/20 to-teal-500/20',
           title: 'No items in this view',
-          description: 'Capture an idea, task, bug, or note to get things rolling.',
+          description: 'Capture a task or note to get things rolling.',
           actionLabel: 'New Item',
           onAction: () => setQuickCaptureOpen(true),
         };
@@ -336,7 +477,6 @@ export const ItemListView: React.FC = () => {
   };
 
   const emptyState = getEmptyState();
-  const EmptyIcon = emptyState.Icon;
 
   const isPaneOpen = Boolean(selectedItemId);
 
@@ -364,8 +504,15 @@ export const ItemListView: React.FC = () => {
   };
 
   // Split displayItems for project view (active vs completed)
-  const activeProjectDisplayItems = viewMode.type === 'project' ? displayItems.filter((i) => i.status !== 'done') : displayItems;
-  const completedProjectDisplayItems = viewMode.type === 'project' ? displayItems.filter((i) => i.status === 'done') : [];
+  // When a component filter is active, scope items to just that component (or unassigned)
+  const componentFilteredItems = viewMode.type === 'project' && selectedComponentId
+    ? selectedComponentId === 'unassigned'
+      ? displayItems.filter((i) => !i.componentId)
+      : displayItems.filter((i) => i.componentId === selectedComponentId)
+    : displayItems;
+
+  const activeProjectDisplayItems = viewMode.type === 'project' ? componentFilteredItems.filter((i) => i.status !== 'done') : componentFilteredItems;
+  const completedProjectDisplayItems = viewMode.type === 'project' ? componentFilteredItems.filter((i) => i.status === 'done') : [];
 
   const renderItemCard = (item: Item) => {
     const isSelected = selectedItemId === item.id;
@@ -521,7 +668,21 @@ export const ItemListView: React.FC = () => {
               </Tooltip>
             );
           })()}
-
+          {/* Component Badge in Project View */}
+          {viewMode.type === 'project' && item.componentId && (() => {
+            const comp = projectComponents.find((c) => c.id === item.componentId);
+            if (!comp) return null;
+            return (
+              <span
+                className="hidden sm:inline-flex items-center text-[11px] font-medium shrink-0"
+                style={{
+                  color: comp.color || '#3b82f6',
+                }}
+              >
+                <span className="truncate max-w-[100px]">{comp.name}</span>
+              </span>
+            );
+          })()}
           {/* Project Column */}
           {viewMode.type !== 'project' && (
             <div className={isPaneOpen ? 'max-w-[90px] shrink-0' : 'w-[100px] sm:w-[120px] flex items-center justify-start shrink-0'}>
@@ -546,8 +707,60 @@ export const ItemListView: React.FC = () => {
     );
   };
 
+  const renderEmptyStateCard = () => {
+    const IconComp = emptyState.Icon;
+    const HoverIconComp = (emptyState as any).HoverIcon;
+
+    return (
+      <div className="flex-1 w-full flex flex-col items-center justify-center text-center p-8 border border-dashed border-[#e5e7eb] dark:border-[#27272a] rounded-[10px] bg-gradient-to-b from-transparent to-[#fafafa]/60 dark:to-[#18181b]/30 my-auto min-h-[340px]">
+        {/* Playful animated icon badge with hover opening folder */}
+        <div
+          onClick={emptyState.onAction}
+          className="relative mb-3.5 group cursor-pointer select-none"
+        >
+          <div
+            className={`absolute -inset-2 bg-gradient-to-br ${emptyState.glowColor} rounded-3xl blur-md opacity-35 group-hover:opacity-75 group-hover:scale-105 transition-all duration-300`}
+          />
+          <div
+            className={`relative w-12 h-12 rounded-2xl border flex items-center justify-center shadow-xs transition-all duration-300 ease-out group-hover:scale-105 group-hover:shadow-sm ${emptyState.badgeBg}`}
+          >
+            {HoverIconComp ? (
+              <div className="relative w-5 h-5 flex items-center justify-center">
+                <IconComp className="w-5 h-5 transition-all duration-300 ease-out group-hover:opacity-0 group-hover:scale-75 group-hover:-rotate-6" />
+                <HoverIconComp className="absolute inset-0 w-5 h-5 transition-all duration-300 ease-out opacity-0 scale-75 rotate-6 group-hover:opacity-100 group-hover:scale-100 group-hover:rotate-0 text-[#111827] dark:text-white" />
+              </div>
+            ) : (
+              <IconComp className="w-5 h-5 transition-transform duration-300 ease-out group-hover:scale-105" />
+            )}
+          </div>
+          {emptyState.emoji && (
+            <span className="absolute -bottom-1 -right-1 text-sm select-none drop-shadow-xs transition-transform duration-200 group-hover:rotate-12 group-hover:scale-110">
+              {emptyState.emoji}
+            </span>
+          )}
+        </div>
+
+        <h3 className="text-sm sm:text-[15px] font-bold text-[#111827] dark:text-[#f4f4f5] tracking-tight">
+          {emptyState.title}
+        </h3>
+        <p className="text-xs text-[#6b7280] dark:text-[#a1a1aa] max-w-xs mt-1.5 leading-relaxed">
+          {emptyState.description}
+        </p>
+        <div className="flex items-center justify-center mt-4">
+          <button
+            onClick={emptyState.onAction}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#f3f4f6] dark:bg-[#27272a] text-[#374151] dark:text-[#d4d4d8] rounded-[6px] text-xs font-semibold hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] transition-all border border-[#e5e7eb] dark:border-[#3f3f46] shrink-0 whitespace-nowrap active:scale-95 cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>{emptyState.actionLabel}</span>
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className={`flex-1 h-full overflow-y-auto overflow-x-hidden ${isPaneOpen ? 'pl-3 pr-2 py-3' : 'p-3'} flex flex-col custom-scrollbar`}>
+    <div className={`flex-1 h-full overflow-y-auto overflow-x-hidden ${isPaneOpen ? 'pl-6 pr-4 py-3' : 'px-6 py-3'} flex flex-col custom-scrollbar`}>
 
       {/* 2. BACKLOG METRICS: SLEEK METRIC STRIP & PROGRESS PILL */}
       {viewMode.type === 'inbox' && inboxItems.length > 0 && (
@@ -558,7 +771,6 @@ export const ItemListView: React.FC = () => {
             <button
               type="button"
               onClick={clearPriorityFilters}
-              title="Show all backlog items"
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] border text-xs font-medium transition-all cursor-pointer select-none active:scale-[0.98] ${
                 !isUrgentFilterActive
                   ? 'bg-[#111827] dark:bg-white text-white dark:text-[#111827] border-[#111827] dark:border-white shadow-2xs'
@@ -574,7 +786,6 @@ export const ItemListView: React.FC = () => {
             <button
               type="button"
               onClick={toggleUrgentFilter}
-              title={isUrgentFilterActive ? 'Clear urgent filter' : 'Filter by urgent items (High & Critical)'}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] border text-xs font-medium transition-all cursor-pointer select-none active:scale-[0.98] ${
                 isUrgentFilterActive
                   ? 'bg-rose-600 text-white border-rose-600 shadow-2xs'
@@ -587,18 +798,6 @@ export const ItemListView: React.FC = () => {
               <span className="font-bold">{urgentInboxCount}</span>
               <span className="opacity-85 text-[11px]">Urgent</span>
               {isUrgentFilterActive && <X className="w-3 h-3 ml-0.5 opacity-80" />}
-            </button>
-
-            {/* 3. Standard Queue Pill */}
-            <button
-              type="button"
-              onClick={clearPriorityFilters}
-              title="Standard queue items"
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] bg-[#f4f5f6] dark:bg-[#1a1a1e] border border-[#e5e7eb] dark:border-[#27272a] text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#27272a] text-xs font-medium transition-all cursor-pointer select-none active:scale-[0.98]"
-            >
-              <Inbox className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-              <span className="font-bold text-[#111827] dark:text-white">{inboxItems.length - urgentInboxCount}</span>
-              <span className="opacity-75 text-[11px]">Standard</span>
             </button>
           </div>
 
@@ -649,57 +848,169 @@ export const ItemListView: React.FC = () => {
       )}
 
       {/* 3. ITEMS LIST CONTENT */}
-      {displayItems.length === 0 ? (
-        <div className="flex-1 min-h-[360px] w-full flex flex-col items-center justify-center text-center p-8 border border-dashed border-[#e5e7eb] dark:border-[#27272a] rounded-[10px] bg-gradient-to-b from-transparent to-[#fafafa]/60 dark:to-[#18181b]/30">
-          <div className="w-12 h-12 rounded-2xl bg-white dark:bg-[#27272a] border border-[#e5e7eb] dark:border-[#3f3f46] shadow-xs flex items-center justify-center mb-3 transition-transform hover:scale-105">
-            <EmptyIcon className="w-6 h-6 text-[#6b7280] dark:text-[#a1a1aa]" />
+      {viewMode.type === 'project' ? (
+        <div className="flex-1 min-w-0 flex flex-col">
+          {/* Component Filter Ribbon — ALWAYS rendered in project view */}
+          <div className="shrink-0 mb-3 flex items-center gap-1.5 flex-wrap">
+            {projectComponents.length > 0 ? (
+              <>
+                {/* All Tasks tab */}
+                <button
+                  onClick={() => setSelectedComponentId(null)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-xs font-medium transition-all whitespace-nowrap cursor-pointer active:scale-95 ${
+                    !selectedComponentId
+                      ? 'bg-[#111827] dark:bg-white text-white dark:text-[#111113] shadow-sm'
+                      : 'bg-[#f3f4f6] dark:bg-[#27272a] text-[#374151] dark:text-[#a1a1aa] hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46]'
+                  }`}
+                >
+                  <Layers className="w-3 h-3" />
+                  <span>All Tasks</span>
+                  <span className={`text-[11px] font-normal ${!selectedComponentId ? 'text-white/80 dark:text-[#111113]/80' : 'text-[#6b7280] dark:text-[#71717a]'}`}>
+                    {displayItems.filter(i => i.status !== 'done').length}
+                  </span>
+                </button>
+
+                {/* Per-component tabs styled with actual component color */}
+                {projectComponents.map((comp) => {
+                  const compActiveCount = displayItems.filter(i => i.componentId === comp.id && i.status !== 'done').length;
+                  const isActive = selectedComponentId === comp.id;
+                  const compColor = comp.color || '#3b82f6';
+                  return (
+                    <div
+                      key={comp.id}
+                      className="relative inline-flex items-center"
+                      onMouseEnter={() => handleMouseEnterComp(comp.id)}
+                      onMouseLeave={handleMouseLeaveComp}
+                    >
+                      <button
+                        onClick={() => setSelectedComponentId(comp.id)}
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          openComponentModal(comp);
+                        }}
+                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-xs font-medium transition-all whitespace-nowrap cursor-pointer active:scale-95"
+                        style={
+                          isActive
+                            ? {
+                                backgroundColor: compColor,
+                                color: '#ffffff',
+                                boxShadow: `0 2px 8px ${compColor}40`,
+                                border: `1px solid ${compColor}`,
+                              }
+                            : {
+                                backgroundColor: `${compColor}1a`,
+                                color: compColor,
+                                border: `1px solid ${compColor}45`,
+                              }
+                        }
+                        title={hasDismissedComponentHint ? 'Click to filter · Right-click to edit or delete' : undefined}
+                      >
+                        <span className="truncate max-w-[120px]">{comp.name}</span>
+                        <span className={`text-[11px] font-normal ${isActive ? 'text-white/85' : 'opacity-75'}`}>
+                          {compActiveCount}
+                        </span>
+                      </button>
+
+                      {/* Contextual Floating Tooltip on Hover with hit bridge */}
+                      {!hasDismissedComponentHint && hoveredComponentId === comp.id && (
+                        <div
+                          onMouseEnter={() => {
+                            if (leaveTimerRef.current) {
+                              clearTimeout(leaveTimerRef.current);
+                              leaveTimerRef.current = null;
+                            }
+                          }}
+                          onMouseLeave={handleMouseLeaveComp}
+                          className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 z-50 flex items-center gap-2 px-2.5 py-1 bg-[#18181b] dark:bg-[#202024] text-white text-[11px] rounded-[6px] border border-black/15 dark:border-white/10 shadow-xl whitespace-nowrap animate-in fade-in zoom-in-95 duration-100 select-none pointer-events-auto before:absolute before:-top-3 before:left-0 before:right-0 before:h-3"
+                        >
+                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 -mb-[1px] border-4 border-transparent border-b-[#18181b] dark:border-b-[#202024]" />
+                          <div className="flex items-center gap-1.5">
+                            <Info className="w-3.5 h-3.5 text-[#a1a1aa] shrink-0" />
+                            <span>Right-click to edit or delete</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDismissComponentHint();
+                            }}
+                            className="px-1.5 py-0.5 bg-white/15 hover:bg-white/25 text-white font-semibold rounded text-[10px] transition-colors cursor-pointer ml-0.5"
+                          >
+                            Got it
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {/* Unassigned tab */}
+                {(() => {
+                  const unassignedCount = displayItems.filter(i => !i.componentId && i.status !== 'done').length;
+                  if (unassignedCount === 0) return null;
+                  const isActive = selectedComponentId === 'unassigned';
+                  return (
+                    <button
+                      onClick={() => setSelectedComponentId('unassigned')}
+                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-xs font-medium transition-all whitespace-nowrap cursor-pointer active:scale-95 ${
+                        isActive
+                          ? 'bg-[#111827] dark:bg-white text-white dark:text-[#111113] shadow-sm'
+                          : 'bg-[#f3f4f6] dark:bg-[#27272a] text-[#374151] dark:text-[#a1a1aa] hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46]'
+                      }`}
+                    >
+                      <span>Unassigned</span>
+                      <span className={`text-[11px] font-normal ${isActive ? 'text-white/80 dark:text-[#111113]/80' : 'text-[#6b7280] dark:text-[#71717a]'}`}>
+                        {unassignedCount}
+                      </span>
+                    </button>
+                  );
+                })()}
+
+                {/* + Module button */}
+                {permissions.canCreateItems && (
+                  <button
+                    onClick={() => openComponentModal()}
+                    className="flex items-center gap-1 px-2 py-1 rounded-[6px] text-xs font-medium text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] border border-dashed border-[#d1d5db] dark:border-[#3f3f46] transition-all whitespace-nowrap cursor-pointer"
+                    title="Create new module (Shortcut: M)"
+                  >
+                    <Plus className="w-3 h-3" />
+                    <span className="text-[11px]">Module</span>
+                  </button>
+                )}
+              </>
+            ) : (
+              permissions.canCreateItems && (
+                <div className="flex items-center justify-start pb-0.5">
+                  <button
+                    onClick={() => openComponentModal()}
+                    className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] rounded-[6px] border border-dashed border-[#e5e7eb] dark:border-[#27272a] transition-colors cursor-pointer"
+                  >
+                    <Plus className="w-3 h-3" />
+                    <span>Add Module</span>
+                  </button>
+                </div>
+              )
+            )}
           </div>
-          <h3 className="text-sm font-semibold text-[#111827] dark:text-[#f4f4f5] tracking-tight">
-            {emptyState.title}
-          </h3>
-          <p className="text-xs text-[#6b7280] dark:text-[#a1a1aa] max-w-sm mt-1.5 leading-relaxed">
-            {emptyState.description}
-          </p>
-          <button
-            onClick={emptyState.onAction}
-            className="mt-4 flex items-center gap-1.5 px-3.5 py-1.5 bg-[#111827] dark:bg-white text-white dark:text-[#111827] rounded-[6px] text-xs font-semibold hover:bg-[#1f2937] dark:hover:bg-[#e4e4e7] transition-all shadow-subtle shrink-0 whitespace-nowrap active:scale-95"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>{emptyState.actionLabel}</span>
-          </button>
-        </div>
-      ) : viewMode.type === 'project' ? (
-        <div className="space-y-3 min-w-0">
-          {/* Active Tasks in Project */}
-          {activeProjectDisplayItems.length === 0 ? (
-            <div className="p-3.5 rounded-[8px] bg-[#f9fafb] dark:bg-[#18181b]/50 border border-[#e5e7eb] dark:border-[#27272a] flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 text-xs font-medium text-[#374151] dark:text-[#ededef]">
-                <CheckCircle2 className="w-4 h-4 text-[#6b7280] dark:text-[#a1a1aa] shrink-0" />
-                <span>
-                  {isUrgentFilterActive
-                    ? 'No urgent tasks match the filter!'
-                    : 'All active tasks in this project are completed! 🎉'}
-                </span>
-              </div>
-              {isUrgentFilterActive ? (
+
+          {/* If project has NO tasks at all, render project empty state with Add Task + Add Component */}
+          {activeProjectDisplayItems.length === 0 && completedProjectDisplayItems.length === 0 ? (
+            renderEmptyStateCard()
+          ) : activeProjectDisplayItems.length === 0 ? (
+            isUrgentFilterActive ? (
+              <div className="p-3 rounded-[8px] bg-[#f9fafb] dark:bg-[#18181b]/50 border border-[#e5e7eb] dark:border-[#27272a] flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-xs font-medium text-[#374151] dark:text-[#ededef]">
+                  <CheckCircle2 className="w-4 h-4 text-[#6b7280] dark:text-[#a1a1aa] shrink-0" />
+                  <span>No urgent tasks match the filter!</span>
+                </div>
                 <button
                   onClick={clearPriorityFilters}
-                  className="px-2.5 py-1 bg-[#f3f4f6] dark:bg-[#27272a] text-[#374151] dark:text-[#d4d4d8] border border-[#e5e7eb] dark:border-[#3f3f46] rounded-[5px] text-xs font-medium hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] transition-colors shrink-0"
+                  className="px-2.5 py-1 bg-[#f3f4f6] dark:bg-[#27272a] text-[#374151] dark:text-[#d4d4d8] border border-[#e5e7eb] dark:border-[#3f3f46] rounded-[5px] text-xs font-medium hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] transition-colors shrink-0 cursor-pointer"
                 >
                   Show All Tasks
                 </button>
-              ) : (
-                permissions.canCreateItems && (
-                  <button
-                    onClick={() => setQuickCaptureOpen(true)}
-                    className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-[#ededef] bg-transparent hover:bg-black/[0.04] dark:hover:bg-white/[0.06] border border-[#e5e7eb] dark:border-[#27272a] hover:border-[#d1d5db] dark:hover:border-[#3f3f46] rounded-[6px] transition-colors shrink-0 whitespace-nowrap active:scale-95 cursor-pointer"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Add Task</span>
-                  </button>
-                )
-              )}
-            </div>
+              </div>
+            ) : null
           ) : (
             <div className="space-y-2 min-w-0">
               {activeProjectDisplayItems.map(renderItemCard)}
@@ -708,7 +1019,10 @@ export const ItemListView: React.FC = () => {
 
           {/* Collapsible Completed Tasks Section */}
           {completedProjectDisplayItems.length > 0 && (
-            <div ref={completedSectionRef} className="pt-3 border-t border-[#e5e7eb] dark:border-[#27272a] space-y-2 scroll-mt-6">
+            <div
+              ref={completedSectionRef}
+              className={`${activeProjectDisplayItems.length > 0 ? 'pt-3 border-t border-[#e5e7eb] dark:border-[#27272a]' : 'pt-1'} space-y-2 scroll-mt-6`}
+            >
               <button
                 type="button"
                 onClick={() => setIsCompletedSectionOpen(!isCompletedSectionOpen)}
@@ -733,10 +1047,23 @@ export const ItemListView: React.FC = () => {
             </div>
           )}
         </div>
+      ) : displayItems.length === 0 ? (
+        renderEmptyStateCard()
       ) : (
         <div className="space-y-2 min-w-0">
           {displayItems.map(renderItemCard)}
         </div>
+      )}
+
+      {/* Component Modal */}
+      {viewMode.type === 'project' && activeProjectId && (
+        <ComponentModal
+          isOpen={isComponentModalOpen}
+          onClose={closeComponentModal}
+          projectId={activeProjectId}
+          workspaceId={workspace?.id || ''}
+          editingComponent={editingComponent}
+        />
       )}
     </div>
   );

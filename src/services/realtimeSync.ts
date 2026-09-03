@@ -1,5 +1,5 @@
 import { createClient, RealtimeChannel, SupabaseClient } from '@supabase/supabase-js';
-import { Item, Project, ChecklistItem, Attachment } from '../types';
+import { Item, Project, ChecklistItem, Attachment, ProjectModule } from '../types';
 import { getCloudCredentials } from './cloudSync';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -9,6 +9,8 @@ export interface RealtimeCallbacks {
   onItemDelete: (itemId: string) => void;
   onProjectUpsert: (project: Partial<Project> & { id: string }) => void;
   onProjectDelete: (projectId: string) => void;
+  onModuleUpsert?: (module: ProjectModule) => void;
+  onModuleDelete?: (moduleId: string) => void;
   onChecklistUpsert: (c: Partial<ChecklistItem> & { id: string; itemId: string }) => void;
   onChecklistDelete: (checklistId: string) => void;
   onAttachmentUpsert?: (a: Attachment) => void;
@@ -31,9 +33,12 @@ function getStoredCredentials(workspaceId: string): { url: string; anonKey: stri
 
 // Map a raw PostgREST row to our Item shape (without hardcoded empty arrays for relations)
 function rowToItem(row: Record<string, unknown>): Partial<Item> & { id: string } {
+  const rawModId = (row.module_id as string) || (row.component_id as string) || null;
   return {
     id: row.id as string,
     projectId: (row.project_id as string) || '',
+    moduleId: rawModId,
+    componentId: rawModId,
     title: (row.title as string) || '',
     content: (row.content as string) || '',
     type: (row.type as Item['type']) || 'task',
@@ -44,6 +49,23 @@ function rowToItem(row: Record<string, unknown>): Partial<Item> & { id: string }
     isPinned: Boolean(row.is_pinned),
     dueAt: (row.due_at as string) || null,
     completedAt: (row.completed_at as string) || null,
+    createdAt: (row.created_at as string) || new Date().toISOString(),
+    updatedAt: (row.updated_at as string) || new Date().toISOString(),
+  };
+}
+
+// Map a raw PostgREST row to our ProjectModule shape
+function rowToModule(row: Record<string, unknown>): ProjectModule {
+  return {
+    id: row.id as string,
+    workspaceId: (row.workspace_id as string) || '',
+    projectId: (row.project_id as string) || '',
+    name: (row.name as string) || '',
+    description: (row.description as string) || '',
+    color: (row.color as string) || '#3b82f6',
+    leadId: (row.lead_id as string) || null,
+    memberIds: Array.isArray(row.member_ids) ? (row.member_ids as string[]) : [],
+    sortOrder: (row.sort_order as number) ?? 0,
     createdAt: (row.created_at as string) || new Date().toISOString(),
     updatedAt: (row.updated_at as string) || new Date().toISOString(),
   };
@@ -148,6 +170,38 @@ export function subscribeToWorkspace(workspaceId: string, callbacks: RealtimeCal
       'postgres_changes',
       { event: 'DELETE', schema: 'public', table: 'projects', filter: `workspace_id=eq.${workspaceId}` },
       (payload) => callbacks.onProjectDelete((payload.old as { id: string }).id)
+    )
+
+    // ── Modules ────────────────────────────────────────────────────────────
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'project_modules', filter: `workspace_id=eq.${workspaceId}` },
+      (payload) => callbacks.onModuleUpsert?.(rowToModule(payload.new as Record<string, unknown>))
+    )
+    .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'project_modules', filter: `workspace_id=eq.${workspaceId}` },
+      (payload) => callbacks.onModuleUpsert?.(rowToModule(payload.new as Record<string, unknown>))
+    )
+    .on(
+      'postgres_changes',
+      { event: 'DELETE', schema: 'public', table: 'project_modules', filter: `workspace_id=eq.${workspaceId}` },
+      (payload) => callbacks.onModuleDelete?.((payload.old as { id: string }).id)
+    )
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'project_components', filter: `workspace_id=eq.${workspaceId}` },
+      (payload) => callbacks.onModuleUpsert?.(rowToModule(payload.new as Record<string, unknown>))
+    )
+    .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'project_components', filter: `workspace_id=eq.${workspaceId}` },
+      (payload) => callbacks.onModuleUpsert?.(rowToModule(payload.new as Record<string, unknown>))
+    )
+    .on(
+      'postgres_changes',
+      { event: 'DELETE', schema: 'public', table: 'project_components', filter: `workspace_id=eq.${workspaceId}` },
+      (payload) => callbacks.onModuleDelete?.((payload.old as { id: string }).id)
     )
 
     // ── Checklist Items ────────────────────────────────────────────────────

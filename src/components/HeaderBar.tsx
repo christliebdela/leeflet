@@ -233,7 +233,7 @@ export const HeaderBar: React.FC = () => {
   return (
     <header
       data-tauri-drag-region
-      className="h-12 px-3 bg-transparent flex items-center justify-between select-none shrink-0"
+      className="h-12 px-6 bg-transparent flex items-center justify-between select-none shrink-0"
     >
       {/* Title & Count */}
       <div className="flex items-center gap-2 min-w-0 mr-1.5 overflow-hidden" data-tauri-drag-region>
@@ -254,53 +254,68 @@ export const HeaderBar: React.FC = () => {
             </button>
           )}
         </div>
-        {viewMode.type === 'project' && activeProj && totalCount > 0 ? (
-          <div
-            className="hidden md:inline-flex items-center gap-1.5 px-2 py-1 rounded-[6px] bg-[#f4f5f6] dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] text-xs font-medium text-[#4b5563] dark:text-[#a1a1aa] shrink-0 shadow-2xs select-none"
-            data-tauri-drag-region
-          >
-            {/* Mini circular progress ring */}
-            <div className="relative w-3.5 h-3.5 shrink-0 flex items-center justify-center">
-              <svg className="w-3.5 h-3.5 -rotate-90 transform" viewBox="0 0 36 36">
-                <circle
-                  cx="18"
-                  cy="18"
-                  r="14"
-                  className="text-[#e5e7eb] dark:text-[#3f3f46]"
-                  strokeWidth="4"
-                  stroke="currentColor"
-                  fill="transparent"
-                />
-                <circle
-                  cx="18"
-                  cy="18"
-                  r="14"
-                  style={{ stroke: activeProj.color || '#71717a' }}
-                  strokeWidth="4"
-                  strokeDasharray={88}
-                  strokeDashoffset={88 - Math.round(((totalCount - openCount) / totalCount) * 88)}
-                  strokeLinecap="round"
-                  fill="transparent"
-                  className="transition-all duration-500 ease-out"
-                />
-              </svg>
-            </div>
+        {viewMode.type === 'project' && activeProj && totalCount > 0 ? (() => {
+          const completedCount = totalCount - openCount;
+          const pct = Math.round((completedCount / totalCount) * 100);
 
-            <span className="font-bold text-[#111827] dark:text-white text-[11px] shrink-0">
-              {Math.round(((totalCount - openCount) / totalCount) * 100)}%
-            </span>
+          // Color-code ring stroke only based on completion rate
+          let strokeColor = activeProj.color || '#71717a';
+          if (pct === 100) {
+            strokeColor = '#10b981'; // vibrant green when 100% complete
+          } else if (pct >= 66) {
+            strokeColor = activeProj.color && activeProj.color !== '#71717a' ? activeProj.color : '#3b82f6';
+          } else if (pct >= 33) {
+            strokeColor = activeProj.color && activeProj.color !== '#71717a' ? activeProj.color : '#f59e0b';
+          }
 
-            <span
-              className={`text-[11px] text-[#6b7280] dark:text-[#a1a1aa] whitespace-nowrap overflow-hidden transition-all duration-200 ease-out inline-flex items-center ${
-                isSearchExpanded
-                  ? 'max-w-0 opacity-0 xl:max-w-[200px] xl:opacity-100'
-                  : 'max-w-0 opacity-0 md:max-w-[200px] md:opacity-100'
-              }`}
+          return (
+            <div
+              className="hidden md:inline-flex items-center gap-1.5 px-2 py-1 rounded-[6px] bg-[#f4f5f6] dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] text-xs font-medium text-[#4b5563] dark:text-[#a1a1aa] shrink-0 shadow-2xs select-none"
+              data-tauri-drag-region
             >
-              {openCount} active · {totalCount - openCount} done
-            </span>
-          </div>
-        ) : (
+              {/* Mini circular progress ring */}
+              <div className="relative w-3.5 h-3.5 shrink-0 flex items-center justify-center">
+                <svg className="w-3.5 h-3.5 -rotate-90 transform" viewBox="0 0 36 36">
+                  <circle
+                    cx="18"
+                    cy="18"
+                    r="14"
+                    className="text-[#e5e7eb] dark:text-[#3f3f46]"
+                    strokeWidth="4"
+                    stroke="currentColor"
+                    fill="transparent"
+                  />
+                  <circle
+                    cx="18"
+                    cy="18"
+                    r="14"
+                    style={{ stroke: strokeColor }}
+                    strokeWidth="4"
+                    strokeDasharray={88}
+                    strokeDashoffset={88 - Math.round((completedCount / totalCount) * 88)}
+                    strokeLinecap="round"
+                    fill="transparent"
+                    className="transition-all duration-500 ease-out"
+                  />
+                </svg>
+              </div>
+
+              <span className="font-bold text-[#111827] dark:text-white text-[11px] shrink-0">
+                {pct}%
+              </span>
+
+              <span
+                className={`text-[11px] text-[#6b7280] dark:text-[#a1a1aa] whitespace-nowrap overflow-hidden transition-all duration-200 ease-out inline-flex items-center ${
+                  isSearchExpanded
+                    ? 'max-w-0 opacity-0 xl:max-w-[200px] xl:opacity-100'
+                    : 'max-w-0 opacity-0 md:max-w-[200px] md:opacity-100'
+                }`}
+              >
+                {openCount} active · {completedCount} done
+              </span>
+            </div>
+          );
+        })() : (
           viewMode.type !== 'my_queue' && viewMode.type !== 'team' && viewMode.type !== 'profile' && viewMode.type !== 'settings' && totalCount > 0 && (
             <span
               className={`text-xs text-[#6b7280] dark:text-[#a1a1aa] font-normal whitespace-nowrap overflow-hidden transition-all duration-200 ease-out inline-flex items-center ${

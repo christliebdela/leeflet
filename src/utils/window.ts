@@ -15,8 +15,8 @@ export async function openQuickCaptureWindow(): Promise<void> {
       return;
     }
 
-    const logicalWidth = 430;
-    const logicalHeight = 250;
+    const logicalWidth = 480;
+    const logicalHeight = 285;
 
     let targetPhysicalX: number | undefined;
     let targetPhysicalY: number | undefined;

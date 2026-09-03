@@ -131,6 +131,7 @@ export class DatabaseService {
     localStorage.removeItem(`${STORAGE_KEY_PREFIX}${id}`);
     localStorage.removeItem(`${STORAGE_KEY_PREFIX}${id}_projects`);
     localStorage.removeItem(`${STORAGE_KEY_PREFIX}${id}_items`);
+    localStorage.removeItem(`${STORAGE_KEY_PREFIX}${id}_components`);
 
     // If the deleted workspace was active, find another one
     if (this.activeWorkspaceId === id) {
@@ -375,6 +376,7 @@ export class DatabaseService {
 
   public async createItem(data: {
     projectId: string;
+    componentId?: string | null;
     title: string;
     content?: string;
     type?: Item['type'];
@@ -395,6 +397,7 @@ export class DatabaseService {
     const newItem: Item = {
       id: crypto.randomUUID(),
       projectId: data.projectId,
+      componentId: data.componentId || null,
       title: data.title.trim(),
       content: data.content || '',
       type: data.type || 'task',

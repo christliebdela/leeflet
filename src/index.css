@@ -207,70 +207,79 @@
    INTERFACE COLOR THEMES
    ======================================================== */
 
-/* 1. Noir (Default Flagship - OLED Pitch Black) */
+/* 1. Noir (Default Flagship - Charcoal Zinc Sidebar, OLED Pitch Black Page) */
 html.dark,
 html.dark[data-color-theme="default"],
 html.dark[data-color-theme="deep-black"] {
+  --theme-bg-shell: #0e0e11;
+  --theme-bg-sidebar: #0e0e11;
   --theme-bg-app: #000000;
-  --theme-bg-sidebar: #000000;
-  --theme-bg-card: #09090b;
-  --theme-bg-card-elevated: #121215;
-  --theme-border: #18181b;
+  --theme-bg-card: #08080a;
+  --theme-bg-card-elevated: #141418;
+  --theme-border: #1f1f24;
   --theme-accent: #ffffff;
 }
 
-/* 2. Charcoal (Zinc & Charcoal) */
+/* 2. Charcoal (Lighter Zinc Sidebar, Deep Charcoal Black Page) */
 html.dark[data-color-theme="charcoal"] {
-  --theme-bg-app: #0f0f11;
-  --theme-bg-sidebar: #121214;
-  --theme-bg-card: #18181b;
-  --theme-bg-card-elevated: #202024;
-  --theme-border: #27272a;
+  --theme-bg-shell: #161619;
+  --theme-bg-sidebar: #161619;
+  --theme-bg-app: #0a0a0c;
+  --theme-bg-card: #101013;
+  --theme-bg-card-elevated: #1c1c20;
+  --theme-border: #26262d;
   --theme-accent: #10b981;
 }
 
-/* 3. Claude (Anthropic Warm Stone & Terracotta) */
+/* 3. Claude (Warm Stone Sidebar, Dark Espresso Page) */
 html.dark[data-color-theme="claude"] {
-  --theme-bg-app: #1b1917;
-  --theme-bg-sidebar: #141210;
-  --theme-bg-card: #24201c;
-  --theme-bg-card-elevated: #2c2824;
-  --theme-border: #3a3530;
+  --theme-bg-shell: #1f1c19;
+  --theme-bg-sidebar: #1f1c19;
+  --theme-bg-app: #0f0d0b;
+  --theme-bg-card: #161412;
+  --theme-bg-card-elevated: #221e1a;
+  --theme-border: #302a24;
   --theme-accent: #da7756;
 }
 
-/* 4. Tokyo Night (folke/tokyo-night.nvim) */
+/* 4. Tokyo Night (Tokyo Blue Sidebar, Midnight Navy Page) */
 html.dark[data-color-theme="tokyo-night"] {
-  --theme-bg-app: #1a1b26;
-  --theme-bg-sidebar: #16161e;
-  --theme-bg-card: #1f2335;
+  --theme-bg-shell: #1f2335;
+  --theme-bg-sidebar: #1f2335;
+  --theme-bg-app: #11121a;
+  --theme-bg-card: #161824;
   --theme-bg-card-elevated: #24283b;
-  --theme-border: #292e42;
+  --theme-border: #2a2f47;
   --theme-accent: #7aa2f7;
 }
 
-/* 5. Catppuccin Mocha */
+/* 5. Catppuccin Mocha (Surface Slate Sidebar, Dark Crust Page) */
 html.dark[data-color-theme="catppuccin"] {
-  --theme-bg-app: #1e1e2e;
-  --theme-bg-sidebar: #181825;
-  --theme-bg-card: #313244;
-  --theme-bg-card-elevated: #45475a;
-  --theme-border: #585b70;
+  --theme-bg-shell: #222334;
+  --theme-bg-sidebar: #222334;
+  --theme-bg-app: #11111b;
+  --theme-bg-card: #181825;
+  --theme-bg-card-elevated: #313244;
+  --theme-border: #3d3f56;
   --theme-accent: #cba6f7;
 }
 
-/* 6. Dracula */
+/* 6. Dracula (Classic Purple-Gray Sidebar, Deep Abyss Page) */
 html.dark[data-color-theme="dracula"] {
-  --theme-bg-app: #282a36;
-  --theme-bg-sidebar: #21222c;
-  --theme-bg-card: #343746;
-  --theme-bg-card-elevated: #44475a;
-  --theme-border: #6272a4;
+  --theme-bg-shell: #282a36;
+  --theme-bg-sidebar: #282a36;
+  --theme-bg-app: #191a21;
+  --theme-bg-card: #21222c;
+  --theme-bg-card-elevated: #343746;
+  --theme-border: #44475a;
   --theme-accent: #bd93f9;
 }
 
-/* 7. Nord */
+/* ---- THEMES 7–16 (commented out for now) ----
+
+7. Nord
 html.dark[data-color-theme="nord"] {
+  --theme-bg-shell: #1b1f28;
   --theme-bg-app: #2e3440;
   --theme-bg-sidebar: #242933;
   --theme-bg-card: #3b4252;
@@ -279,8 +288,9 @@ html.dark[data-color-theme="nord"] {
   --theme-accent: #88c0d0;
 }
 
-/* 8. Gruvbox Dark */
+8. Gruvbox Dark
 html.dark[data-color-theme="gruvbox"] {
+  --theme-bg-shell: #141617;
   --theme-bg-app: #282828;
   --theme-bg-sidebar: #1d2021;
   --theme-bg-card: #3c3836;
@@ -289,8 +299,9 @@ html.dark[data-color-theme="gruvbox"] {
   --theme-accent: #fabd2f;
 }
 
-/* 9. Rosé Pine */
+9. Rosé Pine
 html.dark[data-color-theme="rose-pine"] {
+  --theme-bg-shell: #0e0c18;
   --theme-bg-app: #191724;
   --theme-bg-sidebar: #14121f;
   --theme-bg-card: #1f1d2e;
@@ -299,8 +310,9 @@ html.dark[data-color-theme="rose-pine"] {
   --theme-accent: #ebbcba;
 }
 
-/* 10. Kanagawa Wave */
+10. Kanagawa Wave
 html.dark[data-color-theme="kanagawa"] {
+  --theme-bg-shell: #0e0e15;
   --theme-bg-app: #1f1f28;
   --theme-bg-sidebar: #16161d;
   --theme-bg-card: #2a2a37;
@@ -309,8 +321,9 @@ html.dark[data-color-theme="kanagawa"] {
   --theme-accent: #7e9cd8;
 }
 
-/* 11. Kanagawa Dragon */
+11. Kanagawa Dragon
 html.dark[data-color-theme="kanagawa-dragon"] {
+  --theme-bg-shell: #060605;
   --theme-bg-app: #12120f;
   --theme-bg-sidebar: #0d0d0c;
   --theme-bg-card: #1d1c19;
@@ -319,8 +332,9 @@ html.dark[data-color-theme="kanagawa-dragon"] {
   --theme-accent: #8ba4b0;
 }
 
-/* 12. Everforest Dark */
+12. Everforest Dark
 html.dark[data-color-theme="everforest"] {
+  --theme-bg-shell: #1a2024;
   --theme-bg-app: #2d353b;
   --theme-bg-sidebar: #232a2e;
   --theme-bg-card: #343f44;
@@ -329,8 +343,9 @@ html.dark[data-color-theme="everforest"] {
   --theme-accent: #a7c080;
 }
 
-/* 13. Solarized Dark */
+13. Solarized Dark
 html.dark[data-color-theme="solarized"] {
+  --theme-bg-shell: #00161e;
   --theme-bg-app: #002b36;
   --theme-bg-sidebar: #00212b;
   --theme-bg-card: #073642;
@@ -339,8 +354,9 @@ html.dark[data-color-theme="solarized"] {
   --theme-accent: #268bd2;
 }
 
-/* 14. One Dark */
+14. One Dark
 html.dark[data-color-theme="one-dark"] {
+  --theme-bg-shell: #181c21;
   --theme-bg-app: #282c34;
   --theme-bg-sidebar: #21252b;
   --theme-bg-card: #2c313a;
@@ -349,8 +365,9 @@ html.dark[data-color-theme="one-dark"] {
   --theme-accent: #61afef;
 }
 
-/* 15. Monokai Pro */
+15. Monokai Pro
 html.dark[data-color-theme="monokai-pro"] {
+  --theme-bg-shell: #171518;
   --theme-bg-app: #2d2a2e;
   --theme-bg-sidebar: #221f22;
   --theme-bg-card: #3a383c;
@@ -359,8 +376,9 @@ html.dark[data-color-theme="monokai-pro"] {
   --theme-accent: #ffd866;
 }
 
-/* 16. GitHub Dark */
+16. GitHub Dark
 html.dark[data-color-theme="github-dark"] {
+  --theme-bg-shell: #000000;
   --theme-bg-app: #0d1117;
   --theme-bg-sidebar: #010409;
   --theme-bg-card: #161b22;
@@ -369,8 +387,9 @@ html.dark[data-color-theme="github-dark"] {
   --theme-accent: #58a6ff;
 }
 
+---- END COMMENTED THEMES ---- */
+
 /* Universal Theme Overrides across entire application */
-html.dark div.h-screen.w-screen,
 html.dark .dark\:bg-\[\#0f0f11\],
 html.dark .dark\:bg-\[\#0c0c0e\] {
   background-color: var(--theme-bg-app) !important;
@@ -398,7 +417,16 @@ html.dark .dark\:border-\[\#3f3f46\] {
   border-color: var(--theme-border) !important;
 }
 
-html.dark .dark\:divide-\[\#27272a\] > :not([hidden]) ~ :not([hidden]) {
+html.dark .dark\\:divide-\\[\\#27272a\\] > :not([hidden]) ~ :not([hidden]) {
   border-color: var(--theme-border) !important;
 }
 
+/* Sidebar shell — outer wrapper behind sidebar matches sidebar color seamlessly */
+html.dark div.h-screen.w-screen {
+  background-color: var(--theme-bg-sidebar) !important;
+}
+
+/* Light mode shell */
+html:not(.dark) div.h-screen.w-screen {
+  background-color: #e8e9eb;
+}

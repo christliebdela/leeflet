@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLeafStore } from '../store/useLeafStore';
-import { ItemType, Priority, Project, ChecklistItem, TeamMember } from '../types';
+import { useComponentStore } from '../store/useComponentStore';
+import { ItemType, Priority, Project, ChecklistItem, TeamMember, ProjectComponent } from '../types';
 import {
   Folder,
   Check,
@@ -16,6 +17,7 @@ import {
   Plus,
   Calendar as CalendarIcon,
   User,
+  Layers,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ITEM_TYPE_CONFIG, PRIORITY_CONFIG } from '../utils/format';
@@ -89,51 +91,6 @@ const getPresetDate = (preset: 'today' | 'tomorrow' | 'weekend' | 'next_week'): 
   return d.toISOString().slice(0, 10);
 };
 
-const getPillsWidth = (
-  projectName: string | undefined,
-  priority: Priority,
-  memberName: string | undefined,
-  dueDate: string | null,
-  type: ItemType
-): number => {
-  // 1. Project Pill: icon 14 + gaps 12 + chevron 12 + padding 16 + border 2 = 56px
-  const pName = projectName || 'No Project';
-  const projectW = 56 + Math.min(pName.length * 6.5, 80);
-
-  // 2. Priority Pill: dot 8 + gaps 12 + chevron 12 + padding 16 + border 2 = 50px
-  const priorityLabels: Record<Priority, string> = {
-    none: 'None',
-    low: 'Low',
-    medium: 'Medium',
-    high: 'High',
-    critical: 'Critical',
-  };
-  const priorityW = 50 + (priorityLabels[priority] || 'None').length * 6.5;
-
-  // 3. Assignee Pill: icon 14 + gaps 12 + chevron 12 + padding 16 + border 2 = 56px
-  const aName = memberName || 'Assignee';
-  const assigneeW = 56 + Math.min(aName.length * 6.5, 84);
-
-  // 4. Due Date Pill: icon 14 + gaps 12 + chevron 12 + padding 16 + border 2 = 56px
-  const dueLabel = formatDueDateLabel(dueDate);
-  const dueW = 56 + dueLabel.length * 6.5;
-
-  // 5. Type Pill: icon 14 + gaps 12 + chevron 12 + padding 16 + border 2 = 56px
-  const typeLabels: Record<ItemType, string> = {
-    task: 'Task',
-    bug: 'Bug',
-    idea: 'Idea',
-    improvement: 'Improvement',
-    research: 'Research',
-    question: 'Question',
-    note: 'Note',
-  };
-  const typeW = 56 + (typeLabels[type] || 'Task').length * 6.5;
-
-  // 4 gaps of 8px (32px) + modal padding px-4 left/right (32px) + border (2px) = 66px
-  return Math.round(projectW + priorityW + assigneeW + dueW + typeW + 66);
-};
-
 export const QuickCaptureModal: React.FC = () => {
   const {
     isQuickCaptureOpen,
@@ -176,6 +133,7 @@ export const QuickCaptureModal: React.FC = () => {
   const [type, setType] = useState<ItemType>(() => (localStorage.getItem('leaf_pref_default_type') as ItemType) || 'task');
   const [priority, setPriority] = useState<Priority>(() => (localStorage.getItem('leaf_pref_default_priority') as Priority) || 'none');
   const [assigneeId, setAssigneeId] = useState<string | null>(null);
+  const [componentId, setComponentId] = useState<string | null>(null);
   const [dueDate, setDueDate] = useState<string | null>(null);
 
   const [checklist, setChecklist] = useState<{ id: string; title: string; isCompleted: boolean }[]>(() => {
@@ -201,6 +159,7 @@ export const QuickCaptureModal: React.FC = () => {
   const [isPriorityMenuOpen, setIsPriorityMenuOpen] = useState(false);
   const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false);
   const [isAssigneeMenuOpen, setIsAssigneeMenuOpen] = useState(false);
+  const [isComponentMenuOpen, setIsComponentMenuOpen] = useState(false);
   const [isDueDateMenuOpen, setIsDueDateMenuOpen] = useState(false);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
@@ -218,25 +177,34 @@ export const QuickCaptureModal: React.FC = () => {
   const typeRef = useRef<HTMLDivElement>(null);
   const priorityRef = useRef<HTMLDivElement>(null);
   const assigneeRef = useRef<HTMLDivElement>(null);
+  const componentRef = useRef<HTMLDivElement>(null);
   const dueDateRef = useRef<HTMLDivElement>(null);
 
-  const activeProjectName = isInProjectView ? activeProject?.name : projects.find((p) => p.id === projectId)?.name;
-  const activeMemberName = teamMembers.find((m) => matchesAssignee(m.id, assigneeId))?.name;
+  // Load components when project changes
+  const { getComponentsForProject, loadComponents, selectedComponentId: activeStoreComponentId } = useComponentStore();
+  const currentCaptureProjectId = isInProjectView && activeProject ? activeProject.id : projectId;
+  const projectComponents = getComponentsForProject(currentCaptureProjectId);
+  const selectedComponent = projectComponents.find((c) => c.id === componentId) ?? null;
 
-  const finalModalWidth = useMemo(() => {
-    return getPillsWidth(
-      activeProjectName,
-      priority,
-      activeMemberName,
-      dueDate,
-      type
-    );
-  }, [activeProjectName, priority, activeMemberName, dueDate, type]);
+  useEffect(() => {
+    if (isQuickCaptureOpen && currentCaptureProjectId) {
+      loadComponents(currentCaptureProjectId);
+    }
+  }, [isQuickCaptureOpen, currentCaptureProjectId, loadComponents]);
+
+  // Auto-assignment: when component changes, resolve lead or sole member
+  const resolveComponentAssignee = (comp: ProjectComponent | null): string | null => {
+    if (!comp) return null;
+    if (comp.leadId) return comp.leadId;
+    if (comp.memberIds.length === 1) return comp.memberIds[0];
+    return null;
+  };
 
   // Load team members on open (only active members who accepted)
   useEffect(() => {
     if (isQuickCaptureOpen) {
-      setTeamMembers(getActiveTeamMembers(workspace?.id));
+      const activeMembers = getActiveTeamMembers(workspace?.id);
+      setTeamMembers(activeMembers);
     }
   }, [isQuickCaptureOpen, workspace?.id]);
 
@@ -278,7 +246,7 @@ export const QuickCaptureModal: React.FC = () => {
     } catch {}
   }, [checklist]);
 
-  // Close menus on outside click
+  // Close dropdowns on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as Node;
@@ -286,14 +254,17 @@ export const QuickCaptureModal: React.FC = () => {
         setIsProjectMenuOpen(false);
         setIsCreatingProject(false);
       }
-      if (typeRef.current && !typeRef.current.contains(target)) {
-        setIsTypeMenuOpen(false);
-      }
       if (priorityRef.current && !priorityRef.current.contains(target)) {
         setIsPriorityMenuOpen(false);
       }
+      if (typeRef.current && !typeRef.current.contains(target)) {
+        setIsTypeMenuOpen(false);
+      }
       if (assigneeRef.current && !assigneeRef.current.contains(target)) {
         setIsAssigneeMenuOpen(false);
+      }
+      if (componentRef.current && !componentRef.current.contains(target)) {
+        setIsComponentMenuOpen(false);
       }
       if (dueDateRef.current && !dueDateRef.current.contains(target)) {
         setIsDueDateMenuOpen(false);
@@ -308,7 +279,19 @@ export const QuickCaptureModal: React.FC = () => {
     if (isQuickCaptureOpen) {
       if (isInProjectView && activeProject) {
         setProjectId(activeProject.id);
+        if (activeStoreComponentId && activeStoreComponentId !== 'unassigned') {
+          setComponentId(activeStoreComponentId);
+          const currentComps = getComponentsForProject(activeProject.id);
+          const activeComp = currentComps.find((c) => c.id === activeStoreComponentId);
+          const autoAssignee = resolveComponentAssignee(activeComp ?? null);
+          if (autoAssignee) {
+            setAssigneeId(autoAssignee);
+          }
+        } else {
+          setComponentId(null);
+        }
       } else {
+        setComponentId(null);
         const savedDefault = localStorage.getItem('leaf_pref_default_project');
         if (savedDefault) {
           setProjectId(savedDefault);
@@ -338,7 +321,7 @@ export const QuickCaptureModal: React.FC = () => {
 
       setTimeout(() => titleInputRef.current?.focus(), 60);
     }
-  }, [isQuickCaptureOpen, viewMode, activeProject, selectedProjectId, projects]);
+  }, [isQuickCaptureOpen, viewMode, activeProject, selectedProjectId, projects, activeStoreComponentId]);
 
   if (!isQuickCaptureOpen) return null;
 
@@ -400,6 +383,7 @@ export const QuickCaptureModal: React.FC = () => {
 
     await createItem({
       projectId: targetProjectId,
+      componentId: componentId || null,
       title: finalTitle,
       content: finalContent,
       type,
@@ -416,6 +400,7 @@ export const QuickCaptureModal: React.FC = () => {
     setShowChecklist(false);
     setNewChecklistText('');
     setAssigneeId(null);
+    setComponentId(null);
     setDueDate(null);
     try {
       localStorage.removeItem('leaf_capture_draft_title');
@@ -451,8 +436,7 @@ export const QuickCaptureModal: React.FC = () => {
       className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 select-none animate-in fade-in duration-150"
     >
       <div
-        style={{ width: `${finalModalWidth}px` }}
-        className="max-w-[760px] bg-white dark:bg-[#18181b] rounded-[12px] border border-[#e5e7eb] dark:border-[#27272a] shadow-modal relative animate-in fade-in zoom-in-95 duration-100 flex flex-col transition-[width] duration-150 ease-out"
+        className="w-full max-w-[500px] bg-white dark:bg-[#18181b] rounded-[12px] border border-[#e5e7eb] dark:border-[#27272a] shadow-modal relative animate-in fade-in zoom-in-95 duration-100 flex flex-col"
         onKeyDown={handleKeyDown}
       >
         {/* Top Breadcrumb Header */}
@@ -595,36 +579,41 @@ export const QuickCaptureModal: React.FC = () => {
 
         {/* Metadata Pills Row (Positioned outside scroll context, dropdowns drop DOWN cleanly) */}
         <div className="px-4 py-2 relative overflow-visible shrink-0 z-30">
-          <div id="capture-pills-row" className="flex items-center gap-2 flex-nowrap min-w-max">
-            {/* 1. Project Pill */}
+          <div id="capture-pills-row" className="grid grid-cols-3 gap-2 w-full">
+            {/* Row 1, Col 1: Project Pill */}
             {isInProjectView && activeProject ? (
               <div
                 title="Capturing inside current project"
-                className="flex items-center gap-1.5 px-2 py-1 bg-[#f3f4f6] dark:bg-[#202024] rounded-[6px] text-xs font-medium text-[#374151] dark:text-[#d4d4d8] border border-[#e5e7eb] dark:border-[#27272a] shrink-0"
+                className="w-full flex items-center justify-between gap-1.5 px-2.5 py-1.5 bg-[#f3f4f6] dark:bg-[#202024] rounded-[6px] text-xs font-medium text-[#374151] dark:text-[#d4d4d8] border border-[#e5e7eb] dark:border-[#27272a] min-w-0 select-none"
               >
-                <Folder className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa] shrink-0" />
-                <span className="truncate max-w-[80px]">{activeProject.name}</span>
+                <div className="flex items-center gap-1.5 truncate min-w-0">
+                  <Folder className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa] shrink-0" />
+                  <span className="truncate">{activeProject.name}</span>
+                </div>
               </div>
             ) : (
-              <div className="relative shrink-0" ref={projectRef}>
+              <div className="relative w-full min-w-0" ref={projectRef}>
                 <button
                   type="button"
                   onClick={() => {
                     setIsProjectMenuOpen(!isProjectMenuOpen);
-                    setIsTypeMenuOpen(false);
                     setIsPriorityMenuOpen(false);
+                    setIsComponentMenuOpen(false);
                     setIsAssigneeMenuOpen(false);
                     setIsDueDateMenuOpen(false);
+                    setIsTypeMenuOpen(false);
                   }}
-                  className="flex items-center gap-1.5 bg-[#f9fafb] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] px-2 py-1 hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-colors shrink-0 text-xs font-medium text-[#374151] dark:text-[#f4f4f5]"
+                  className="w-full flex items-center justify-between gap-1.5 bg-[#f9fafb] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] px-2.5 py-1.5 hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-colors text-xs font-medium text-[#374151] dark:text-[#f4f4f5] cursor-pointer min-w-0"
                 >
-                  <Folder className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa] shrink-0" />
-                  <span className="truncate max-w-[80px]">{selectedProject?.name || 'No Project'}</span>
-                  <ChevronDown className="w-3 h-3 opacity-60 shrink-0" />
+                  <div className="flex items-center gap-1.5 truncate min-w-0">
+                    <Folder className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa] shrink-0" />
+                    <span className="truncate">{selectedProject?.name || 'No Project'}</span>
+                  </div>
+                  <ChevronDown className="w-3 h-3 opacity-60 shrink-0 ml-1" />
                 </button>
 
                 {isProjectMenuOpen && (
-                  <div className="absolute left-0 bottom-full mb-1.5 w-52 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-2xl p-1 z-50 space-y-0.5 max-h-48 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-bottom-2 duration-100">
+                  <div className="absolute left-0 top-full mt-1.5 w-52 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-2xl p-1 z-50 space-y-0.5 max-h-48 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-100">
                     <div className="max-h-36 overflow-y-auto custom-scrollbar space-y-0.5">
                       {projects.map((p) => (
                         <button
@@ -662,27 +651,15 @@ export const QuickCaptureModal: React.FC = () => {
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
                                   e.preventDefault();
-                                  e.stopPropagation();
                                   handleCreateProject();
                                 } else if (e.key === 'Escape') {
-                                  e.preventDefault();
-                                  e.stopPropagation();
                                   setIsCreatingProject(false);
-                                  setNewProjectName('');
                                 }
                               }}
-                              placeholder="Project name..."
-                              className="w-full bg-[#f9fafb] dark:bg-[#141416] border border-[#e5e7eb] dark:border-[#27272a] rounded-[4px] px-2 py-1 text-xs text-[#111827] dark:text-[#f4f4f5] focus:outline-none focus:border-[#9ca3af] dark:focus:border-[#52525b]"
+                              placeholder="New project..."
+                              className="w-full bg-[#f9fafb] dark:bg-[#27272a] border border-[#e5e7eb] dark:border-[#3f3f46] rounded px-1.5 py-0.5 text-xs text-[#111827] dark:text-[#f4f4f5] outline-none"
                               autoFocus
                             />
-                            <button
-                              type="button"
-                              onClick={handleCreateProject}
-                              disabled={!newProjectName.trim()}
-                              className="px-2 py-1 bg-[#111827] text-white dark:bg-white dark:text-[#111827] rounded-[4px] text-xs font-semibold hover:opacity-90 disabled:opacity-40 transition-opacity"
-                            >
-                              <Check className="w-3 h-3" />
-                            </button>
                           </div>
                         </div>
                       ) : (
@@ -692,9 +669,9 @@ export const QuickCaptureModal: React.FC = () => {
                             setIsCreatingProject(true);
                             setTimeout(() => newProjectInputRef.current?.focus(), 50);
                           }}
-                          className="w-full text-left px-2 py-1.5 rounded-[4px] text-xs flex items-center gap-2 text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] transition-colors"
+                          className="w-full flex items-center gap-1.5 px-2 py-1 text-xs text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-[#f4f4f5] rounded hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] transition-colors"
                         >
-                          <Plus className="w-3.5 h-3.5" />
+                          <Plus className="w-3 h-3" />
                           <span>New Project</span>
                         </button>
                       )}
@@ -704,26 +681,29 @@ export const QuickCaptureModal: React.FC = () => {
               </div>
             )}
 
-            {/* 2. Priority Pill */}
-            <div className="relative shrink-0" ref={priorityRef}>
+            {/* Row 1, Col 2: Priority Pill */}
+            <div className="relative w-full min-w-0" ref={priorityRef}>
               <button
                 type="button"
                 onClick={() => {
                   setIsPriorityMenuOpen(!isPriorityMenuOpen);
                   setIsProjectMenuOpen(false);
-                  setIsTypeMenuOpen(false);
+                  setIsComponentMenuOpen(false);
                   setIsAssigneeMenuOpen(false);
                   setIsDueDateMenuOpen(false);
+                  setIsTypeMenuOpen(false);
                 }}
-                className="flex items-center gap-1.5 bg-[#f9fafb] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] px-2 py-1 hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-colors shrink-0 text-xs font-medium text-[#374151] dark:text-[#f4f4f5]"
+                className="w-full flex items-center justify-between gap-1.5 bg-[#f9fafb] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] px-2.5 py-1.5 hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-colors text-xs font-medium text-[#374151] dark:text-[#f4f4f5] cursor-pointer min-w-0"
               >
-                <span className={`w-2 h-2 rounded-full shrink-0 ${priorityConfig.dotColor}`} />
-                <span className="capitalize">{priorityConfig.label}</span>
-                <ChevronDown className="w-3 h-3 opacity-60 shrink-0" />
+                <div className="flex items-center gap-1.5 truncate min-w-0">
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${priorityConfig.dotColor}`} />
+                  <span className="capitalize truncate">{priorityConfig.label}</span>
+                </div>
+                <ChevronDown className="w-3 h-3 opacity-60 shrink-0 ml-1" />
               </button>
 
               {isPriorityMenuOpen && (
-                <div className="absolute left-0 bottom-full mb-1.5 w-32 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-2xl p-1 z-50 space-y-0.5 max-h-44 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-bottom-2 duration-100">
+                <div className="absolute left-0 top-full mt-1.5 w-32 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-2xl p-1 z-50 space-y-0.5 max-h-44 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-100">
                   {(['none', 'low', 'medium', 'high', 'critical'] as Priority[]).map((p) => {
                     const pCfg = PRIORITY_CONFIG[p];
                     return (
@@ -752,36 +732,135 @@ export const QuickCaptureModal: React.FC = () => {
               )}
             </div>
 
-            {/* 3. Assignee Pill */}
-            <div className="relative shrink-0" ref={assigneeRef}>
+            {/* Row 1, Col 3: Component Pill */}
+            <div className="relative w-full min-w-0" ref={componentRef}>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsComponentMenuOpen(!isComponentMenuOpen);
+                  setIsProjectMenuOpen(false);
+                  setIsPriorityMenuOpen(false);
+                  setIsAssigneeMenuOpen(false);
+                  setIsDueDateMenuOpen(false);
+                  setIsTypeMenuOpen(false);
+                }}
+                className="w-full flex items-center justify-between gap-1.5 bg-[#f9fafb] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] px-2.5 py-1.5 hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-colors text-xs font-medium text-[#374151] dark:text-[#f4f4f5] cursor-pointer min-w-0"
+              >
+                <div className="flex items-center gap-1.5 truncate min-w-0">
+                  {selectedComponent ? (
+                    <span
+                      className="w-2 h-2 rounded-full shrink-0"
+                      style={{ backgroundColor: selectedComponent.color || '#3b82f6' }}
+                    />
+                  ) : (
+                    <Layers className="w-3.5 h-3.5 shrink-0 opacity-60" />
+                  )}
+                  <span className="truncate">
+                    {selectedComponent?.name || 'Module'}
+                  </span>
+                </div>
+                <ChevronDown className="w-3 h-3 opacity-60 shrink-0 ml-1" />
+              </button>
+
+              {isComponentMenuOpen && (
+                <div className="absolute right-0 top-full mt-1.5 w-52 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-2xl p-1 z-50 space-y-0.5 max-h-52 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-100">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setComponentId(null);
+                      setAssigneeId(null);
+                      setIsComponentMenuOpen(false);
+                    }}
+                    className={`w-full text-left px-2 py-1.5 rounded-[4px] text-xs flex items-center justify-between transition-colors ${
+                      !componentId
+                        ? 'bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-[#f4f4f5] font-semibold'
+                        : 'text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Layers className="w-3.5 h-3.5 opacity-60" />
+                      <span>No Module</span>
+                    </div>
+                    {!componentId && <Check className="w-3.5 h-3.5 shrink-0" />}
+                  </button>
+
+                  {projectComponents.length === 0 ? (
+                    <div className="px-2 py-2 text-[11px] text-[#9ca3af] dark:text-[#71717a] text-center border-t border-[#f3f4f6] dark:border-[#27272a] mt-1">
+                      No modules in project
+                    </div>
+                  ) : (
+                    projectComponents.map((comp) => {
+                      const isSelected = comp.id === componentId;
+                      return (
+                        <button
+                          key={comp.id}
+                          type="button"
+                          onClick={() => {
+                            setComponentId(comp.id);
+                            const resolvedAssignee = resolveComponentAssignee(comp);
+                            if (resolvedAssignee) setAssigneeId(resolvedAssignee);
+                            setIsComponentMenuOpen(false);
+                          }}
+                          className={`w-full text-left px-2 py-1.5 rounded-[4px] text-xs flex items-center justify-between transition-colors ${
+                            isSelected
+                              ? 'bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-[#f4f4f5] font-semibold'
+                              : 'text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a]'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 truncate min-w-0">
+                            <span
+                              className="w-2 h-2 rounded-full shrink-0"
+                              style={{ backgroundColor: comp.color || '#3b82f6' }}
+                            />
+                            <span className="truncate">{comp.name}</span>
+                            {comp.memberIds.length > 0 && (
+                              <span className="text-[10px] text-[#6b7280] dark:text-[#71717a] shrink-0">
+                                {comp.memberIds.length} member{comp.memberIds.length !== 1 ? 's' : ''}
+                              </span>
+                            )}
+                          </div>
+                          {isSelected && <Check className="w-3.5 h-3.5 shrink-0" />}
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Row 2, Col 1: Assignee Pill */}
+            <div className="relative w-full min-w-0" ref={assigneeRef}>
               <button
                 type="button"
                 onClick={() => {
                   setIsAssigneeMenuOpen(!isAssigneeMenuOpen);
                   setIsProjectMenuOpen(false);
-                  setIsTypeMenuOpen(false);
                   setIsPriorityMenuOpen(false);
+                  setIsComponentMenuOpen(false);
                   setIsDueDateMenuOpen(false);
+                  setIsTypeMenuOpen(false);
                 }}
-                className="flex items-center gap-1.5 bg-[#f9fafb] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] px-2 py-1 hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-colors shrink-0 text-xs font-medium text-[#374151] dark:text-[#f4f4f5]"
+                className="w-full flex items-center justify-between gap-1.5 bg-[#f9fafb] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] px-2.5 py-1.5 hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-colors text-xs font-medium text-[#374151] dark:text-[#f4f4f5] cursor-pointer min-w-0"
               >
-                {selectedMember ? (
-                  <span className="w-4 h-4 rounded-full border border-[#e5e7eb] dark:border-[#323238] shrink-0 overflow-hidden">
-                    <img
-                      src={resolveAvatarUrl(selectedMember.avatarMascot || selectedMember.avatarUrl || selectedMember.avatarColor, selectedMember.name || selectedMember.id)}
-                      alt={selectedMember.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </span>
-                ) : (
-                  <User className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa] shrink-0 opacity-80" />
-                )}
-                <span className="truncate max-w-[84px]">{selectedMember?.name || 'Assignee'}</span>
-                <ChevronDown className="w-3 h-3 opacity-60 shrink-0" />
+                <div className="flex items-center gap-1.5 truncate min-w-0">
+                  {selectedMember ? (
+                    <span className="w-4 h-4 rounded-full border border-[#e5e7eb] dark:border-[#323238] shrink-0 overflow-hidden">
+                      <img
+                        src={resolveAvatarUrl(selectedMember.avatarMascot || selectedMember.avatarUrl || selectedMember.avatarColor, selectedMember.name || selectedMember.id)}
+                        alt={selectedMember.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </span>
+                  ) : (
+                    <User className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa] shrink-0 opacity-80" />
+                  )}
+                  <span className="truncate">{selectedMember?.name || 'Assignee'}</span>
+                </div>
+                <ChevronDown className="w-3 h-3 opacity-60 shrink-0 ml-1" />
               </button>
 
               {isAssigneeMenuOpen && (
-                <div className="absolute left-0 bottom-full mb-1.5 w-44 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-2xl p-1 z-50 space-y-0.5 max-h-48 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-bottom-2 duration-100">
+                <div className="absolute left-0 top-full mt-1.5 w-48 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-2xl p-1 z-50 space-y-0.5 max-h-48 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-100">
                   <button
                     type="button"
                     onClick={() => {
@@ -836,26 +915,29 @@ export const QuickCaptureModal: React.FC = () => {
               )}
             </div>
 
-            {/* 4. Due Date Pill */}
-            <div className="relative shrink-0" ref={dueDateRef}>
+            {/* Row 2, Col 2: Due Date Pill */}
+            <div className="relative w-full min-w-0" ref={dueDateRef}>
               <button
                 type="button"
                 onClick={() => {
                   setIsDueDateMenuOpen(!isDueDateMenuOpen);
                   setIsProjectMenuOpen(false);
-                  setIsTypeMenuOpen(false);
                   setIsPriorityMenuOpen(false);
+                  setIsComponentMenuOpen(false);
                   setIsAssigneeMenuOpen(false);
+                  setIsTypeMenuOpen(false);
                 }}
-                className="flex items-center gap-1.5 bg-[#f9fafb] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] px-2 py-1 hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-colors shrink-0 text-xs font-medium text-[#374151] dark:text-[#f4f4f5]"
+                className="w-full flex items-center justify-between gap-1.5 bg-[#f9fafb] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] px-2.5 py-1.5 hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-colors text-xs font-medium text-[#374151] dark:text-[#f4f4f5] cursor-pointer min-w-0"
               >
-                <CalendarIcon className="w-3.5 h-3.5 opacity-70 shrink-0 text-[#6b7280] dark:text-[#a1a1aa]" />
-                <span className="truncate">{formatDueDateLabel(dueDate)}</span>
-                <ChevronDown className="w-3 h-3 opacity-60 shrink-0" />
+                <div className="flex items-center gap-1.5 truncate min-w-0">
+                  <CalendarIcon className="w-3.5 h-3.5 opacity-70 shrink-0 text-[#6b7280] dark:text-[#a1a1aa]" />
+                  <span className="truncate">{formatDueDateLabel(dueDate)}</span>
+                </div>
+                <ChevronDown className="w-3 h-3 opacity-60 shrink-0 ml-1" />
               </button>
 
               {isDueDateMenuOpen && (
-                <div className="absolute left-0 bottom-full mb-1.5 w-48 bg-white dark:bg-[#18181b] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-2xl p-1.5 z-50 animate-in fade-in slide-in-from-bottom-2 duration-100">
+                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 w-48 bg-white dark:bg-[#18181b] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-2xl p-1.5 z-50 animate-in fade-in slide-in-from-top-2 duration-100">
                   <div className="grid grid-cols-3 gap-0.5 pb-1 mb-0.5 border-b border-[#f3f4f6] dark:border-[#27272a]">
                     <button
                       type="button"
@@ -927,26 +1009,29 @@ export const QuickCaptureModal: React.FC = () => {
               )}
             </div>
 
-            {/* 5. Type Pill */}
-            <div className="relative shrink-0" ref={typeRef}>
+            {/* Row 2, Col 3: Type Pill */}
+            <div className="relative w-full min-w-0" ref={typeRef}>
               <button
                 type="button"
                 onClick={() => {
                   setIsTypeMenuOpen(!isTypeMenuOpen);
                   setIsProjectMenuOpen(false);
                   setIsPriorityMenuOpen(false);
+                  setIsComponentMenuOpen(false);
                   setIsAssigneeMenuOpen(false);
                   setIsDueDateMenuOpen(false);
                 }}
-                className="flex items-center gap-1.5 bg-[#f9fafb] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] px-2 py-1 hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-colors shrink-0 text-xs font-medium text-[#374151] dark:text-[#f4f4f5]"
+                className="w-full flex items-center justify-between gap-1.5 bg-[#f9fafb] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] px-2.5 py-1.5 hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-colors text-xs font-medium text-[#374151] dark:text-[#f4f4f5] cursor-pointer min-w-0"
               >
-                <TypeIcon className="w-3.5 h-3.5 shrink-0 text-[#6b7280] dark:text-[#a1a1aa]" />
-                <span className="capitalize">{typeConfig.label}</span>
-                <ChevronDown className="w-3 h-3 opacity-60 shrink-0" />
+                <div className="flex items-center gap-1.5 truncate min-w-0">
+                  <TypeIcon className="w-3.5 h-3.5 shrink-0 text-[#6b7280] dark:text-[#a1a1aa]" />
+                  <span className="capitalize truncate">{typeConfig.label}</span>
+                </div>
+                <ChevronDown className="w-3 h-3 opacity-60 shrink-0 ml-1" />
               </button>
 
               {isTypeMenuOpen && (
-                <div className="absolute right-0 bottom-full mb-1.5 w-36 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-2xl p-1 z-50 space-y-0.5 max-h-44 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-bottom-2 duration-100">
+                <div className="absolute right-0 top-full mt-1.5 w-36 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-2xl p-1 z-50 space-y-0.5 max-h-44 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-100">
                   {(['task', 'bug', 'idea', 'improvement', 'research', 'question', 'note'] as ItemType[]).map((t) => {
                     const ItemIcon = TYPE_ICONS[t];
                     const cfg = ITEM_TYPE_CONFIG[t];

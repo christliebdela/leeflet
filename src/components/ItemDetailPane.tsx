@@ -31,9 +31,11 @@ import {
   Calendar as CalendarIcon,
   User,
   Shield,
+  Layers,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Item, ItemType, Priority, Status, ChecklistItem, Attachment, TeamMember } from '../types';
+import { useComponentStore } from '../store/useComponentStore';
 import { getUserPermissions } from '../utils/permissions';
 import {
   formatFullDate,
@@ -102,10 +104,14 @@ export const ItemDetailPane: React.FC = () => {
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving'>('saved');
   const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(null);
 
-  const [openMenu, setOpenMenu] = useState<'project' | 'type' | 'priority' | 'status' | 'assignee' | 'dueDate' | null>(null);
+  const [openMenu, setOpenMenu] = useState<'project' | 'type' | 'priority' | 'status' | 'assignee' | 'component' | 'dueDate' | null>(null);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [componentId, setComponentId] = useState<string | null>(null);
+
+  // Component store
+  const { getComponentsForProject, loadComponents } = useComponentStore();
 
   const paneRef = useRef<HTMLElement>(null);
   const titleInputRef = useRef<HTMLTextAreaElement>(null);
@@ -239,10 +245,13 @@ export const ItemDetailPane: React.FC = () => {
       setPriority(activeItem.priority);
       setStatus(activeItem.status);
       setAssigneeId(activeItem.assigneeId || null);
+      setComponentId(activeItem.componentId || null);
       setDueAt(activeItem.dueAt || null);
       setChecklist(activeItem.checklist || []);
       setAttachments(activeItem.attachments || []);
       setTeamMembers(getActiveTeamMembers(workspace?.id));
+      // Load components for this project
+      loadComponents(activeItem.projectId);
     } else {
       lastLoadedItemIdRef.current = null;
     }
@@ -351,6 +360,7 @@ export const ItemDetailPane: React.FC = () => {
         title: (patch.title !== undefined ? patch.title : title).trim() || 'Untitled',
         content: patch.content !== undefined ? patch.content : content,
         projectId: patch.projectId !== undefined ? patch.projectId : projectId,
+        componentId: patch.componentId !== undefined ? patch.componentId : componentId,
         type: patch.type !== undefined ? patch.type : type,
         priority: patch.priority !== undefined ? patch.priority : priority,
         status: patch.status !== undefined ? patch.status : status,
@@ -1047,6 +1057,91 @@ export const ItemDetailPane: React.FC = () => {
                 </div>
               )}
             </div>
+
+            {/* Component Selector */}
+            {(() => {
+              const projectComps = getComponentsForProject(projectId);
+              if (projectComps.length === 0) return null;
+              const currentComp = projectComps.find(c => c.id === componentId);
+              return (
+                <div className="relative">
+                  <button
+                    type="button"
+                    disabled={!canEdit}
+                    onClick={() => setOpenMenu(openMenu === 'component' ? null : 'component')}
+                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-[#f4f4f5] border border-transparent hover:border-[#d1d5db] dark:hover:border-[#3f3f46] transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                  >
+                    <div className="flex items-center gap-1.5 truncate">
+                      {currentComp ? (
+                        <>
+                          <span
+                            className="w-2 h-2 rounded-full shrink-0"
+                            style={{ backgroundColor: currentComp.color || '#3b82f6' }}
+                          />
+                          <span className="truncate">{currentComp.name}</span>
+                        </>
+                      ) : (
+                        <>
+                          <Layers className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa] shrink-0 opacity-80" />
+                          <span className="truncate">No Module</span>
+                        </>
+                      )}
+                    </div>
+                    <ChevronDown className="w-3 h-3 opacity-60 shrink-0" />
+                  </button>
+
+                  {openMenu === 'component' && (
+                    <div className="absolute left-0 top-full mt-1 w-52 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] shadow-modal p-1 z-50 space-y-0.5 max-h-52 overflow-y-auto custom-scrollbar">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setComponentId(null);
+                          triggerAutoSave({ componentId: null });
+                          setOpenMenu(null);
+                        }}
+                        className={`w-full text-left px-2 py-1.5 rounded-[4px] text-xs flex items-center justify-between transition-colors ${
+                          !componentId
+                            ? 'bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-[#f4f4f5] font-semibold'
+                            : 'text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Layers className="w-3.5 h-3.5 opacity-60" />
+                          <span>No Module</span>
+                        </div>
+                        {!componentId && <Check className="w-3.5 h-3.5 shrink-0" />}
+                      </button>
+
+                      {projectComps.map((comp) => (
+                        <button
+                          key={comp.id}
+                          type="button"
+                          onClick={() => {
+                            setComponentId(comp.id);
+                            triggerAutoSave({ componentId: comp.id });
+                            setOpenMenu(null);
+                          }}
+                          className={`w-full text-left px-2 py-1.5 rounded-[4px] text-xs flex items-center justify-between transition-colors ${
+                            componentId === comp.id
+                              ? 'bg-[#f4f5f6] dark:bg-[#27272a] text-[#111827] dark:text-[#f4f4f5] font-semibold'
+                              : 'text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f3f4f6] dark:hover:bg-[#27272a]'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 truncate min-w-0">
+                            <span
+                              className="w-2 h-2 rounded-full shrink-0"
+                              style={{ backgroundColor: comp.color || '#3b82f6' }}
+                            />
+                            <span className="truncate">{comp.name}</span>
+                          </div>
+                          {componentId === comp.id && <Check className="w-3.5 h-3.5 shrink-0" />}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Assignee Selector */}
             <div className="relative">

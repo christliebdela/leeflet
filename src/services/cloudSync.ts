@@ -1,4 +1,4 @@
-import { Workspace, Project, Item, ChecklistItem, Attachment, TeamMember, RoleId, MemberStatus } from '../types';
+import { Workspace, Project, Item, ChecklistItem, Attachment, TeamMember, RoleId, MemberStatus, ProjectModule } from '../types';
 import { normalizeAssigneeId, getStoredTeamMembers, saveStoredTeamMembers } from '../utils/team';
 
 export interface CloudCredentials {
@@ -267,10 +267,15 @@ export async function pushItemToCloud(wsId: string, item: Item): Promise<void> {
   const normalizedAssignee = normalizeAssigneeId(item.assigneeId);
   const assignee_id = normalizedAssignee && isValidUuid(normalizedAssignee) ? normalizedAssignee : null;
 
-  const body = {
+  const rawModId = item.moduleId || item.componentId;
+  const module_id = rawModId && isValidUuid(rawModId) ? rawModId : null;
+
+  const body: Record<string, any> = {
     id: item.id,
     workspace_id: wsId,
     project_id,
+    module_id,
+    component_id: module_id, // supports both migrated and legacy schemas
     title: item.title,
     content: item.content || '',
     type: item.type || 'task',
@@ -547,9 +552,12 @@ export async function syncWorkspaceWithCloud(
             }))
           : existing?.attachments || [];
 
+      const remoteModId = ri.module_id || ri.component_id || existing?.moduleId || existing?.componentId || null;
       const remoteItem: Item = {
         id: ri.id,
         projectId: ri.project_id || '',
+        moduleId: remoteModId,
+        componentId: remoteModId,
         title: ri.title,
         content: ri.content || '',
         type: ri.type || 'task',
@@ -832,3 +840,134 @@ async function pushWorkspaceStubIfNeeded(creds: CloudCredentials, wsId: string):
     // ignore
   }
 }
+
+// ─── Module Cloud Sync ───────────────────────────────────────────────────────
+
+export async function pushModuleToCloud(wsId: string, module: ProjectModule): Promise<void> {
+  const creds = getCloudCredentials(wsId);
+  if (!creds || !isValidUuid(wsId) || !isValidUuid(module.id)) return;
+
+  const updatedAt = module.updatedAt || new Date().toISOString();
+  const leadId = module.leadId && isValidUuid(module.leadId) ? module.leadId : null;
+
+  const body = {
+    id: module.id,
+    workspace_id: wsId,
+    project_id: module.projectId,
+    name: module.name,
+    description: module.description || '',
+    color: module.color || '#3b82f6',
+    lead_id: leadId,
+    member_ids: module.memberIds || [],
+    sort_order: module.sortOrder ?? 0,
+    created_at: module.createdAt || new Date().toISOString(),
+    updated_at: updatedAt,
+  };
+
+  try {
+    await pushWorkspaceStubIfNeeded(creds, wsId);
+
+    // Try project_modules first, fallback to project_components
+    let postRes = await fetch(`${creds.url}/rest/v1/project_modules`, {
+      method: 'POST',
+      headers: { ...getAuthHeaders(creds), Prefer: 'resolution=ignore-duplicates,return=minimal' },
+      body: JSON.stringify([body]),
+    });
+
+    const targetTable = postRes.status === 404 ? 'project_components' : 'project_modules';
+
+    if (postRes.status === 404) {
+      await fetch(`${creds.url}/rest/v1/project_components`, {
+        method: 'POST',
+        headers: { ...getAuthHeaders(creds), Prefer: 'resolution=ignore-duplicates,return=minimal' },
+        body: JSON.stringify([body]),
+      });
+    }
+
+    // PATCH if we're newer
+    await fetch(
+      `${creds.url}/rest/v1/${targetTable}?id=eq.${module.id}&updated_at=lt.${encodeURIComponent(updatedAt)}`,
+      {
+        method: 'PATCH',
+        headers: { ...getAuthHeaders(creds), 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }
+    );
+  } catch {
+    // swallowed
+  }
+}
+
+export const pushComponentToCloud = pushModuleToCloud;
+
+export async function deleteModuleFromCloud(wsId: string, moduleId: string): Promise<void> {
+  const creds = getCloudCredentials(wsId);
+  if (!creds || !isValidUuid(moduleId)) return;
+
+  try {
+    // NULL out items referencing this module before deleting it
+    await fetch(
+      `${creds.url}/rest/v1/items?module_id=eq.${moduleId}`,
+      {
+        method: 'PATCH',
+        headers: { ...getAuthHeaders(creds), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ module_id: null, component_id: null }),
+      }
+    ).catch(() => {});
+
+    // Try deleting from project_modules
+    const delRes = await fetch(`${creds.url}/rest/v1/project_modules?id=eq.${moduleId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(creds),
+    });
+
+    if (delRes.status === 404) {
+      await fetch(`${creds.url}/rest/v1/project_components?id=eq.${moduleId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(creds),
+      });
+    }
+  } catch {
+    // swallowed
+  }
+}
+
+export const deleteComponentFromCloud = deleteModuleFromCloud;
+
+export async function pullModulesFromCloud(wsId: string, projectId?: string): Promise<ProjectModule[]> {
+  const creds = getCloudCredentials(wsId);
+  if (!creds || !isValidUuid(wsId)) return [];
+
+  try {
+    const filter = projectId ? `&project_id=eq.${projectId}` : '';
+    let res = await fetch(
+      `${creds.url}/rest/v1/project_modules?workspace_id=eq.${wsId}${filter}&select=*&order=sort_order.asc`,
+      { headers: getAuthHeaders(creds) }
+    );
+    if (res.status === 404) {
+      res = await fetch(
+        `${creds.url}/rest/v1/project_components?workspace_id=eq.${wsId}${filter}&select=*&order=sort_order.asc`,
+        { headers: getAuthHeaders(creds) }
+      );
+    }
+    if (!res.ok) return [];
+    const rows: any[] = await res.json();
+    return rows.map((r): ProjectModule => ({
+      id: r.id,
+      workspaceId: r.workspace_id,
+      projectId: r.project_id,
+      name: r.name,
+      description: r.description || '',
+      color: r.color || '#3b82f6',
+      leadId: r.lead_id ?? null,
+      memberIds: Array.isArray(r.member_ids) ? r.member_ids : [],
+      sortOrder: r.sort_order ?? 0,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export const pullComponentsFromCloud = pullModulesFromCloud;

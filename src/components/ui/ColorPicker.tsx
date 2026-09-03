@@ -115,7 +115,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
                 }}
                 className={`w-6 h-6 rounded-full flex items-center justify-center transition-all relative border border-[#d1d5db] dark:border-[#3f3f46] cursor-pointer ${
                   isDefaultSelected
-                    ? 'ring-2 ring-offset-2 ring-offset-white dark:ring-offset-[#1c1c1f] ring-[#111827] dark:ring-white scale-110 shadow-xs bg-[#6b7280] dark:bg-[#71717a]'
+                    ? 'scale-110 shadow-md bg-[#6b7280] dark:bg-[#71717a]'
                     : 'hover:scale-110 shadow-2xs bg-[#9ca3af] dark:bg-[#52525b] opacity-75 hover:opacity-100'
                 }`}
               >
@@ -146,7 +146,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
                   }}
                   className={`w-6 h-6 rounded-full flex items-center justify-center transition-all relative ${
                     isSelected
-                      ? 'ring-2 ring-offset-2 ring-offset-white dark:ring-offset-[#1c1c1f] ring-[#111827] dark:ring-white scale-110 shadow-xs'
+                      ? 'scale-110 shadow-md'
                       : isAssigned
                       ? 'opacity-25 cursor-not-allowed grayscale-[60%]'
                       : 'hover:scale-110 cursor-pointer shadow-2xs'
@@ -177,7 +177,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
                 onClick={() => setIsCustomOpen(!isCustomOpen)}
                 className={`w-6 h-6 rounded-full flex items-center justify-center border border-[#d1d5db] dark:border-[#3f3f46] transition-all cursor-pointer relative overflow-hidden ${
                   isCustomSelected
-                    ? 'ring-2 ring-offset-2 ring-offset-white dark:ring-offset-[#1c1c1f] ring-[#111827] dark:ring-white scale-110 shadow-xs'
+                    ? 'scale-110 shadow-md'
                     : 'hover:scale-110 bg-[#ebecee] dark:bg-[#27272a]'
                 }`}
                 style={{

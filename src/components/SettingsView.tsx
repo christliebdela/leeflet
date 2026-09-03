@@ -135,6 +135,10 @@ export const SettingsView: React.FC = () => {
     setColorTheme,
     standbyJokesEnabled,
     setStandbyJokesEnabled,
+    sidebarCollapseMode,
+    setSidebarCollapseMode,
+    sidebarHoverExpand,
+    setSidebarHoverExpand,
     viewMode,
     initialize,
   } = useLeafStore();
@@ -502,7 +506,7 @@ export const SettingsView: React.FC = () => {
   const handleCopyMigrationSql = () => {
     navigator.clipboard.writeText(INITIAL_SCHEMA_SQL);
     setCopiedSql(true);
-    toast.success('Migration SQL copied to clipboard');
+    toast.success('Schema SQL copied to clipboard');
     setTimeout(() => setCopiedSql(false), 2500);
   };
 
@@ -817,7 +821,7 @@ export const SettingsView: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 h-full overflow-y-auto p-4 sm:p-8 custom-scrollbar">
+    <div className="flex-1 h-full overflow-y-auto px-6 py-4 sm:px-10 sm:py-8 custom-scrollbar">
       <div className="max-w-[760px] mx-auto space-y-6 pb-16">
         {/* Settings Header with Tab Navigation */}
         <div className="space-y-3.5 pb-4 border-b border-[#e5e7eb] dark:border-[#27272a]">
@@ -942,12 +946,30 @@ export const SettingsView: React.FC = () => {
               </div>
             </div>
 
-            {/* 3. Layout & Sidebar Preferences (Commented out for now - Icons Only is default) */}
-            {/* <div className="space-y-1.5">
+            {/* 3. Layout & Sidebar Preferences */}
+            <div className="space-y-1.5">
               <div className="text-[11px] font-semibold uppercase tracking-wider text-[#9ca3af] dark:text-[#71717a] px-1">
-                Layout
+                Layout & Sidebar
               </div>
               <div className="border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] bg-white dark:bg-[#18181b] divide-y divide-[#f3f4f6] dark:divide-[#27272a] overflow-hidden text-xs">
+                {/* Hover Auto-Expand / Auto-Close */}
+                <div className="flex items-center justify-between px-4 py-3 gap-4">
+                  <div>
+                    <div className="text-xs font-medium text-[#111827] dark:text-[#f4f4f5]">
+                      Hover Auto-Expand / Auto-Close
+                    </div>
+                    <div className="text-[11px] text-[#9ca3af] dark:text-[#71717a]">
+                      Temporarily peek open when hovering over the collapsed sidebar, and auto-close on mouse leave. Keep disabled for a fixed sidebar.
+                    </div>
+                  </div>
+                  <ToggleSwitch
+                    ariaLabel="Hover auto-expand sidebar"
+                    checked={sidebarHoverExpand}
+                    onChange={() => setSidebarHoverExpand(!sidebarHoverExpand)}
+                  />
+                </div>
+
+                {/* Sidebar Collapsed Style */}
                 <div className="flex items-center justify-between px-4 py-3 gap-4">
                   <div>
                     <div className="text-xs font-medium text-[#111827] dark:text-[#f4f4f5]">
@@ -958,16 +980,32 @@ export const SettingsView: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex items-center p-0.5 rounded-[6px] border border-[#e5e7eb] dark:border-[#323238] bg-[#f9fafb] dark:bg-[#202024]">
-                    <button type="button" className="px-2.5 py-1 text-xs font-medium rounded-[5px] bg-white dark:bg-[#27272a] text-[#111827] dark:text-white shadow-2xs font-semibold">
+                    <button
+                      type="button"
+                      onClick={() => setSidebarCollapseMode('icons')}
+                      className={`px-2.5 py-1 text-xs font-medium rounded-[5px] transition-all cursor-pointer ${
+                        sidebarCollapseMode === 'icons'
+                          ? 'bg-white dark:bg-[#27272a] text-[#111827] dark:text-white shadow-2xs font-semibold'
+                          : 'text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white'
+                      }`}
+                    >
                       Icons Only (Default)
                     </button>
-                    <button type="button" className="px-2.5 py-1 text-xs font-medium rounded-[5px] text-[#6b7280] dark:text-[#a1a1aa]">
+                    <button
+                      type="button"
+                      onClick={() => setSidebarCollapseMode('hidden')}
+                      className={`px-2.5 py-1 text-xs font-medium rounded-[5px] transition-all cursor-pointer ${
+                        sidebarCollapseMode === 'hidden'
+                          ? 'bg-white dark:bg-[#27272a] text-[#111827] dark:text-white shadow-2xs font-semibold'
+                          : 'text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white'
+                      }`}
+                    >
                       Hidden
                     </button>
                   </div>
                 </div>
               </div>
-            </div> */}
+            </div>
 
             {/* 2. Task & Workflow Defaults (Linear-Grade Dropdowns) */}
             <div className="space-y-1.5">

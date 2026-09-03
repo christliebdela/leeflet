@@ -6,6 +6,7 @@ import { toast } from './useToastStore';
 import { soundService } from '../utils/audio';
 import { subscribeToWorkspace, unsubscribe as realtimeUnsubscribe } from '../services/realtimeSync';
 import { getDefaultCloudCredentials } from '../services/cloudSync';
+import { useComponentStore } from './useComponentStore';
 
 interface LeafState {
   workspace: Workspace | null;
@@ -29,6 +30,7 @@ interface LeafState {
   standbyJokesEnabled: boolean;
   isSidebarCollapsed: boolean;
   sidebarCollapseMode: SidebarCollapseMode;
+  sidebarHoverExpand: boolean;
   theme: 'light' | 'dark';
   colorTheme: ColorThemeId;
 
@@ -36,6 +38,7 @@ interface LeafState {
   toggleSidebar: () => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
   setSidebarCollapseMode: (mode: SidebarCollapseMode) => void;
+  setSidebarHoverExpand: (enabled: boolean) => void;
   setColorTheme: (colorTheme: ColorThemeId) => void;
   initialize: (customLoadingMessage?: string) => Promise<void>;
   setLoadingMessage: (msg: string) => void;
@@ -58,6 +61,7 @@ interface LeafState {
   loadItems: () => Promise<void>;
   createItem: (data: {
     projectId: string;
+    componentId?: string | null;
     title: string;
     content?: string;
     type?: ItemType;
@@ -103,8 +107,6 @@ const getInitialColorTheme = (): ColorThemeId => {
     const saved = rawSaved as ColorThemeId | null;
     const validIds: ColorThemeId[] = [
       'default', 'charcoal', 'claude', 'tokyo-night', 'catppuccin', 'dracula',
-      'nord', 'gruvbox', 'rose-pine', 'kanagawa', 'kanagawa-dragon', 'everforest',
-      'solarized', 'one-dark', 'monokai-pro', 'github-dark', 'tide', 'sage', 'caffeine',
     ];
     if (saved && validIds.includes(saved)) {
       return saved;
@@ -159,12 +161,18 @@ export const useLeafStore = create<LeafState>((set, get) => ({
   standbyJokesEnabled: typeof window !== 'undefined' && localStorage.getItem('leaf_standby_jokes_enabled') === 'true',
   isSidebarCollapsed: typeof window !== 'undefined' && localStorage.getItem('leaf_sidebar_collapsed') === 'true',
   sidebarCollapseMode: getInitialSidebarCollapseMode(),
+  sidebarHoverExpand: typeof window !== 'undefined' && localStorage.getItem('leaf_pref_sidebar_hover_expand') === 'true',
   theme: getInitialTheme(),
   colorTheme: getInitialColorTheme(),
 
   setSidebarCollapseMode: (sidebarCollapseMode: SidebarCollapseMode) => {
     localStorage.setItem('leaf_pref_sidebar_collapse_mode', sidebarCollapseMode);
     set({ sidebarCollapseMode });
+  },
+
+  setSidebarHoverExpand: (sidebarHoverExpand: boolean) => {
+    localStorage.setItem('leaf_pref_sidebar_hover_expand', String(sidebarHoverExpand));
+    set({ sidebarHoverExpand });
   },
 
   setColorTheme: (colorTheme: ColorThemeId) => {
@@ -627,6 +635,30 @@ export const useLeafStore = create<LeafState>((set, get) => ({
       },
       onProjectDelete: (projectId) => {
         set({ projects: get().projects.filter((p) => p.id !== projectId) });
+      },
+
+      // ── Module events ────────────────────────────────────────────────────
+      onModuleUpsert: (incoming) => {
+        const compStore = useComponentStore.getState();
+        const current = compStore.components;
+        const idx = current.findIndex((c) => c.id === incoming.id);
+        if (idx === -1) {
+          useComponentStore.setState({ components: [...current, incoming] });
+        } else {
+          const existing = current[idx];
+          if (!existing.updatedAt || new Date(incoming.updatedAt) >= new Date(existing.updatedAt)) {
+            const updated = [...current];
+            updated[idx] = incoming;
+            useComponentStore.setState({ components: updated });
+          }
+        }
+      },
+      onModuleDelete: (moduleId) => {
+        const compStore = useComponentStore.getState();
+        useComponentStore.setState({
+          components: compStore.components.filter((c) => c.id !== moduleId),
+          selectedComponentId: compStore.selectedComponentId === moduleId ? null : compStore.selectedComponentId,
+        });
       },
 
       // ── Checklist events ─────────────────────────────────────────────────

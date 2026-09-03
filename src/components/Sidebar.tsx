@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useLeafStore } from '../store/useLeafStore';
 import {
   ListTodo,
@@ -59,6 +60,7 @@ export const Sidebar: React.FC = () => {
     toggleTheme,
     isSidebarCollapsed,
     sidebarCollapseMode,
+    sidebarHoverExpand,
     toggleSidebar,
     initialize,
   } = useLeafStore();
@@ -365,12 +367,6 @@ export const Sidebar: React.FC = () => {
   const completedCount = items.filter((i: Item) => i.status === 'done').length;
   const archivedCount = items.filter((i: Item) => i.status === 'archived').length;
 
-  const railProjects = projects.filter((p: Project) => {
-    if (p.isArchived) return false;
-    const hasTasks = items.some((i: Item) => i.projectId === p.id && i.status !== 'archived');
-    const isCurrent = viewMode.type === 'project' && viewMode.projectId === p.id;
-    return hasTasks || isCurrent;
-  });
 
   const isViewActive = (mode: ViewMode) => {
     if (mode.type !== viewMode.type) return false;
@@ -395,15 +391,8 @@ export const Sidebar: React.FC = () => {
     setProjectToDelete(null);
   };
 
-  if (isSidebarCollapsed) {
-    if (sidebarCollapseMode === 'hidden') {
-      return <aside className="w-0 border-r-0 overflow-hidden transition-all duration-200" />;
-    }
-
-    return (
-      <aside
-        className="w-14 h-full bg-[#f4f5f6] dark:bg-[#121214] border-r border-[#e5e7eb] dark:border-[#27272a] flex flex-col justify-between items-center py-2.5 select-none text-xs text-[#374151] dark:text-[#d4d4d8] shrink-0 transition-[width,border-color] duration-200 ease-in-out z-20"
-      >
+  const renderCollapsedRail = () => (
+    <div className="w-14 h-full flex flex-col justify-between items-center py-2.5 select-none text-xs text-[#374151] dark:text-[#d4d4d8] min-w-14 shrink-0">
         {/* Top Expand / Logo button */}
         <div className="flex flex-col items-center gap-3 w-full" data-tauri-drag-region>
           <Tooltip>
@@ -483,108 +472,6 @@ export const Sidebar: React.FC = () => {
               <TooltipContent side="right">Team</TooltipContent>
             </Tooltip>
           </div>
-
-          {/* Projects Divider & Items with active content */}
-          {railProjects.length > 0 && (
-            <div className="w-full flex flex-col items-center gap-1.5 px-2 pt-2 border-t border-[#e5e7eb] dark:border-[#27272a] overflow-y-auto max-h-56 custom-scrollbar">
-              {railProjects.map((project) => {
-                const isActive = viewMode.type === 'project' && viewMode.projectId === project.id;
-                const count = items.filter(
-                  (i: Item) => i.projectId === project.id && i.status !== 'done' && i.status !== 'archived'
-                ).length;
-                const isDragged = draggedProjectId === project.id;
-                const isDragOverBefore = dragOverInfo?.id === project.id && dragOverInfo.position === 'before';
-                const isDragOverAfter = dragOverInfo?.id === project.id && dragOverInfo.position === 'after';
-
-                return (
-                  <Tooltip key={project.id}>
-                    <TooltipTrigger asChild>
-                      <div
-                        draggable={!permissions.isViewer}
-                        onDragStart={(e) => {
-                          if (permissions.isViewer) {
-                            e.preventDefault();
-                            return;
-                          }
-                          e.dataTransfer.setData('text/plain', project.id);
-                          e.dataTransfer.effectAllowed = 'move';
-                          setDraggedProjectId(project.id);
-                        }}
-                        onDragOver={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          e.dataTransfer.dropEffect = 'move';
-                          const rect = e.currentTarget.getBoundingClientRect();
-                          const isTopHalf = (e.clientY - rect.top) < (rect.height / 2);
-                          const position = isTopHalf ? 'before' : 'after';
-                          if (!dragOverInfo || dragOverInfo.id !== project.id || dragOverInfo.position !== position) {
-                            setDragOverInfo({ id: project.id, position });
-                          }
-                        }}
-                        onDragLeave={(e) => {
-                          if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-                            if (dragOverInfo?.id === project.id) {
-                              setDragOverInfo(null);
-                            }
-                          }
-                        }}
-                        onDragEnd={() => {
-                          setDraggedProjectId(null);
-                          setDragOverInfo(null);
-                        }}
-                        onDrop={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          const sourceId = e.dataTransfer.getData('text/plain') || draggedProjectId;
-                          const position = dragOverInfo?.id === project.id ? dragOverInfo.position : 'before';
-                          if (sourceId && sourceId !== project.id) {
-                            reorderProjects(sourceId, project.id, position);
-                          }
-                          setDraggedProjectId(null);
-                          setDragOverInfo(null);
-                        }}
-                        onClick={() => setViewMode({ type: 'project', projectId: project.id })}
-                        className={`w-9 h-9 flex items-center justify-center rounded-[6px] transition-all cursor-pointer relative select-none ${
-                          isActive
-                            ? 'bg-[#e5e7eb] dark:bg-[#27272a] text-[#111827] dark:text-white'
-                            : 'text-[#6b7280] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white'
-                        } ${isDragged ? 'opacity-30 scale-[0.95]' : ''}`}
-                      >
-                        {isDragOverBefore && (
-                          <div className="absolute -top-1 left-0.5 right-0.5 h-0.5 bg-[#111827] dark:bg-white rounded-full z-20 pointer-events-none flex items-center shadow-xs">
-                            <div className="w-1 h-1 rounded-full bg-[#111827] dark:bg-white -ml-0.5 shadow-sm" />
-                          </div>
-                        )}
-                        {isDragOverAfter && (
-                          <div className="absolute -bottom-1 left-0.5 right-0.5 h-0.5 bg-[#111827] dark:bg-white rounded-full z-20 pointer-events-none flex items-center shadow-xs">
-                            <div className="w-1 h-1 rounded-full bg-[#111827] dark:bg-white -ml-0.5 shadow-sm" />
-                          </div>
-                        )}
-                        <Folder
-                          className="w-4 h-4 transition-transform hover:scale-110"
-                          style={project.color ? { color: project.color } : undefined}
-                        />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent side="right">
-                      <div className="flex items-center gap-1.5">
-                        <span
-                          className={`w-2 h-2 rounded-full shrink-0 ${!project.color ? 'bg-[#6b7280] dark:bg-[#a1a1aa]' : ''}`}
-                          style={project.color ? { backgroundColor: project.color } : undefined}
-                        />
-                        <span className="font-medium">{project.name}</span>
-                        {count > 0 && (
-                          <span className="text-[#9ca3af] dark:text-[#71717a] font-normal">
-                            ({count})
-                          </span>
-                        )}
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                );
-              })}
-            </div>
-          )}
         </div>
 
         {/* Bottom Tools in Rail */}
@@ -684,13 +571,42 @@ export const Sidebar: React.FC = () => {
             <TooltipContent side="right">Profile ({userProfileName})</TooltipContent>
           </Tooltip>
         </div>
-      </aside>
-    );
-  }
+    </div>
+  );
+
+  const [isHovered, setIsHovered] = useState(false);
+  const isExpanded = !isSidebarCollapsed || (isHovered && sidebarHoverExpand && sidebarCollapseMode !== 'hidden');
+  const isHidden = isSidebarCollapsed && sidebarCollapseMode === 'hidden' && !isHovered;
+  const targetWidth = isHidden ? 0 : isExpanded ? 248 : 72;
 
   return (
     <>
-      <aside className="w-52 h-full bg-[#f4f5f6] dark:bg-[#121214] border-r border-[#e5e7eb] dark:border-[#27272a] flex flex-col justify-between select-none text-xs text-[#374151] dark:text-[#d4d4d8] shrink-0 transition-colors">
+      <motion.aside
+        animate={{ width: targetWidth }}
+        transition={{
+          duration: 0.25,
+          ease: [0.4, 0, 0.2, 1],
+        }}
+        onMouseEnter={() => {
+          if (isSidebarCollapsed && sidebarHoverExpand) setIsHovered(true);
+        }}
+        onMouseLeave={() => {
+          if (!isWorkspaceMenuOpen) {
+            setIsHovered(false);
+          }
+        }}
+        className="h-full bg-[#e8e9eb] dark:bg-[#0a0a0c] flex flex-col justify-between shrink-0 select-none z-0 overflow-hidden relative transition-colors"
+      >
+        <AnimatePresence mode="wait" initial={false}>
+          {isExpanded ? (
+            <motion.div
+              key="expanded"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="w-[232px] h-full flex flex-col justify-between select-none text-xs text-[#374151] dark:text-[#d4d4d8] min-w-[232px] shrink-0"
+            >
         {/* Workspace Switcher Header */}
         <div
           ref={workspaceContainerRef}
@@ -724,10 +640,10 @@ export const Sidebar: React.FC = () => {
           <button
             type="button"
             onClick={toggleSidebar}
-            title="Collapse sidebar (Ctrl + B)"
+            title={isSidebarCollapsed ? "Pin sidebar open (Ctrl + B)" : "Collapse sidebar (Ctrl + B)"}
             className="p-1.5 rounded-[5px] hover:bg-[#e5e7eb]/70 dark:hover:bg-[#1f1f23] text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white transition-colors shrink-0 cursor-pointer"
           >
-            <PanelLeftClose className="w-3.5 h-3.5" />
+            {isSidebarCollapsed ? <PanelLeftOpen className="w-3.5 h-3.5" /> : <PanelLeftClose className="w-3.5 h-3.5" />}
           </button>
 
           {/* Workspace Dropdown Menu */}
@@ -1315,7 +1231,21 @@ export const Sidebar: React.FC = () => {
             </span>
           </button>
         </div>
-      </aside>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="collapsed"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="w-14 h-full flex flex-col justify-between items-center min-w-14 shrink-0"
+            >
+              {renderCollapsedRail()}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.aside>
 
       {/* Project Delete Confirmation Modal */}
       {projectToDelete && (

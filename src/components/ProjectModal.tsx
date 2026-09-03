@@ -61,9 +61,13 @@ export const ProjectModal: React.FC = () => {
 
   if (!isProjectModalOpen || !isCurrentUserAdmin) return null;
 
+  const isDuplicateName = Boolean(name.trim()) && projects.some(
+    (p) => p.id !== editingProject?.id && p.name.trim().toLowerCase() === name.trim().toLowerCase()
+  );
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim() || isDuplicateName) return;
 
     if (editingProject) {
       await updateProject({
@@ -136,8 +140,17 @@ export const ProjectModal: React.FC = () => {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Qlaima, Ventrix RMS, Personal..."
-              className="w-full px-3 py-1.5 bg-[#f9fafb] dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] text-[#111827] dark:text-[#f4f4f5] focus:bg-white dark:focus:bg-[#27272a] focus:outline-none"
+              className={`w-full px-3 py-1.5 bg-[#f9fafb] dark:bg-[#1c1c1f] border rounded-[6px] text-[#111827] dark:text-[#f4f4f5] focus:bg-white dark:focus:bg-[#27272a] focus:outline-none ${
+                isDuplicateName
+                  ? 'border-rose-500 focus:border-rose-500'
+                  : 'border-[#e5e7eb] dark:border-[#27272a]'
+              }`}
             />
+            {isDuplicateName && (
+              <p className="text-[11px] text-rose-500 mt-1 font-medium">
+                A project with this name already exists.
+              </p>
+            )}
           </div>
 
           {/* Project Accent Color Selection */}
@@ -218,7 +231,8 @@ export const ProjectModal: React.FC = () => {
               </button>
               <button
                 type="submit"
-                className="px-4 py-1.5 bg-[#111827] dark:bg-white hover:bg-[#1f2937] dark:hover:bg-[#e4e4e7] text-white dark:text-[#111827] rounded-[6px] font-semibold shadow-subtle"
+                disabled={!name.trim() || isDuplicateName}
+                className="px-4 py-1.5 bg-[#111827] dark:bg-white hover:bg-[#1f2937] dark:hover:bg-[#e4e4e7] text-white dark:text-[#111827] rounded-[6px] font-semibold shadow-subtle disabled:opacity-40 disabled:cursor-not-allowed transition-all"
               >
                 {editingProject ? 'Save Changes' : 'Create Project'}
               </button>
