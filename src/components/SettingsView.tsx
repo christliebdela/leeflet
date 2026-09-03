@@ -135,8 +135,8 @@ export const SettingsView: React.FC = () => {
     setColorTheme,
     standbyJokesEnabled,
     setStandbyJokesEnabled,
-    sidebarCollapseMode,
-    setSidebarCollapseMode,
+    // sidebarCollapseMode,
+    // setSidebarCollapseMode,
     sidebarHoverExpand,
     setSidebarHoverExpand,
     viewMode,
@@ -969,7 +969,7 @@ export const SettingsView: React.FC = () => {
                   />
                 </div>
 
-                {/* Sidebar Collapsed Style */}
+                {/* Sidebar Collapsed Style (commented out for now)
                 <div className="flex items-center justify-between px-4 py-3 gap-4">
                   <div>
                     <div className="text-xs font-medium text-[#111827] dark:text-[#f4f4f5]">
@@ -1004,6 +1004,7 @@ export const SettingsView: React.FC = () => {
                     </button>
                   </div>
                 </div>
+                */}
               </div>
             </div>
 
