@@ -44,7 +44,7 @@ const getStoredLastChecked = (): string | null => {
 
 export const useUpdaterStore = create<UpdaterState>((set, get) => ({
   status: 'idle',
-  currentVersion: '0.3.0',
+  currentVersion: '0.4.0',
   availableVersion: null,
   releaseDate: null,
   releaseNotes: null,
