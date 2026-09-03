@@ -760,7 +760,7 @@ export const ItemListView: React.FC = () => {
   };
 
   return (
-    <div className={`flex-1 h-full overflow-y-auto overflow-x-hidden ${isPaneOpen ? 'pl-6 pr-4 py-3' : 'px-6 py-3'} flex flex-col custom-scrollbar`}>
+    <div className={`flex-1 h-full overflow-y-auto overflow-x-hidden ${isPaneOpen ? 'pl-3 pr-2 py-3' : 'p-3'} flex flex-col custom-scrollbar`}>
 
       {/* 2. BACKLOG METRICS: SLEEK METRIC STRIP & PROGRESS PILL */}
       {viewMode.type === 'inbox' && inboxItems.length > 0 && (

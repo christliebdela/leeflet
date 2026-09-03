@@ -207,71 +207,71 @@
    INTERFACE COLOR THEMES
    ======================================================== */
 
-/* 1. Noir (Default Flagship - Charcoal Zinc Sidebar, OLED Pitch Black Page) */
+/* 1. Noir (Default Flagship - OLED Pitch Black) */
 html.dark,
 html.dark[data-color-theme="default"],
 html.dark[data-color-theme="deep-black"] {
-  --theme-bg-shell: #0e0e11;
-  --theme-bg-sidebar: #0e0e11;
+  --theme-bg-shell: #000000;
   --theme-bg-app: #000000;
-  --theme-bg-card: #08080a;
-  --theme-bg-card-elevated: #141418;
-  --theme-border: #1f1f24;
+  --theme-bg-sidebar: #000000;
+  --theme-bg-card: #09090b;
+  --theme-bg-card-elevated: #121215;
+  --theme-border: #18181b;
   --theme-accent: #ffffff;
 }
 
-/* 2. Charcoal (Lighter Zinc Sidebar, Deep Charcoal Black Page) */
+/* 2. Charcoal (Zinc & Charcoal) */
 html.dark[data-color-theme="charcoal"] {
-  --theme-bg-shell: #161619;
-  --theme-bg-sidebar: #161619;
-  --theme-bg-app: #0a0a0c;
-  --theme-bg-card: #101013;
-  --theme-bg-card-elevated: #1c1c20;
-  --theme-border: #26262d;
+  --theme-bg-shell: #121214;
+  --theme-bg-app: #0f0f11;
+  --theme-bg-sidebar: #121214;
+  --theme-bg-card: #18181b;
+  --theme-bg-card-elevated: #202024;
+  --theme-border: #27272a;
   --theme-accent: #10b981;
 }
 
-/* 3. Claude (Warm Stone Sidebar, Dark Espresso Page) */
+/* 3. Claude (Anthropic Warm Stone & Terracotta) */
 html.dark[data-color-theme="claude"] {
-  --theme-bg-shell: #1f1c19;
-  --theme-bg-sidebar: #1f1c19;
-  --theme-bg-app: #0f0d0b;
-  --theme-bg-card: #161412;
-  --theme-bg-card-elevated: #221e1a;
-  --theme-border: #302a24;
+  --theme-bg-shell: #141210;
+  --theme-bg-app: #1b1917;
+  --theme-bg-sidebar: #141210;
+  --theme-bg-card: #24201c;
+  --theme-bg-card-elevated: #2c2824;
+  --theme-border: #3a3530;
   --theme-accent: #da7756;
 }
 
-/* 4. Tokyo Night (Tokyo Blue Sidebar, Midnight Navy Page) */
+/* 4. Tokyo Night (folke/tokyo-night.nvim) */
 html.dark[data-color-theme="tokyo-night"] {
-  --theme-bg-shell: #1f2335;
-  --theme-bg-sidebar: #1f2335;
-  --theme-bg-app: #11121a;
-  --theme-bg-card: #161824;
+  --theme-bg-shell: #16161e;
+  --theme-bg-app: #1a1b26;
+  --theme-bg-sidebar: #16161e;
+  --theme-bg-card: #1f2335;
   --theme-bg-card-elevated: #24283b;
-  --theme-border: #2a2f47;
+  --theme-border: #292e42;
   --theme-accent: #7aa2f7;
 }
 
-/* 5. Catppuccin Mocha (Surface Slate Sidebar, Dark Crust Page) */
+/* 5. Catppuccin Mocha */
 html.dark[data-color-theme="catppuccin"] {
-  --theme-bg-shell: #222334;
-  --theme-bg-sidebar: #222334;
-  --theme-bg-app: #11111b;
-  --theme-bg-card: #181825;
-  --theme-bg-card-elevated: #313244;
-  --theme-border: #3d3f56;
+  --theme-bg-shell: #181825;
+  --theme-bg-app: #1e1e2e;
+  --theme-bg-sidebar: #181825;
+  --theme-bg-card: #313244;
+  --theme-bg-card-elevated: #45475a;
+  --theme-border: #585b70;
   --theme-accent: #cba6f7;
 }
 
-/* 6. Dracula (Classic Purple-Gray Sidebar, Deep Abyss Page) */
+/* 6. Dracula */
 html.dark[data-color-theme="dracula"] {
-  --theme-bg-shell: #282a36;
-  --theme-bg-sidebar: #282a36;
-  --theme-bg-app: #191a21;
-  --theme-bg-card: #21222c;
-  --theme-bg-card-elevated: #343746;
-  --theme-border: #44475a;
+  --theme-bg-shell: #21222c;
+  --theme-bg-app: #282a36;
+  --theme-bg-sidebar: #21222c;
+  --theme-bg-card: #343746;
+  --theme-bg-card-elevated: #44475a;
+  --theme-border: #6272a4;
   --theme-accent: #bd93f9;
 }
 
@@ -417,7 +417,7 @@ html.dark .dark\:border-\[\#3f3f46\] {
   border-color: var(--theme-border) !important;
 }
 
-html.dark .dark\\:divide-\\[\\#27272a\\] > :not([hidden]) ~ :not([hidden]) {
+html.dark .dark\:divide-\[\#27272a\] > :not([hidden]) ~ :not([hidden]) {
   border-color: var(--theme-border) !important;
 }
 

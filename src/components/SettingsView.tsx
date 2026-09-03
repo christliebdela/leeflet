@@ -821,7 +821,7 @@ export const SettingsView: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 h-full overflow-y-auto px-6 py-4 sm:px-10 sm:py-8 custom-scrollbar">
+    <div className="flex-1 h-full overflow-y-auto p-4 sm:p-8 custom-scrollbar">
       <div className="max-w-[760px] mx-auto space-y-6 pb-16">
         {/* Settings Header with Tab Navigation */}
         <div className="space-y-3.5 pb-4 border-b border-[#e5e7eb] dark:border-[#27272a]">

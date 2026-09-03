@@ -395,23 +395,13 @@ export const Sidebar: React.FC = () => {
     <div className="w-14 h-full flex flex-col justify-between items-center py-2.5 select-none text-xs text-[#374151] dark:text-[#d4d4d8] min-w-14 shrink-0">
         {/* Top Expand / Logo button */}
         <div className="flex flex-col items-center gap-3 w-full" data-tauri-drag-region>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                onClick={toggleSidebar}
-                className="w-9 h-9 rounded-[7px] hover:bg-[#e5e7eb]/70 dark:hover:bg-[#1f1f23] flex items-center justify-center transition-colors cursor-pointer group/rail relative"
-              >
-                <img
-                  src="/leaf_logo.png"
-                  alt="leeflet"
-                  className="w-5 h-5 object-contain group-hover/rail:opacity-0 transition-opacity invert dark:invert-0"
-                />
-                <PanelLeftOpen className="w-4 h-4 text-[#111827] dark:text-white absolute opacity-0 group-hover/rail:opacity-100 transition-opacity" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="right">Expand sidebar (Ctrl + B)</TooltipContent>
-          </Tooltip>
+          <div className="w-9 h-9 flex items-center justify-center shrink-0">
+            <img
+              src="/leaf_logo.png"
+              alt="leeflet"
+              className="w-5 h-5 object-contain invert dark:invert-0"
+            />
+          </div>
 
           {/* Primary View Icons */}
           <div className="flex flex-col items-center gap-1 w-full px-2">
@@ -635,15 +625,6 @@ export const Sidebar: React.FC = () => {
                 isWorkspaceMenuOpen ? 'rotate-180' : ''
               }`}
             />
-          </button>
-
-          <button
-            type="button"
-            onClick={toggleSidebar}
-            title={isSidebarCollapsed ? "Pin sidebar open (Ctrl + B)" : "Collapse sidebar (Ctrl + B)"}
-            className="p-1.5 rounded-[5px] hover:bg-[#e5e7eb]/70 dark:hover:bg-[#1f1f23] text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white transition-colors shrink-0 cursor-pointer"
-          >
-            {isSidebarCollapsed ? <PanelLeftOpen className="w-3.5 h-3.5" /> : <PanelLeftClose className="w-3.5 h-3.5" />}
           </button>
 
           {/* Workspace Dropdown Menu */}

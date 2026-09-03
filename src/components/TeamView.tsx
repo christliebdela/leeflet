@@ -463,7 +463,7 @@ export const TeamView: React.FC = () => {
   const isCurrentUserAdmin = !isJoined || storedRole === 'Admin' || storedRole === 'Owner' || storedRole === 'admin' || storedRole === 'owner';
 
   return (
-    <div className="flex-1 h-full overflow-y-auto px-6 py-3 sm:px-8 sm:py-4 custom-scrollbar flex flex-col gap-4">
+    <div className="flex-1 h-full overflow-y-auto p-3 sm:p-4 custom-scrollbar flex flex-col gap-4">
       {/* Top Team Collaboration Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 rounded-[8px] border border-[#e5e7eb] dark:border-[#27272a] bg-white dark:bg-[#18181b]">
         <div className="flex items-center gap-3 min-w-0">

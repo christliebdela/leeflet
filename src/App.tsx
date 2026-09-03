@@ -429,12 +429,12 @@ export const App: React.FC = () => {
 
   return (
     <TooltipProvider delayDuration={150}>
-      <div className="h-screen w-screen flex bg-[#e8e9eb] dark:bg-[#0a0a0c] text-[#111827] dark:text-[#f4f4f5] overflow-hidden select-none">
+      <div className="h-screen w-screen flex bg-[#e8e9eb] dark:bg-[#0a0a0c] text-[#111827] dark:text-[#f4f4f5] overflow-hidden select-none py-2 pr-2">
         {/* Left Sidebar */}
         <Sidebar />
 
-        {/* Main Content Area — card with rounded-l curves over the sidebar */}
-        <div className="flex-1 h-full flex flex-col min-w-0 relative z-10 -ml-4 bg-[#f8f9fa] dark:bg-[#0f0f11] rounded-l-[12px] border-l border-y border-[#e5e7eb] dark:border-[#27272a] shadow-xs overflow-hidden">
+        {/* Main Content Area — floating card inset from all edges */}
+        <div className="flex-1 h-full flex flex-col min-w-0 relative z-10 -ml-4 bg-[#f8f9fa] dark:bg-[#0f0f11] rounded-[10px] border border-[#e5e7eb] dark:border-[#27272a] shadow-sm overflow-hidden">
           {/* Fixed Unified Header */}
           <HeaderBar />
 

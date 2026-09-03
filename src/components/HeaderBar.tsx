@@ -17,6 +17,8 @@ import {
   Cloud,
   CloudOff,
   Loader2,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react';
 import { ItemType, Priority, Project, Item } from '../types';
 import { ITEM_TYPE_CONFIG, PRIORITY_CONFIG } from '../utils/format';
@@ -49,6 +51,7 @@ export const HeaderBar: React.FC = () => {
     syncCloudData,
     startRealtime,
     stopRealtime,
+    isSidebarCollapsed,
     toggleSidebar,
     setSearchQuery,
     setFilterOptions,
@@ -121,7 +124,7 @@ export const HeaderBar: React.FC = () => {
     return () => { stopRealtime(); };
   }, [isCloudSync, isOnline, workspace?.id]);
 
-  // Keyboard shortcut: Ctrl+R / F5 → silent refresh, Ctrl+B → toggle sidebar
+  // Keyboard shortcut: Ctrl+R / F5 → silent refresh
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey && e.key.toLowerCase() === 'r') || e.key === 'F5') {
@@ -129,15 +132,10 @@ export const HeaderBar: React.FC = () => {
         handleRefresh(false);
         return;
       }
-      if ((e.ctrlKey || e.metaKey) && (e.key === 'b' || e.key === 'B')) {
-        e.preventDefault();
-        toggleSidebar();
-        return;
-      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [workspace, isCloudSync, isRefreshing, toggleSidebar]);
+  }, [workspace, isCloudSync, isRefreshing]);
 
   // Click outside to auto-close dropdowns
   useEffect(() => {
@@ -233,10 +231,19 @@ export const HeaderBar: React.FC = () => {
   return (
     <header
       data-tauri-drag-region
-      className="h-12 px-6 bg-transparent flex items-center justify-between select-none shrink-0"
+      className="h-12 px-3 bg-transparent flex items-center justify-between select-none shrink-0"
     >
       {/* Title & Count */}
-      <div className="flex items-center gap-2 min-w-0 mr-1.5 overflow-hidden" data-tauri-drag-region>
+      <div className="flex items-center gap-1.5 min-w-0 mr-1.5 overflow-hidden" data-tauri-drag-region>
+        {/* Sidebar Toggle Button — shown inline with page heading */}
+        <button
+          type="button"
+          onClick={toggleSidebar}
+          title={isSidebarCollapsed ? 'Expand sidebar (Ctrl + B)' : 'Collapse sidebar (Ctrl + B)'}
+          className="p-1 rounded-[5px] hover:bg-[#e5e7eb] dark:hover:bg-[#27272a] text-[#9ca3af] hover:text-[#111827] dark:hover:text-white transition-colors shrink-0 cursor-pointer"
+        >
+          {isSidebarCollapsed ? <PanelLeftOpen className="w-3.5 h-3.5" /> : <PanelLeftClose className="w-3.5 h-3.5" />}
+        </button>
         <div className="flex items-center gap-1 min-w-0 shrink-0">
           <h1
             className="text-sm sm:text-base font-bold text-[#111827] dark:text-[#f4f4f5] tracking-tight truncate max-w-[120px] sm:max-w-[200px] md:max-w-[320px]"
