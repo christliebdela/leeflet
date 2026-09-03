@@ -19,12 +19,14 @@ import {
   Loader2,
   PanelLeftClose,
   PanelLeftOpen,
+  List,
+  Kanban,
+  LayoutGrid,
 } from 'lucide-react';
 import { ItemType, Priority, Project, Item } from '../types';
 import { ITEM_TYPE_CONFIG, PRIORITY_CONFIG } from '../utils/format';
 import { WindowControls } from './WindowControls';
 import { SearchInput } from './ui/SearchInput';
-import { Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
 import { getUserPermissions } from '../utils/permissions';
 import { toast } from '../store/useToastStore';
 import { isWorkspaceCloudSync } from '../services/cloudSync';
@@ -57,6 +59,8 @@ export const HeaderBar: React.FC = () => {
     setFilterOptions,
     setProjectModalOpen,
     setQuickCaptureOpen,
+    itemViewLayout,
+    setItemViewLayout,
   } = useLeafStore();
 
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
@@ -69,6 +73,8 @@ export const HeaderBar: React.FC = () => {
 
   const filterDropdownRef = useRef<HTMLDivElement>(null);
   const sortDropdownRef = useRef<HTMLDivElement>(null);
+  const layoutDropdownRef = useRef<HTMLDivElement>(null);
+  const [isLayoutDropdownOpen, setIsLayoutDropdownOpen] = useState(false);
 
   const permissions = getUserPermissions(workspace?.id);
   const isCurrentUserAdmin = permissions.isAdmin;
@@ -151,6 +157,12 @@ export const HeaderBar: React.FC = () => {
         !sortDropdownRef.current.contains(event.target as Node)
       ) {
         setIsSortDropdownOpen(false);
+      }
+      if (
+        layoutDropdownRef.current &&
+        !layoutDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsLayoutDropdownOpen(false);
       }
     };
 
@@ -239,7 +251,6 @@ export const HeaderBar: React.FC = () => {
         <button
           type="button"
           onClick={toggleSidebar}
-          title={isSidebarCollapsed ? 'Expand sidebar (Ctrl + B)' : 'Collapse sidebar (Ctrl + B)'}
           className="p-1 rounded-[5px] hover:bg-[#e5e7eb] dark:hover:bg-[#27272a] text-[#9ca3af] hover:text-[#111827] dark:hover:text-white transition-colors shrink-0 cursor-pointer"
         >
           {isSidebarCollapsed ? <PanelLeftOpen className="w-3.5 h-3.5" /> : <PanelLeftClose className="w-3.5 h-3.5" />}
@@ -255,7 +266,6 @@ export const HeaderBar: React.FC = () => {
             <button
               onClick={() => setProjectModalOpen(true, activeProj)}
               className="p-1 rounded-[4px] hover:bg-[#ebecee] dark:hover:bg-[#27272a] text-[#9ca3af] hover:text-[#111827] dark:hover:text-white transition-colors shrink-0"
-              title="Edit Project"
             >
               <SquarePen className="w-3.5 h-3.5" />
             </button>
@@ -359,20 +369,18 @@ export const HeaderBar: React.FC = () => {
         <div className="relative shrink-0" ref={filterDropdownRef}>
           <button
             onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
-            title="Filter items"
-            className={`flex items-center justify-center p-1.5 md:px-2.5 md:py-1 rounded-[6px] border text-xs font-medium shrink-0 whitespace-nowrap transition-colors ${
+            className={`w-7 h-7 flex items-center justify-center p-1.5 rounded-[6px] border text-xs font-medium shrink-0 transition-colors relative cursor-pointer ${
               isFilterDropdownOpen || activeFilterCount > 0
                 ? 'bg-[#111827] text-white border-[#111827] dark:bg-white dark:text-[#111827] dark:border-white shadow-sm'
                 : 'bg-[#f4f5f6] dark:bg-[#1c1c1f] border-[#e5e7eb] dark:border-[#27272a] text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#27272a]'
             }`}
           >
             <Filter className="w-3.5 h-3.5" />
-            <span className="hidden md:inline ml-1.5">Filter</span>
             {activeFilterCount > 0 && (
               <span
-                className={`px-1.5 py-0 text-[10px] rounded-full font-bold leading-tight ml-1 ${
+                className={`absolute -top-1 -right-1 min-w-3.5 h-3.5 px-0.5 flex items-center justify-center text-[9px] rounded-full font-bold shadow-xs leading-none ${
                   isFilterDropdownOpen || activeFilterCount > 0
-                    ? 'bg-white/20 text-white dark:bg-black/20 dark:text-[#111827]'
+                    ? 'bg-rose-500 text-white'
                     : 'bg-[#111827] text-white dark:bg-white dark:text-[#111827]'
                 }`}
               >
@@ -562,11 +570,9 @@ export const HeaderBar: React.FC = () => {
         <div className="relative shrink-0" ref={sortDropdownRef}>
           <button
             onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
-            title="Sort items"
-            className="flex items-center justify-center p-1.5 md:px-2.5 md:py-1 rounded-[6px] border border-[#e5e7eb] dark:border-[#27272a] bg-[#f4f5f6] dark:bg-[#1c1c1f] text-xs font-medium text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#27272a] shrink-0 whitespace-nowrap transition-colors"
+            className="w-7 h-7 flex items-center justify-center p-1.5 rounded-[6px] border border-[#e5e7eb] dark:border-[#27272a] bg-[#f4f5f6] dark:bg-[#1c1c1f] text-xs font-medium text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#27272a] shrink-0 transition-colors cursor-pointer"
           >
             <ArrowUpDown className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
-            <span className="hidden md:inline ml-1">Sort</span>
           </button>
 
           {isSortDropdownOpen && (
@@ -629,95 +635,119 @@ export const HeaderBar: React.FC = () => {
             </div>
           )}
         </div>
+
+        {/* View Layout Switcher Dropdown — hidden on Queue page */}
+        {viewMode.type !== 'my_queue' && (
+          <div className="relative shrink-0" ref={layoutDropdownRef}>
+            <button
+              onClick={() => setIsLayoutDropdownOpen(!isLayoutDropdownOpen)}
+              className="w-7 h-7 flex items-center justify-center p-1.5 rounded-[6px] border border-[#e5e7eb] dark:border-[#27272a] bg-[#f4f5f6] dark:bg-[#1c1c1f] text-xs font-medium text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#27272a] shrink-0 transition-colors cursor-pointer"
+            >
+              {itemViewLayout === 'board' ? (
+                <Kanban className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
+              ) : itemViewLayout === 'cards' ? (
+                <LayoutGrid className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
+              ) : (
+                <List className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
+              )}
+            </button>
+
+            {isLayoutDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-modal py-1.5 z-50 text-xs animate-in fade-in zoom-in-95 duration-100">
+                <button
+                  onClick={() => {
+                    setItemViewLayout('list');
+                    setIsLayoutDropdownOpen(false);
+                  }}
+                  className={`w-full text-left px-3 py-1.5 hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] flex items-center justify-between ${
+                    itemViewLayout === 'list'
+                      ? 'font-semibold text-[#111827] dark:text-white'
+                      : 'text-[#4b5563] dark:text-[#a1a1aa]'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <List className="w-3.5 h-3.5 opacity-70" />
+                    <span>List View</span>
+                  </div>
+                  {itemViewLayout === 'list' && (
+                    <Check className="w-3.5 h-3.5 text-[#111827] dark:text-white" />
+                  )}
+                </button>
+
+                <button
+                  onClick={() => {
+                    setItemViewLayout('board');
+                    setIsLayoutDropdownOpen(false);
+                  }}
+                  className={`w-full text-left px-3 py-1.5 hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] flex items-center justify-between ${
+                    itemViewLayout === 'board'
+                      ? 'font-semibold text-[#111827] dark:text-white'
+                      : 'text-[#4b5563] dark:text-[#a1a1aa]'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Kanban className="w-3.5 h-3.5 opacity-70" />
+                    <span>Board View</span>
+                  </div>
+                  {itemViewLayout === 'board' && (
+                    <Check className="w-3.5 h-3.5 text-[#111827] dark:text-white" />
+                  )}
+                </button>
+
+                <button
+                  onClick={() => {
+                    setItemViewLayout('cards');
+                    setIsLayoutDropdownOpen(false);
+                  }}
+                  className={`w-full text-left px-3 py-1.5 hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] flex items-center justify-between ${
+                    itemViewLayout === 'cards'
+                      ? 'font-semibold text-[#111827] dark:text-white'
+                      : 'text-[#4b5563] dark:text-[#a1a1aa]'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <LayoutGrid className="w-3.5 h-3.5 opacity-70" />
+                    <span>Cards View</span>
+                  </div>
+                  {itemViewLayout === 'cards' && (
+                    <Check className="w-3.5 h-3.5 text-[#111827] dark:text-white" />
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </>
     )}
 
-        {/* Cloud Sync / Offline button — with rich custom tooltip */}
+        {/* Cloud Sync / Offline button */}
         {isCloudSync && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                onClick={() => handleRefresh(false)}
-                className={`flex items-center justify-center p-1.5 md:px-2.5 md:py-1 rounded-[6px] border text-xs font-medium shrink-0 whitespace-nowrap transition-colors cursor-pointer select-none ${
-                  !isOnline
-                    ? 'bg-[#f4f5f6] dark:bg-[#1c1c1f] border-[#e5e7eb] dark:border-[#27272a] text-[#9ca3af] dark:text-[#52525b]'
-                    : 'bg-[#f4f5f6] dark:bg-[#1c1c1f] border-[#e5e7eb] dark:border-[#27272a] text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#27272a]'
-                }`}
-              >
-                {!isOnline ? (
-                  <CloudOff className="w-3.5 h-3.5" />
-                ) : syncState === 'syncing' ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Cloud className="w-3.5 h-3.5" />
-                )}
-                <span className="hidden md:inline ml-1">
-                  {!isOnline
-                    ? 'Offline'
-                    : syncState === 'syncing'
-                    ? 'Syncing'
-                    : syncState === 'synced'
-                    ? 'Synced'
-                    : 'Cloud'}
-                </span>
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" align="center" sideOffset={6} className="p-2.5 max-w-[280px] space-y-1 text-left">
-              {!isOnline ? (
-                <>
-                  <div className="font-semibold text-xs text-white dark:text-[#f4f4f5] flex items-center gap-1.5">
-                    <CloudOff className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                    <span>Working Offline</span>
-                  </div>
-                  <p className="text-[11px] text-[#d4d4d8] dark:text-[#a1a1aa] leading-relaxed">
-                    All your changes are saved locally. When you reconnect, updates will sync automatically to the cloud. Conflicting edits are merged using the latest write timestamp.
-                  </p>
-                </>
-              ) : syncState === 'syncing' ? (
-                <>
-                  <div className="font-semibold text-xs text-white dark:text-[#f4f4f5] flex items-center gap-1.5">
-                    <Loader2 className="w-3.5 h-3.5 text-blue-400 animate-spin shrink-0" />
-                    <span>Syncing with Cloud...</span>
-                  </div>
-                  <p className="text-[11px] text-[#d4d4d8] dark:text-[#a1a1aa] leading-relaxed">
-                    Replicating delta mutations and fetching the latest updates from your Supabase database.
-                  </p>
-                </>
-              ) : syncState === 'synced' ? (
-                <>
-                  <div className="font-semibold text-xs text-white dark:text-[#f4f4f5] flex items-center gap-1.5">
-                    <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                    <span>Cloud Synchronized</span>
-                  </div>
-                  <p className="text-[11px] text-[#d4d4d8] dark:text-[#a1a1aa] leading-relaxed">
-                    Your workspace is fully up to date with your team's cloud database. Click to trigger a manual refresh.
-                  </p>
-                </>
-              ) : (
-                <>
-                  <div className="font-semibold text-xs text-white dark:text-[#f4f4f5] flex items-center gap-1.5">
-                    <Cloud className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                    <span>Cloud Sync Active</span>
-                  </div>
-                  <p className="text-[11px] text-[#d4d4d8] dark:text-[#a1a1aa] leading-relaxed">
-                    Real-time WebSocket synchronization is active. Click to manually check for remote changes.
-                  </p>
-                </>
-              )}
-            </TooltipContent>
-          </Tooltip>
+          <button
+            type="button"
+            onClick={() => handleRefresh(false)}
+            className={`w-7 h-7 flex items-center justify-center p-1.5 rounded-[6px] border text-xs font-medium shrink-0 transition-colors cursor-pointer select-none ${
+              !isOnline
+                ? 'bg-[#f4f5f6] dark:bg-[#1c1c1f] border-[#e5e7eb] dark:border-[#27272a] text-[#9ca3af] dark:text-[#52525b]'
+                : 'bg-[#f4f5f6] dark:bg-[#1c1c1f] border-[#e5e7eb] dark:border-[#27272a] text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#27272a]'
+            }`}
+          >
+            {!isOnline ? (
+              <CloudOff className="w-3.5 h-3.5" />
+            ) : syncState === 'syncing' ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Cloud className="w-3.5 h-3.5" />
+            )}
+          </button>
         )}
 
         {/* + New Button or View Only Badge */}
         {permissions.canCreateItems ? (
           <button
             onClick={() => setQuickCaptureOpen(true)}
-            title="Create New Item (N)"
-            className="flex items-center justify-center p-1.5 md:px-3 md:py-1 bg-[#111827] dark:bg-[#f4f4f5] hover:bg-[#1f2937] dark:hover:bg-white text-white dark:text-[#18181b] rounded-[6px] text-xs font-semibold shadow-subtle shrink-0 whitespace-nowrap transition-all active:scale-[0.98] cursor-pointer"
+            className="w-7 h-7 flex items-center justify-center p-1.5 bg-[#111827] dark:bg-[#f4f4f5] hover:bg-[#1f2937] dark:hover:bg-white text-white dark:text-[#18181b] rounded-[6px] text-xs font-semibold shadow-subtle shrink-0 transition-all active:scale-[0.96] cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span className="hidden md:inline ml-1">New</span>
           </button>
         ) : (
           <span className="flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 border border-amber-500/25 text-amber-600 dark:text-amber-400 rounded-[6px] text-[11px] font-semibold shrink-0 select-none">

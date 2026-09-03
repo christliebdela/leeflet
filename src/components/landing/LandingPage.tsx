@@ -13,17 +13,17 @@ import {
 
 interface FaqItemProps {
   question: string;
-  answer: string;
+  answer: React.ReactNode;
+  isOpen: boolean;
+  onToggle: () => void;
 }
 
-const FaqItem: React.FC<FaqItemProps> = ({ question, answer }) => {
-  const [open, setOpen] = useState(false);
-
+const FaqItem: React.FC<FaqItemProps> = ({ question, answer, isOpen, onToggle }) => {
   return (
     <div className="border-b border-white/[0.06] last:border-b-0">
       <button
         type="button"
-        onClick={() => setOpen(!open)}
+        onClick={onToggle}
         className="w-full py-4 text-left flex items-center justify-between gap-4 group cursor-pointer"
       >
         <span className="text-sm font-medium text-[#ededef] group-hover:text-white transition-colors">
@@ -39,7 +39,7 @@ const FaqItem: React.FC<FaqItemProps> = ({ question, answer }) => {
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+            className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
           >
             <path d="m6 9 6 6 6-6" />
           </svg>
@@ -47,12 +47,12 @@ const FaqItem: React.FC<FaqItemProps> = ({ question, answer }) => {
       </button>
       <div
         className={`overflow-hidden transition-all duration-200 ease-in-out ${
-          open ? 'max-h-60 pb-4 opacity-100' : 'max-h-0 opacity-0'
+          isOpen ? 'max-h-96 pb-4 opacity-100' : 'max-h-0 opacity-0'
         }`}
       >
-        <p className="text-xs sm:text-sm text-[#8a8f98] leading-relaxed">
+        <div className="text-xs sm:text-sm text-[#8a8f98] leading-relaxed space-y-2">
           {answer}
-        </p>
+        </div>
       </div>
     </div>
   );
@@ -61,6 +61,7 @@ const FaqItem: React.FC<FaqItemProps> = ({ question, answer }) => {
 export const LandingPage: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [starCount, setStarCount] = useState<number>(0);
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   const { os, osName, downloadUrl, allDownloads } = useReleaseDownload();
 
   useEffect(() => {
@@ -304,25 +305,25 @@ export const LandingPage: React.FC = () => {
         </section>
 
         {/* ── Social Proof / Trusted By Teams Strip ── */}
-        <section className="py-12 px-6 max-w-6xl mx-auto border-t border-white/[0.04]">
-          <p className="text-center text-[11px] font-mono uppercase tracking-[0.25em] text-[#71717a] mb-8">
+        <section className="py-14 px-6 max-w-6xl mx-auto border-t border-white/[0.04]">
+          <p className="text-center text-[11px] sm:text-xs font-mono uppercase tracking-[0.25em] text-[#71717a] mb-8">
             Trusted by engineers & builders across
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-12 md:gap-14">
+          <div className="flex flex-wrap lg:flex-nowrap items-center justify-center lg:justify-between gap-5 sm:gap-6 md:gap-7 lg:gap-4 w-full">
             
             {/* Ventrix RMS */}
             <a
               href="https://app.ventryman.com/"
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-2.5 group cursor-pointer transition-opacity duration-200 opacity-60 hover:opacity-100"
+              className="flex items-center gap-2 group cursor-pointer transition-opacity duration-200 opacity-75 hover:opacity-100 shrink-0 whitespace-nowrap"
             >
               <img
                 src="/trustees/ventrix-logo.png"
                 alt="Ventrix RMS"
-                className="h-6 sm:h-7 w-auto object-contain brightness-0 invert opacity-90 group-hover:opacity-100 group-hover:brightness-100 group-hover:invert-0 transition-all"
+                className="h-6 sm:h-7 w-auto object-contain brightness-0 invert transition-all"
               />
-              <span className="font-semibold text-xs sm:text-sm tracking-tight text-[#ededef]">Ventrix RMS</span>
+              <span className="font-bold text-sm sm:text-base tracking-tight text-white">Ventrix RMS</span>
             </a>
 
             {/* IdeaGap */}
@@ -330,14 +331,14 @@ export const LandingPage: React.FC = () => {
               href="https://ideagap.org/"
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-2.5 group cursor-pointer transition-opacity duration-200 opacity-60 hover:opacity-100"
+              className="flex items-center gap-2 group cursor-pointer transition-opacity duration-200 opacity-75 hover:opacity-100 shrink-0 whitespace-nowrap"
             >
               <img
-                src="/trustees/ideagap.jpg"
+                src="/trustees/ideagap.png"
                 alt="IdeaGap"
-                className="w-6 h-6 rounded object-cover opacity-85 group-hover:opacity-100 transition-opacity"
+                className="h-6 sm:h-7 w-auto object-contain brightness-0 invert transition-all"
               />
-              <span className="font-semibold text-xs sm:text-sm tracking-tight text-[#ededef]">IdeaGap</span>
+              <span className="font-bold text-sm sm:text-base tracking-tight text-white">IdeaGap</span>
             </a>
 
             {/* Supabase */}
@@ -345,14 +346,14 @@ export const LandingPage: React.FC = () => {
               href="https://supabase.com/"
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-2.5 group cursor-pointer transition-opacity duration-200 opacity-60 hover:opacity-100"
+              className="flex items-center gap-2 group cursor-pointer transition-opacity duration-200 opacity-75 hover:opacity-100 shrink-0 whitespace-nowrap"
             >
               <img
                 src="/trustees/supabase.png"
                 alt="Supabase"
-                className="h-5 sm:h-6 w-auto object-contain opacity-85 group-hover:opacity-100 transition-opacity"
+                className="h-5 sm:h-6 w-auto object-contain brightness-0 invert transition-all"
               />
-              <span className="font-semibold text-xs sm:text-sm tracking-tight text-[#ededef]">Supabase</span>
+              <span className="font-bold text-sm sm:text-base tracking-tight text-white">Supabase</span>
             </a>
 
             {/* Vercel */}
@@ -360,14 +361,29 @@ export const LandingPage: React.FC = () => {
               href="https://vercel.com/"
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-2.5 group cursor-pointer transition-opacity duration-200 opacity-60 hover:opacity-100"
+              className="flex items-center gap-2 group cursor-pointer transition-opacity duration-200 opacity-75 hover:opacity-100 shrink-0 whitespace-nowrap"
             >
               <img
                 src="/trustees/logo-vercel.svg"
                 alt="Vercel"
-                className="w-4 h-4 object-contain brightness-0 invert opacity-90 group-hover:opacity-100 transition-opacity"
+                className="w-4 h-4 sm:w-5 sm:h-5 object-contain brightness-0 invert transition-all"
               />
-              <span className="font-semibold text-xs sm:text-sm tracking-tight text-[#ededef]">Vercel</span>
+              <span className="font-bold text-sm sm:text-base tracking-tight text-white">Vercel</span>
+            </a>
+
+            {/* Cursor */}
+            <a
+              href="https://cursor.com/"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-2 group cursor-pointer transition-opacity duration-200 opacity-75 hover:opacity-100 shrink-0 whitespace-nowrap"
+            >
+              <img
+                src="/trustees/cursor.png"
+                alt="Cursor"
+                className="h-5 sm:h-6 w-auto object-contain brightness-0 invert transition-all"
+              />
+              <span className="font-bold text-sm sm:text-base tracking-tight text-white">Cursor</span>
             </a>
 
             {/* Tuma */}
@@ -375,14 +391,14 @@ export const LandingPage: React.FC = () => {
               href="https://tuma-nu.vercel.app/"
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-2.5 group cursor-pointer transition-opacity duration-200 opacity-60 hover:opacity-100"
+              className="flex items-center gap-2 group cursor-pointer transition-opacity duration-200 opacity-75 hover:opacity-100 shrink-0 whitespace-nowrap"
             >
               <img
                 src="/trustees/tuma.png"
                 alt="Tuma"
-                className="h-5 sm:h-6 w-auto object-contain brightness-0 invert opacity-85 group-hover:opacity-100 transition-opacity"
+                className="h-5 sm:h-6 w-auto object-contain brightness-0 invert transition-all"
               />
-              <span className="font-semibold text-xs sm:text-sm tracking-tight text-[#ededef]">Tuma</span>
+              <span className="font-bold text-sm sm:text-base tracking-tight text-white">Tuma</span>
             </a>
 
             {/* Qlaima */}
@@ -390,14 +406,14 @@ export const LandingPage: React.FC = () => {
               href="https://qlaima.vercel.app/"
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-2.5 group cursor-pointer transition-opacity duration-200 opacity-60 hover:opacity-100"
+              className="flex items-center gap-2 group cursor-pointer transition-opacity duration-200 opacity-75 hover:opacity-100 shrink-0 whitespace-nowrap"
             >
               <img
                 src="/trustees/qlaima.png"
                 alt="Qlaima"
-                className="h-5 sm:h-6 w-auto object-contain brightness-0 invert opacity-90 group-hover:opacity-100 transition-opacity"
+                className="h-5 sm:h-6 w-auto object-contain brightness-0 invert transition-all"
               />
-              <span className="font-semibold text-xs sm:text-sm tracking-tight text-[#ededef]">Qlaima</span>
+              <span className="font-bold text-sm sm:text-base tracking-tight text-white">Qlaima</span>
             </a>
 
           </div>
@@ -811,51 +827,80 @@ export const LandingPage: React.FC = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
             {/* Left Column: FAQ Accordion List */}
             <div className="lg:col-span-7 divide-y divide-white/[0.06] rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl px-6 py-2">
               <FaqItem
+                question="Who maintains the software?"
+                isOpen={openFaqIndex === 0}
+                onToggle={() => setOpenFaqIndex(openFaqIndex === 0 ? null : 0)}
+                answer={
+                  <>
+                    <p>
+                      Mostly me – <a href="https://christliebdela.vercel.app/" target="_blank" rel="noreferrer" className="text-white underline underline-offset-2 hover:text-[#ededef]">Christlieb Dela</a>. Leeflet started as a side project because I wanted a cleaner, faster task workspace that gives you true ownership over your data. It's grown from there.
+                    </p>
+                    <p>
+                      Contributions, bug reports, and feature requests are welcome on <a href="https://github.com/christliebdela/leeflet" target="_blank" rel="noreferrer" className="text-white underline underline-offset-2 hover:text-[#ededef]">GitHub</a>. For anything else you can reach me at <a href="mailto:info@terax.app" className="text-white underline underline-offset-2 hover:text-[#ededef]">info@terax.app</a>.
+                    </p>
+                  </>
+                }
+              />
+              <FaqItem
                 question="Is Leeflet completely free, or are there hidden paid tiers?"
-                answer="100% free with zero paywalls. Leeflet is released under the permissive MIT license. Every feature—from offline SQLite persistence and desktop widgets to real-time BYOD sync—is unlocked for everyone."
+                isOpen={openFaqIndex === 1}
+                onToggle={() => setOpenFaqIndex(openFaqIndex === 1 ? null : 1)}
+                answer="100% free with zero paywalls. Leeflet is released under the permissive MIT license. Every feature, from offline SQLite persistence and desktop widgets to real-time BYOD sync is unlocked for everyone."
               />
               <FaqItem
                 question="Do I ever have to create an account?"
+                isOpen={openFaqIndex === 2}
+                onToggle={() => setOpenFaqIndex(openFaqIndex === 2 ? null : 2)}
                 answer="No. You never need to sign up, enter an email, or generate login credentials. You simply download the binary, launch it, and your workspace is live immediately."
               />
               <FaqItem
                 question="Does any task or note data ever leave my computer?"
+                isOpen={openFaqIndex === 3}
+                onToggle={() => setOpenFaqIndex(openFaqIndex === 3 ? null : 3)}
                 answer="Never by default. Everything remains in your local SQLite database on disk. If you choose to enable cloud sync, your data communicates directly with your own private Supabase instance over encrypted WebSockets."
               />
               <FaqItem
                 question="How does the private Supabase integration work?"
+                isOpen={openFaqIndex === 4}
+                onToggle={() => setOpenFaqIndex(openFaqIndex === 4 ? null : 4)}
                 answer="Enter your personal Supabase project URL and Anon key in Settings. Your tasks sync in real time using PostgreSQL with Row Level Security. We operate zero intermediary servers and never touch your credentials."
               />
               <FaqItem
                 question="Which desktop platforms are supported?"
+                isOpen={openFaqIndex === 5}
+                onToggle={() => setOpenFaqIndex(openFaqIndex === 5 ? null : 5)}
                 answer="Leeflet runs natively on Windows, macOS (Intel & Apple Silicon), and Linux with lightweight installers and background automatic updates."
               />
               <FaqItem
                 question="Where can I report bugs or suggest new features?"
+                isOpen={openFaqIndex === 6}
+                onToggle={() => setOpenFaqIndex(openFaqIndex === 6 ? null : 6)}
                 answer="All development happens openly on GitHub. You can open issues, submit pull requests, or discuss upcoming feature roadmaps in our public repository."
               />
             </div>
 
             {/* Right Column: Community & Support Glass Cards */}
-            <div className="lg:col-span-5 flex flex-col gap-5">
-              <div className="p-7 rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl hover:border-white/[0.14] transition-colors">
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-[#a1a1aa] px-2 py-0.5 rounded-full border border-white/[0.08] bg-white/[0.03]">
-                    Community & Support
-                  </span>
+            <div className="lg:col-span-5 flex flex-col">
+              <div className="h-full p-7 rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl hover:border-white/[0.14] transition-colors flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-[#a1a1aa] px-2 py-0.5 rounded-full border border-white/[0.08] bg-white/[0.03]">
+                      Community & Support
+                    </span>
+                  </div>
+
+                  <h3 className="text-lg font-semibold tracking-tight text-[#ededef]">
+                    Have a question not answered here?
+                  </h3>
+
+                  <p className="mt-2.5 text-sm text-[#8a8f98] leading-relaxed">
+                    Leeflet is developed in public. Open an issue, join discussions, or submit feature requests directly on our GitHub repository.
+                  </p>
                 </div>
-
-                <h3 className="text-lg font-semibold tracking-tight text-[#ededef]">
-                  Have a question not answered here?
-                </h3>
-
-                <p className="mt-2.5 text-sm text-[#8a8f98] leading-relaxed">
-                  Leeflet is developed in public. Open an issue, join discussions, or submit feature requests directly on our GitHub repository.
-                </p>
 
                 <div className="mt-6 pt-5 border-t border-white/[0.06] flex flex-col gap-2.5">
                   <a

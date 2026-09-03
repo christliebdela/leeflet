@@ -42,6 +42,7 @@ export const App: React.FC = () => {
     setStandby,
     setQuickCaptureOpen,
     toggleSidebar,
+    itemViewLayout,
   } = useLeafStore();
 
   // Joke navigation state (history so ← goes back, → fetches next)
@@ -436,11 +437,19 @@ export const App: React.FC = () => {
         {/* Main Content Area — floating card inset from all edges */}
         <div className="flex-1 h-full flex flex-col min-w-0 relative z-10 -ml-4 bg-[#f8f9fa] dark:bg-[#0f0f11] rounded-[10px] border border-[#e5e7eb] dark:border-[#27272a] shadow-sm overflow-hidden">
           {/* Fixed Unified Header */}
-          <HeaderBar />
+          <div className="relative shrink-0">
+            <HeaderBar />
+            {Boolean(selectedItemId) && (itemViewLayout === 'board' || itemViewLayout === 'cards') && (
+              <div
+                onClick={() => setSelectedItemId(null)}
+                className="absolute inset-0 right-[360px] bg-black/5 dark:bg-black/10 backdrop-blur-[2px] z-20 transition-all duration-200 cursor-pointer animate-in fade-in"
+              />
+            )}
+          </div>
 
           {/* Dynamic Body Content & Detail / Settings Pane */}
           <main className="flex-1 min-h-0 flex overflow-hidden relative">
-            <div className="flex-1 min-w-0 h-full flex flex-col overflow-hidden">
+            <div className="flex-1 min-w-0 h-full flex flex-col overflow-hidden relative">
               {viewMode.type === 'my_queue' ? (
                 <MyQueueView />
               ) : viewMode.type === 'team' ? (
@@ -452,10 +461,24 @@ export const App: React.FC = () => {
               ) : (
                 <ItemListView />
               )}
+
+              {/* Blur page for Board & Card views when detailed sheet is open (not sidebar) */}
+              {Boolean(selectedItemId) && (itemViewLayout === 'board' || itemViewLayout === 'cards') && (
+                <div
+                  onClick={() => setSelectedItemId(null)}
+                  className="absolute inset-0 bg-black/5 dark:bg-black/10 backdrop-blur-[2px] z-20 transition-all duration-200 cursor-pointer animate-in fade-in"
+                />
+              )}
             </div>
 
-            {/* Item Detail Split Slide-In Pane */}
-            <ItemDetailPane />
+            {/* Item Detail Split Slide-In Pane — Overlaps content in board/card views so content does not squeeze */}
+            {itemViewLayout === 'board' || itemViewLayout === 'cards' ? (
+              <div className="absolute right-0 top-0 bottom-0 z-30 flex pointer-events-none [&>*]:pointer-events-auto">
+                <ItemDetailPane />
+              </div>
+            ) : (
+              <ItemDetailPane />
+            )}
           </main>
         </div>
 

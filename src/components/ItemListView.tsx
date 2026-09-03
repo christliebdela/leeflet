@@ -28,10 +28,11 @@ import { Item, ChecklistItem, Project } from '../types';
 import { useComponentStore } from '../store/useComponentStore';
 import { ComponentModal } from './ComponentModal';
 import { formatDate, formatDueDateLabel } from '../utils/format';
-import { getStoredTeamMembers, matchesAssignee } from '../utils/team';
-import { resolveAvatarUrl } from '../utils/avatars';
+import { resolveAssignee } from '../utils/team';
 import { getUserPermissions } from '../utils/permissions';
 import { Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
+import { ItemBoardView } from './ItemBoardView';
+import { ItemCardGridView } from './ItemCardGridView';
 
 const LinearPriorityIcon: React.FC<{ priority: string }> = ({ priority }) => {
   switch (priority) {
@@ -86,6 +87,7 @@ export const ItemListView: React.FC = () => {
     reorderItems,
     filterOptions,
     setFilterOptions,
+    itemViewLayout,
   } = useLeafStore();
 
   const permissions = getUserPermissions(workspace?.id);
@@ -263,9 +265,9 @@ export const ItemListView: React.FC = () => {
     if (filterOptions.searchQuery.trim()) {
       return {
         Icon: Search,
-        emoji: '🔍',
-        badgeBg: 'bg-amber-500/10 text-amber-500 border-amber-500/25',
-        glowColor: 'from-amber-500/20 to-orange-500/20',
+        emoji: '',
+        badgeBg: 'bg-[#f4f5f6] dark:bg-[#1c1c1f] text-[#6b7280] dark:text-[#a1a1aa] border-[#e5e7eb] dark:border-[#27272a]',
+        glowColor: 'from-zinc-500/10 to-stone-500/10',
         title: 'No clues found',
         description: 'Try different keywords or check spelling.',
         actionLabel: 'Clear Search',
@@ -277,9 +279,9 @@ export const ItemListView: React.FC = () => {
       case 'inbox':
         return {
           Icon: Inbox,
-          emoji: '☕',
-          badgeBg: 'bg-indigo-500/10 text-indigo-500 border-indigo-500/25',
-          glowColor: 'from-indigo-500/20 to-purple-500/20',
+          emoji: '',
+          badgeBg: 'bg-[#f4f5f6] dark:bg-[#1c1c1f] text-[#6b7280] dark:text-[#a1a1aa] border-[#e5e7eb] dark:border-[#27272a]',
+          glowColor: 'from-zinc-500/10 to-stone-500/10',
           title: 'Inbox zero. Time for coffee?',
           description: 'Your backlog is clear. Enjoy the focus.',
           actionLabel: 'Capture Thought',
@@ -288,9 +290,9 @@ export const ItemListView: React.FC = () => {
       case 'all':
         return {
           Icon: Layers,
-          emoji: '🌱',
-          badgeBg: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/25',
-          glowColor: 'from-emerald-500/20 to-teal-500/20',
+          emoji: '',
+          badgeBg: 'bg-[#f4f5f6] dark:bg-[#1c1c1f] text-[#6b7280] dark:text-[#a1a1aa] border-[#e5e7eb] dark:border-[#27272a]',
+          glowColor: 'from-zinc-500/10 to-stone-500/10',
           title: 'A fresh canvas',
           description: 'Ready whenever inspiration strikes.',
           actionLabel: 'Create First Item',
@@ -343,9 +345,9 @@ export const ItemListView: React.FC = () => {
           case 'bug':
             return {
               Icon: Bug,
-              emoji: '🐞',
-              badgeBg: 'bg-rose-500/10 text-rose-500 border-rose-500/25',
-              glowColor: 'from-rose-500/20 to-pink-500/20',
+              emoji: '',
+              badgeBg: 'bg-[#f4f5f6] dark:bg-[#1c1c1f] text-[#6b7280] dark:text-[#a1a1aa] border-[#e5e7eb] dark:border-[#27272a]',
+              glowColor: 'from-zinc-500/10 to-stone-500/10',
               title: 'Bug-free paradise',
               description: 'Zero defects reported. Smooth sailing!',
               actionLabel: 'Report a Bug',
@@ -354,9 +356,9 @@ export const ItemListView: React.FC = () => {
           case 'idea':
             return {
               Icon: Lightbulb,
-              emoji: '💡',
-              badgeBg: 'bg-amber-500/10 text-amber-500 border-amber-500/25',
-              glowColor: 'from-amber-500/20 to-yellow-500/20',
+              emoji: '',
+              badgeBg: 'bg-[#f4f5f6] dark:bg-[#1c1c1f] text-[#6b7280] dark:text-[#a1a1aa] border-[#e5e7eb] dark:border-[#27272a]',
+              glowColor: 'from-zinc-500/10 to-stone-500/10',
               title: 'Waiting for the spark',
               description: 'Jot it down before inspiration fades.',
               actionLabel: 'Jot an Idea',
@@ -365,9 +367,9 @@ export const ItemListView: React.FC = () => {
           case 'task':
             return {
               Icon: CheckSquare,
-              emoji: '🎯',
-              badgeBg: 'bg-blue-500/10 text-blue-500 border-blue-500/25',
-              glowColor: 'from-blue-500/20 to-indigo-500/20',
+              emoji: '',
+              badgeBg: 'bg-[#f4f5f6] dark:bg-[#1c1c1f] text-[#6b7280] dark:text-[#a1a1aa] border-[#e5e7eb] dark:border-[#27272a]',
+              glowColor: 'from-zinc-500/10 to-stone-500/10',
               title: 'All caught up!',
               description: 'Nothing pending on your plate right now.',
               actionLabel: 'New Task',
@@ -376,9 +378,9 @@ export const ItemListView: React.FC = () => {
           case 'improvement':
             return {
               Icon: Sparkles,
-              emoji: '✨',
-              badgeBg: 'bg-violet-500/10 text-violet-500 border-violet-500/25',
-              glowColor: 'from-violet-500/20 to-purple-500/20',
+              emoji: '',
+              badgeBg: 'bg-[#f4f5f6] dark:bg-[#1c1c1f] text-[#6b7280] dark:text-[#a1a1aa] border-[#e5e7eb] dark:border-[#27272a]',
+              glowColor: 'from-zinc-500/10 to-stone-500/10',
               title: 'Polished to a shine',
               description: 'Spot something to level up next?',
               actionLabel: 'Log Improvement',
@@ -387,9 +389,9 @@ export const ItemListView: React.FC = () => {
           case 'research':
             return {
               Icon: BookOpen,
-              emoji: '🐇',
-              badgeBg: 'bg-teal-500/10 text-teal-500 border-teal-500/25',
-              glowColor: 'from-teal-500/20 to-emerald-500/20',
+              emoji: '',
+              badgeBg: 'bg-[#f4f5f6] dark:bg-[#1c1c1f] text-[#6b7280] dark:text-[#a1a1aa] border-[#e5e7eb] dark:border-[#27272a]',
+              glowColor: 'from-zinc-500/10 to-stone-500/10',
               title: 'Down the rabbit hole',
               description: 'Save bookmarks, reads, and deep dives.',
               actionLabel: 'Add Research Note',
@@ -398,9 +400,9 @@ export const ItemListView: React.FC = () => {
           case 'question':
             return {
               Icon: HelpCircle,
-              emoji: '🕵️',
-              badgeBg: 'bg-fuchsia-500/10 text-fuchsia-500 border-fuchsia-500/25',
-              glowColor: 'from-fuchsia-500/20 to-pink-500/20',
+              emoji: '',
+              badgeBg: 'bg-[#f4f5f6] dark:bg-[#1c1c1f] text-[#6b7280] dark:text-[#a1a1aa] border-[#e5e7eb] dark:border-[#27272a]',
+              glowColor: 'from-zinc-500/10 to-stone-500/10',
               title: 'Zero mysteries today',
               description: 'No open questions on the radar.',
               actionLabel: 'Ask a Question',
@@ -409,9 +411,9 @@ export const ItemListView: React.FC = () => {
           case 'note':
             return {
               Icon: FileText,
-              emoji: '📝',
-              badgeBg: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/25',
-              glowColor: 'from-zinc-500/20 to-slate-500/20',
+              emoji: '',
+              badgeBg: 'bg-[#f4f5f6] dark:bg-[#1c1c1f] text-[#6b7280] dark:text-[#a1a1aa] border-[#e5e7eb] dark:border-[#27272a]',
+              glowColor: 'from-zinc-500/10 to-stone-500/10',
               title: 'Fresh notepad',
               description: 'Snippets, notes, and quick thoughts.',
               actionLabel: 'Take a Note',
@@ -420,9 +422,9 @@ export const ItemListView: React.FC = () => {
           default:
             return {
               Icon: Layers,
-              emoji: '🪴',
-              badgeBg: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/25',
-              glowColor: 'from-emerald-500/20 to-teal-500/20',
+              emoji: '',
+              badgeBg: 'bg-[#f4f5f6] dark:bg-[#1c1c1f] text-[#6b7280] dark:text-[#a1a1aa] border-[#e5e7eb] dark:border-[#27272a]',
+              glowColor: 'from-zinc-500/10 to-stone-500/10',
               title: 'All caught up',
               description: 'Ready whenever inspiration strikes.',
               actionLabel: 'New Item',
@@ -432,9 +434,9 @@ export const ItemListView: React.FC = () => {
       case 'priority_filter':
         return {
           Icon: AlertCircle,
-          emoji: '⛵',
-          badgeBg: 'bg-orange-500/10 text-orange-500 border-orange-500/25',
-          glowColor: 'from-orange-500/20 to-amber-500/20',
+          emoji: '',
+          badgeBg: 'bg-[#f4f5f6] dark:bg-[#1c1c1f] text-[#6b7280] dark:text-[#a1a1aa] border-[#e5e7eb] dark:border-[#27272a]',
+          glowColor: 'from-zinc-500/10 to-stone-500/10',
           title: 'Smooth sailing',
           description: 'No urgent fires to put out right now.',
           actionLabel: 'Add Priority Task',
@@ -443,9 +445,9 @@ export const ItemListView: React.FC = () => {
       case 'completed':
         return {
           Icon: CheckCircle2,
-          emoji: '🏆',
-          badgeBg: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/25',
-          glowColor: 'from-emerald-500/20 to-teal-500/20',
+          emoji: '',
+          badgeBg: 'bg-[#f4f5f6] dark:bg-[#1c1c1f] text-[#6b7280] dark:text-[#a1a1aa] border-[#e5e7eb] dark:border-[#27272a]',
+          glowColor: 'from-zinc-500/10 to-stone-500/10',
           title: 'Trophies go here',
           description: 'Check off tasks to watch them stack up.',
           actionLabel: 'Go to Queue',
@@ -454,9 +456,9 @@ export const ItemListView: React.FC = () => {
       case 'archived':
         return {
           Icon: Archive,
-          emoji: '📦',
-          badgeBg: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/25',
-          glowColor: 'from-zinc-500/20 to-slate-500/20',
+          emoji: '',
+          badgeBg: 'bg-[#f4f5f6] dark:bg-[#1c1c1f] text-[#6b7280] dark:text-[#a1a1aa] border-[#e5e7eb] dark:border-[#27272a]',
+          glowColor: 'from-zinc-500/10 to-stone-500/10',
           title: 'The vault is quiet',
           description: 'Retired items will rest safely here.',
           actionLabel: 'Back to Backlog',
@@ -465,9 +467,9 @@ export const ItemListView: React.FC = () => {
       default:
         return {
           Icon: Layers,
-          emoji: '🪴',
-          badgeBg: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/25',
-          glowColor: 'from-emerald-500/20 to-teal-500/20',
+          emoji: '',
+          badgeBg: 'bg-[#f4f5f6] dark:bg-[#1c1c1f] text-[#6b7280] dark:text-[#a1a1aa] border-[#e5e7eb] dark:border-[#27272a]',
+          glowColor: 'from-zinc-500/10 to-stone-500/10',
           title: 'No items in this view',
           description: 'Capture a task or note to get things rolling.',
           actionLabel: 'New Item',
@@ -646,8 +648,8 @@ export const ItemListView: React.FC = () => {
 
           {/* Assignee Avatar Indicator */}
           {item.assigneeId && (() => {
-            const assignedMember = getStoredTeamMembers(workspace?.id).find(m => matchesAssignee(m.id, item.assigneeId));
-            const memberName = assignedMember?.name || item.assigneeId;
+            const assignee = resolveAssignee(item.assigneeId, workspace?.id);
+            if (!assignee) return null;
             return (
               <Tooltip delayDuration={150}>
                 <TooltipTrigger asChild>
@@ -656,14 +658,14 @@ export const ItemListView: React.FC = () => {
                     onClick={(e) => e.stopPropagation()}
                   >
                     <img
-                      src={resolveAvatarUrl(assignedMember?.avatarMascot || assignedMember?.avatarUrl || assignedMember?.avatarColor, memberName)}
-                      alt={memberName}
+                      src={assignee.avatarUrl}
+                      alt={assignee.name}
                       className="w-full h-full object-cover"
                     />
                   </span>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="text-[11px] font-medium py-1 px-2">
-                  <span>{memberName}</span>
+                  <span>{assignee.name}</span>
                 </TooltipContent>
               </Tooltip>
             );
@@ -759,7 +761,7 @@ export const ItemListView: React.FC = () => {
   };
 
   return (
-    <div className={`flex-1 h-full overflow-y-auto overflow-x-hidden ${isPaneOpen ? 'pl-3 pr-2 py-3' : 'p-3'} flex flex-col custom-scrollbar`}>
+    <div className={`flex-1 h-full ${itemViewLayout === 'board' ? 'overflow-hidden' : 'overflow-y-auto overflow-x-hidden custom-scrollbar'} ${isPaneOpen ? 'pl-3 pr-2 py-3' : 'p-3'} flex flex-col`}>
 
       {/* 2. BACKLOG METRICS: SLEEK METRIC STRIP & PROGRESS PILL */}
       {viewMode.type === 'inbox' && inboxItems.length > 0 && (
@@ -772,8 +774,8 @@ export const ItemListView: React.FC = () => {
               onClick={clearPriorityFilters}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] border text-xs font-medium transition-all cursor-pointer select-none active:scale-[0.98] ${
                 !isUrgentFilterActive
-                  ? 'bg-[#111827] dark:bg-white text-white dark:text-[#111827] border-[#111827] dark:border-white shadow-2xs'
-                  : 'bg-[#f4f5f6] dark:bg-[#1a1a1e] border-[#e5e7eb] dark:border-[#27272a] text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#27272a]'
+                  ? 'bg-[#e4e5e7] dark:bg-[#27272a] text-[#111827] dark:text-[#f4f4f5] border-[#d1d5db] dark:border-[#3f3f46] font-semibold shadow-2xs'
+                  : 'bg-[#f4f5f6] dark:bg-[#18181b] border-[#e5e7eb] dark:border-[#27272a] text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#222226]'
               }`}
             >
               <Layers className="w-3.5 h-3.5 shrink-0" />
@@ -787,13 +789,11 @@ export const ItemListView: React.FC = () => {
               onClick={toggleUrgentFilter}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] border text-xs font-medium transition-all cursor-pointer select-none active:scale-[0.98] ${
                 isUrgentFilterActive
-                  ? 'bg-rose-600 text-white border-rose-600 shadow-2xs'
-                  : urgentInboxCount > 0
-                  ? 'bg-rose-500/10 dark:bg-rose-500/15 border-rose-500/30 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20'
-                  : 'bg-[#f4f5f6] dark:bg-[#1a1a1e] border-[#e5e7eb] dark:border-[#27272a] text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#27272a]'
+                  ? 'bg-[#e4e5e7] dark:bg-[#27272a] text-[#111827] dark:text-[#f4f4f5] border-[#d1d5db] dark:border-[#3f3f46] font-semibold shadow-2xs'
+                  : 'bg-[#f4f5f6] dark:bg-[#18181b] border-[#e5e7eb] dark:border-[#27272a] text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#222226]'
               }`}
             >
-              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+              <AlertCircle className={`w-3.5 h-3.5 shrink-0 ${urgentInboxCount > 0 ? 'text-rose-500' : 'text-[#6b7280] dark:text-[#a1a1aa]'}`} />
               <span className="font-bold">{urgentInboxCount}</span>
               <span className="opacity-85 text-[11px]">Urgent</span>
               {isUrgentFilterActive && <X className="w-3 h-3 ml-0.5 opacity-80" />}
@@ -848,7 +848,7 @@ export const ItemListView: React.FC = () => {
 
       {/* 3. ITEMS LIST CONTENT */}
       {viewMode.type === 'project' ? (
-        <div className="flex-1 min-w-0 flex flex-col">
+        <div className={`flex-1 min-w-0 min-h-0 flex flex-col ${itemViewLayout === 'board' ? 'overflow-hidden' : ''}`}>
           {/* Component Filter Ribbon — ALWAYS rendered in project view */}
           <div className="shrink-0 mb-3 flex items-center gap-1.5 flex-wrap">
             {projectComponents.length > 0 ? (
@@ -1003,59 +1003,99 @@ export const ItemListView: React.FC = () => {
           {/* If project has NO tasks at all, render project empty state with Add Task + Add Component */}
           {activeProjectDisplayItems.length === 0 && completedProjectDisplayItems.length === 0 ? (
             renderEmptyStateCard()
-          ) : activeProjectDisplayItems.length === 0 ? (
-            isUrgentFilterActive ? (
-              <div className="p-3 rounded-[8px] bg-[#f9fafb] dark:bg-[#18181b]/50 border border-[#e5e7eb] dark:border-[#27272a] flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 text-xs font-medium text-[#374151] dark:text-[#ededef]">
-                  <CheckCircle2 className="w-4 h-4 text-[#6b7280] dark:text-[#a1a1aa] shrink-0" />
-                  <span>No urgent tasks match the filter!</span>
-                </div>
-                <button
-                  onClick={clearPriorityFilters}
-                  className="px-2.5 py-1 bg-[#f3f4f6] dark:bg-[#27272a] text-[#374151] dark:text-[#d4d4d8] border border-[#e5e7eb] dark:border-[#3f3f46] rounded-[5px] text-xs font-medium hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] transition-colors shrink-0 cursor-pointer"
-                >
-                  Show All Tasks
-                </button>
-              </div>
-            ) : null
+          ) : itemViewLayout === 'board' ? (
+            <ItemBoardView
+              items={componentFilteredItems}
+              projectComponents={projectComponents}
+              activeProjectId={activeProjectId ?? undefined}
+            />
+          ) : itemViewLayout === 'cards' ? (
+            <ItemCardGridView
+              items={displayItems}
+              projectComponents={projectComponents}
+              activeProjectId={activeProjectId ?? undefined}
+            />
           ) : (
-            <div className="space-y-2 min-w-0">
-              {activeProjectDisplayItems.map(renderItemCard)}
-            </div>
-          )}
-
-          {/* Collapsible Completed Tasks Section */}
-          {completedProjectDisplayItems.length > 0 && (
-            <div
-              ref={completedSectionRef}
-              className={`${activeProjectDisplayItems.length > 0 ? 'pt-3 border-t border-[#e5e7eb] dark:border-[#27272a]' : 'pt-1'} space-y-2 scroll-mt-6`}
-            >
-              <button
-                type="button"
-                onClick={() => setIsCompletedSectionOpen(!isCompletedSectionOpen)}
-                className="flex items-center gap-2 text-xs font-semibold text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white transition-colors py-1 px-1 rounded select-none group"
-              >
-                {isCompletedSectionOpen ? (
-                  <ChevronDown className="w-3.5 h-3.5 text-[#9ca3af] group-hover:text-[#111827] dark:group-hover:text-white transition-transform" />
-                ) : (
-                  <ChevronRight className="w-3.5 h-3.5 text-[#9ca3af] group-hover:text-[#111827] dark:group-hover:text-white transition-transform" />
-                )}
-                <span>Completed</span>
-                <span className="text-[10.5px] font-medium bg-[#f3f4f6] dark:bg-[#27272a] text-[#6b7280] dark:text-[#a1a1aa] px-1.5 py-0.5 rounded-full">
-                  {completedProjectDisplayItems.length}
-                </span>
-              </button>
-
-              {isCompletedSectionOpen && (
-                <div className="space-y-2 opacity-80 hover:opacity-100 transition-opacity">
-                  {completedProjectDisplayItems.map(renderItemCard)}
+            <>
+              {activeProjectDisplayItems.length === 0 ? (
+                isUrgentFilterActive ? (
+                  <div className="p-3 rounded-[8px] bg-[#f9fafb] dark:bg-[#18181b]/50 border border-[#e5e7eb] dark:border-[#27272a] flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 text-xs font-medium text-[#374151] dark:text-[#ededef]">
+                      <CheckCircle2 className="w-4 h-4 text-[#6b7280] dark:text-[#a1a1aa] shrink-0" />
+                      <span>No urgent tasks match the filter!</span>
+                    </div>
+                    <button
+                      onClick={clearPriorityFilters}
+                      className="px-2.5 py-1 bg-[#f3f4f6] dark:bg-[#27272a] text-[#374151] dark:text-[#d4d4d8] border border-[#e5e7eb] dark:border-[#3f3f46] rounded-[5px] text-xs font-medium hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] transition-colors shrink-0 cursor-pointer"
+                    >
+                      Show All Tasks
+                    </button>
+                  </div>
+                ) : null
+              ) : (
+                <div className="space-y-2 min-w-0">
+                  {activeProjectDisplayItems.map(renderItemCard)}
                 </div>
               )}
-            </div>
+
+              {/* Collapsible Completed Tasks Section */}
+              {completedProjectDisplayItems.length > 0 && (
+                <div
+                  ref={completedSectionRef}
+                  className={`${activeProjectDisplayItems.length > 0 ? 'pt-3 border-t border-[#e5e7eb] dark:border-[#27272a]' : 'pt-1'} space-y-2 scroll-mt-6`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setIsCompletedSectionOpen(!isCompletedSectionOpen)}
+                    className="flex items-center gap-2 text-xs font-semibold text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white transition-colors py-1 px-1 rounded select-none group"
+                  >
+                    {isCompletedSectionOpen ? (
+                      <ChevronDown className="w-3.5 h-3.5 text-[#9ca3af] group-hover:text-[#111827] dark:group-hover:text-white transition-transform" />
+                    ) : (
+                      <ChevronRight className="w-3.5 h-3.5 text-[#9ca3af] group-hover:text-[#111827] dark:group-hover:text-white transition-transform" />
+                    )}
+                    <span>Completed</span>
+                    <span className="text-[10.5px] font-medium bg-[#f3f4f6] dark:bg-[#27272a] text-[#6b7280] dark:text-[#a1a1aa] px-1.5 py-0.5 rounded-full">
+                      {completedProjectDisplayItems.length}
+                    </span>
+                  </button>
+
+                  {isCompletedSectionOpen && (
+                    <div className="space-y-2 opacity-80 hover:opacity-100 transition-opacity">
+                      {completedProjectDisplayItems.map(renderItemCard)}
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
           )}
         </div>
       ) : displayItems.length === 0 ? (
         renderEmptyStateCard()
+      ) : itemViewLayout === 'board' ? (
+        <ItemBoardView
+          items={items.filter((item: Item) => {
+            // For board view: skip status-only restrictions so dragging between columns works.
+            // Still enforce project/type/search/archived filters.
+            if (item.status === 'archived') return false;
+            if (viewMode.type === 'type_filter' && item.type !== viewMode.itemType) return false;
+            if (viewMode.type === 'priority_filter' && item.priority !== 'high' && item.priority !== 'critical') return false;
+            if (filterOptions.searchQuery.trim()) {
+              const q = filterOptions.searchQuery.toLowerCase();
+              if (!item.title.toLowerCase().includes(q) && !item.content?.toLowerCase().includes(q) && !item.tags.some((t: string) => t.toLowerCase().includes(q))) return false;
+            }
+            if (filterOptions.projectIds?.length && !filterOptions.projectIds.includes(item.projectId)) return false;
+            if (filterOptions.types?.length && !filterOptions.types.includes(item.type)) return false;
+            if (filterOptions.priorities?.length && !filterOptions.priorities.includes(item.priority)) return false;
+            return true;
+          })}
+          projectComponents={projectComponents}
+        />
+      ) : itemViewLayout === 'cards' ? (
+        <ItemCardGridView
+          items={displayItems}
+          projectComponents={projectComponents}
+        />
       ) : (
         <div className="space-y-2 min-w-0">
           {displayItems.map(renderItemCard)}

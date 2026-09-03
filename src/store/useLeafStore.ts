@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Workspace, Project, Item, ViewMode, FilterOptions, ChecklistItem, Attachment, ItemType, Priority, Status, ColorThemeId, SidebarCollapseMode } from '../types';
+import { Workspace, Project, Item, ViewMode, FilterOptions, ChecklistItem, Attachment, ItemType, Priority, Status, ColorThemeId, SidebarCollapseMode, ItemViewLayout } from '../types';
 import { dbService } from '../services/db';
 import { broadcastSync, subscribeToSync } from '../utils/sync';
 import { toast } from './useToastStore';
@@ -33,6 +33,7 @@ interface LeafState {
   sidebarHoverExpand: boolean;
   theme: 'light' | 'dark';
   colorTheme: ColorThemeId;
+  itemViewLayout: ItemViewLayout;
 
   // Actions
   toggleSidebar: () => void;
@@ -40,6 +41,7 @@ interface LeafState {
   setSidebarCollapseMode: (mode: SidebarCollapseMode) => void;
   setSidebarHoverExpand: (enabled: boolean) => void;
   setColorTheme: (colorTheme: ColorThemeId) => void;
+  setItemViewLayout: (layout: ItemViewLayout) => void;
   initialize: (customLoadingMessage?: string) => Promise<void>;
   setLoadingMessage: (msg: string) => void;
   setStandby: (isStandby: boolean) => void;
@@ -136,6 +138,14 @@ const getInitialViewMode = (): ViewMode => {
   return { type: 'inbox' };
 };
 
+const getInitialItemViewLayout = (): ItemViewLayout => {
+  try {
+    const saved = localStorage.getItem('leaf_item_view_layout') as ItemViewLayout | null;
+    if (saved === 'list' || saved === 'board' || saved === 'cards') return saved;
+  } catch {}
+  return 'list';
+};
+
 export const useLeafStore = create<LeafState>((set, get) => ({
   workspace: null,
   workspaces: [],
@@ -164,6 +174,14 @@ export const useLeafStore = create<LeafState>((set, get) => ({
   sidebarHoverExpand: typeof window !== 'undefined' && localStorage.getItem('leaf_pref_sidebar_hover_expand') === 'true',
   theme: getInitialTheme(),
   colorTheme: getInitialColorTheme(),
+  itemViewLayout: getInitialItemViewLayout(),
+
+  setItemViewLayout: (itemViewLayout: ItemViewLayout) => {
+    try {
+      localStorage.setItem('leaf_item_view_layout', itemViewLayout);
+    } catch {}
+    set({ itemViewLayout });
+  },
 
   setSidebarCollapseMode: (sidebarCollapseMode: SidebarCollapseMode) => {
     localStorage.setItem('leaf_pref_sidebar_collapse_mode', sidebarCollapseMode);

@@ -1,4 +1,5 @@
 import { TeamMember, RoleId } from '../types';
+import { resolveAvatarUrl } from './avatars';
 
 const STORAGE_KEY = 'leeflet_team_members';
 
@@ -202,4 +203,43 @@ export const getInitials = (name: string): string => {
   if (parts.length === 0) return 'U';
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+};
+
+export const resolveAssignee = (
+  assigneeId: string | null | undefined,
+  workspaceId?: string
+): { name: string; avatarUrl: string } | null => {
+  if (!assigneeId) return null;
+
+  const members = getStoredTeamMembers(workspaceId);
+  const assignedMember = members.find((m) => matchesAssignee(m.id, assigneeId));
+
+  let name = assignedMember?.name;
+  let avatarVal =
+    assignedMember?.avatarMascot ||
+    assignedMember?.avatarUrl ||
+    assignedMember?.avatarColor;
+
+  if (!name || name === OWNER_MEMBER_UUID || name === 'owner_1') {
+    if (matchesAssignee(OWNER_MEMBER_UUID, assigneeId)) {
+      try {
+        const pRaw =
+          localStorage.getItem('leeflet_user_profile_data') ||
+          localStorage.getItem('leaf_user_profile_data');
+        if (pRaw) {
+          const p = JSON.parse(pRaw);
+          if (p.fullName) name = p.fullName;
+          if (!avatarVal) {
+            avatarVal = p.avatarMascot || p.avatarUrl || p.avatarColor;
+          }
+        }
+      } catch {}
+      if (!name) name = 'Workspace Admin';
+    } else {
+      name = assigneeId;
+    }
+  }
+
+  const avatarUrl = resolveAvatarUrl(avatarVal, name);
+  return { name, avatarUrl };
 };

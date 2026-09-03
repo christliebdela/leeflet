@@ -135,6 +135,8 @@ export interface FilterOptions {
 
 export type SidebarCollapseMode = 'icons' | 'hidden';
 
+export type ItemViewLayout = 'list' | 'board' | 'cards';
+
 export type ColorThemeId =
   | 'default'
   | 'charcoal'
