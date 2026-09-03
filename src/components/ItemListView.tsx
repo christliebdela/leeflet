@@ -672,12 +672,11 @@ export const ItemListView: React.FC = () => {
           {viewMode.type === 'project' && item.componentId && (() => {
             const comp = projectComponents.find((c) => c.id === item.componentId);
             if (!comp) return null;
+            const compColor = comp.color?.trim();
             return (
               <span
-                className="hidden sm:inline-flex items-center text-[11px] font-medium shrink-0"
-                style={{
-                  color: comp.color || '#3b82f6',
-                }}
+                className={`hidden sm:inline-flex items-center text-[11px] font-medium shrink-0 ${!compColor ? 'text-[#6b7280] dark:text-[#a1a1aa]' : ''}`}
+                style={compColor ? { color: compColor } : undefined}
               >
                 <span className="truncate max-w-[100px]">{comp.name}</span>
               </span>
@@ -857,15 +856,15 @@ export const ItemListView: React.FC = () => {
                 {/* All Tasks tab */}
                 <button
                   onClick={() => setSelectedComponentId(null)}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-xs font-medium transition-all whitespace-nowrap cursor-pointer active:scale-95 ${
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-xs font-medium transition-all whitespace-nowrap cursor-pointer active:scale-95 border ${
                     !selectedComponentId
-                      ? 'bg-[#111827] dark:bg-white text-white dark:text-[#111113] shadow-sm'
-                      : 'bg-[#f3f4f6] dark:bg-[#27272a] text-[#374151] dark:text-[#a1a1aa] hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46]'
+                      ? 'bg-[#111827] dark:bg-[#27272a] text-white dark:text-[#f4f4f5] border-[#111827] dark:border-[#3f3f46] shadow-xs'
+                      : 'bg-[#f3f4f6] dark:bg-[#18181b] border-transparent text-[#6b7280] dark:text-[#a1a1aa] hover:bg-[#e5e7eb] dark:hover:bg-[#222226] hover:text-[#111827] dark:hover:text-[#f4f4f5]'
                   }`}
                 >
                   <Layers className="w-3 h-3" />
                   <span>All Tasks</span>
-                  <span className={`text-[11px] font-normal ${!selectedComponentId ? 'text-white/80 dark:text-[#111113]/80' : 'text-[#6b7280] dark:text-[#71717a]'}`}>
+                  <span className={`text-[11px] font-normal ${!selectedComponentId ? 'text-white/80 dark:text-[#a1a1aa]' : 'text-[#6b7280] dark:text-[#71717a]'}`}>
                     {displayItems.filter(i => i.status !== 'done').length}
                   </span>
                 </button>
@@ -874,7 +873,7 @@ export const ItemListView: React.FC = () => {
                 {projectComponents.map((comp) => {
                   const compActiveCount = displayItems.filter(i => i.componentId === comp.id && i.status !== 'done').length;
                   const isActive = selectedComponentId === comp.id;
-                  const compColor = comp.color || '#3b82f6';
+                  const compColor = comp.color?.trim();
                   return (
                     <div
                       key={comp.id}
@@ -888,25 +887,33 @@ export const ItemListView: React.FC = () => {
                           e.preventDefault();
                           openComponentModal(comp);
                         }}
-                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-xs font-medium transition-all whitespace-nowrap cursor-pointer active:scale-95"
+                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-xs font-medium transition-all whitespace-nowrap cursor-pointer active:scale-95 border ${
+                          !compColor
+                            ? isActive
+                              ? 'bg-[#111827] dark:bg-[#27272a] text-white dark:text-[#f4f4f5] border-[#111827] dark:border-[#3f3f46] shadow-xs'
+                              : 'bg-[#f3f4f6] dark:bg-[#18181b] border-[#e5e7eb] dark:border-[#27272a] text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#e5e7eb] dark:hover:bg-[#222226] hover:text-[#111827] dark:hover:text-white'
+                            : ''
+                        }`}
                         style={
-                          isActive
-                            ? {
-                                backgroundColor: compColor,
-                                color: '#ffffff',
-                                boxShadow: `0 2px 8px ${compColor}40`,
-                                border: `1px solid ${compColor}`,
-                              }
-                            : {
-                                backgroundColor: `${compColor}1a`,
-                                color: compColor,
-                                border: `1px solid ${compColor}45`,
-                              }
+                          compColor
+                            ? isActive
+                              ? {
+                                  backgroundColor: compColor,
+                                  color: '#ffffff',
+                                  boxShadow: `0 2px 8px ${compColor}40`,
+                                  border: `1px solid ${compColor}`,
+                                }
+                              : {
+                                  backgroundColor: `${compColor}1a`,
+                                  color: compColor,
+                                  border: `1px solid ${compColor}45`,
+                                }
+                            : undefined
                         }
                         title={hasDismissedComponentHint ? 'Click to filter · Right-click to edit or delete' : undefined}
                       >
                         <span className="truncate max-w-[120px]">{comp.name}</span>
-                        <span className={`text-[11px] font-normal ${isActive ? 'text-white/85' : 'opacity-75'}`}>
+                        <span className={`text-[11px] font-normal ${isActive ? (compColor ? 'text-white/85' : 'text-white/80 dark:text-[#a1a1aa]') : 'opacity-75'}`}>
                           {compActiveCount}
                         </span>
                       </button>
@@ -952,10 +959,10 @@ export const ItemListView: React.FC = () => {
                   return (
                     <button
                       onClick={() => setSelectedComponentId('unassigned')}
-                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-xs font-medium transition-all whitespace-nowrap cursor-pointer active:scale-95 ${
+                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-xs font-medium transition-all whitespace-nowrap cursor-pointer active:scale-95 border ${
                         isActive
-                          ? 'bg-[#111827] dark:bg-white text-white dark:text-[#111113] shadow-sm'
-                          : 'bg-[#f3f4f6] dark:bg-[#27272a] text-[#374151] dark:text-[#a1a1aa] hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46]'
+                          ? 'bg-[#111827] dark:bg-[#27272a] text-white dark:text-[#f4f4f5] border-[#111827] dark:border-[#3f3f46] shadow-xs'
+                          : 'bg-[#f3f4f6] dark:bg-[#18181b] border-transparent text-[#6b7280] dark:text-[#a1a1aa] hover:bg-[#e5e7eb] dark:hover:bg-[#222226] hover:text-[#111827] dark:hover:text-[#f4f4f5]'
                       }`}
                     >
                       <span>Unassigned</span>

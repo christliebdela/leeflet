@@ -24,8 +24,6 @@ import {
   Moon,
   Minimize2,
   Coffee,
-  PanelLeftClose,
-  PanelLeftOpen,
   Check,
   Link2,
   Building2,
@@ -61,7 +59,6 @@ export const Sidebar: React.FC = () => {
     isSidebarCollapsed,
     sidebarCollapseMode,
     sidebarHoverExpand,
-    toggleSidebar,
     initialize,
   } = useLeafStore();
 

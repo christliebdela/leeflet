@@ -25,7 +25,7 @@ export const ComponentModal: React.FC<ComponentModalProps> = ({
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [color, setColor] = useState('#3b82f6');
+  const [color, setColor] = useState('');
   const [leadId, setLeadId] = useState<string | null>(null);
   const [memberIds, setMemberIds] = useState<string[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
@@ -54,13 +54,14 @@ export const ComponentModal: React.FC<ComponentModalProps> = ({
       if (editingComponent) {
         setName(editingComponent.name);
         setDescription(editingComponent.description || '');
-        setColor(editingComponent.color || '#3b82f6');
+        // Preserve '' (default/monochrome) — don't fall back to a hardcoded color
+        setColor(editingComponent.color ?? '');
         setLeadId(editingComponent.leadId ?? null);
         setMemberIds(editingComponent.memberIds || []);
       } else {
         setName('');
         setDescription('');
-        // Auto-assign random vibrant color if none chosen
+        // Pre-select a suggested color (user can override with the default swatch)
         const existingColors = new Set(existingComps.map((c) => c.color).filter(Boolean));
         const available = MODERN_COLOR_PRESETS.filter((p) => !existingColors.has(p.value));
         const pool = available.length > 0 ? available : MODERN_COLOR_PRESETS;
@@ -125,7 +126,7 @@ export const ComponentModal: React.FC<ComponentModalProps> = ({
         projectId,
         name: name.trim(),
         description: description.trim(),
-        color: color || MODERN_COLOR_PRESETS[Math.floor(Math.random() * MODERN_COLOR_PRESETS.length)].value,
+        color: color,
         leadId,
         memberIds,
       };

@@ -750,7 +750,7 @@ export const QuickCaptureModal: React.FC = () => {
                   {selectedComponent ? (
                     <span
                       className="w-2 h-2 rounded-full shrink-0"
-                      style={{ backgroundColor: selectedComponent.color || '#3b82f6' }}
+                      style={{ backgroundColor: selectedComponent.color || '#71717a' }}
                     />
                   ) : (
                     <Layers className="w-3.5 h-3.5 shrink-0 opacity-60" />
@@ -810,7 +810,7 @@ export const QuickCaptureModal: React.FC = () => {
                           <div className="flex items-center gap-2 truncate min-w-0">
                             <span
                               className="w-2 h-2 rounded-full shrink-0"
-                              style={{ backgroundColor: comp.color || '#3b82f6' }}
+                              style={{ backgroundColor: comp.color || '#71717a' }}
                             />
                             <span className="truncate">{comp.name}</span>
                             {comp.memberIds.length > 0 && (

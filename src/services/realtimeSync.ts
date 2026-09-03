@@ -62,7 +62,7 @@ function rowToModule(row: Record<string, unknown>): ProjectModule {
     projectId: (row.project_id as string) || '',
     name: (row.name as string) || '',
     description: (row.description as string) || '',
-    color: (row.color as string) || '#3b82f6',
+    color: (row.color as string) || '',
     leadId: (row.lead_id as string) || null,
     memberIds: Array.isArray(row.member_ids) ? (row.member_ids as string[]) : [],
     sortOrder: (row.sort_order as number) ?? 0,

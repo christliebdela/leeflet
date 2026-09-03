@@ -1076,7 +1076,7 @@ export const ItemDetailPane: React.FC = () => {
                         <>
                           <span
                             className="w-2 h-2 rounded-full shrink-0"
-                            style={{ backgroundColor: currentComp.color || '#3b82f6' }}
+                            style={{ backgroundColor: currentComp.color || '#71717a' }}
                           />
                           <span className="truncate">{currentComp.name}</span>
                         </>
@@ -1130,7 +1130,7 @@ export const ItemDetailPane: React.FC = () => {
                           <div className="flex items-center gap-2 truncate min-w-0">
                             <span
                               className="w-2 h-2 rounded-full shrink-0"
-                              style={{ backgroundColor: comp.color || '#3b82f6' }}
+                              style={{ backgroundColor: comp.color || '#71717a' }}
                             />
                             <span className="truncate">{comp.name}</span>
                           </div>

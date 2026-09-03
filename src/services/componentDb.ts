@@ -61,7 +61,7 @@ export class ComponentDatabaseService {
       id: crypto.randomUUID(),
       workspaceId: wsId,
       memberIds: data.memberIds ?? [],
-      color: data.color ?? '#3b82f6',
+      color: data.color ?? '',
       sortOrder: data.sortOrder ?? all.filter((c) => c.projectId === data.projectId).length,
       createdAt: now,
       updatedAt: now,
