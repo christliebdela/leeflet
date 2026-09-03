@@ -1107,15 +1107,10 @@ export const Sidebar: React.FC = () => {
             <button
               type="button"
               onClick={() => setUpdateModalOpen(true)}
-              className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] bg-[#111827] dark:bg-white text-white dark:text-[#111827] hover:opacity-90 transition-all text-xs font-semibold shadow-subtle cursor-pointer select-none active:scale-[0.98] mb-1.5 group"
+              className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-[6px] bg-[#111827] dark:bg-white text-white dark:text-[#111827] hover:opacity-90 transition-all text-xs font-semibold shadow-subtle cursor-pointer select-none active:scale-[0.98] mb-1.5"
             >
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 dark:bg-emerald-500 animate-pulse shrink-0" />
-                <span className="font-semibold text-xs whitespace-nowrap">Update to v{availableVersion || 'new'}</span>
-              </div>
-              <span className="text-[11px] opacity-70 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all shrink-0">
-                →
-              </span>
+              <ArrowUpCircle className="w-3.5 h-3.5 shrink-0" />
+              <span className="font-semibold text-xs whitespace-nowrap">Update to v{availableVersion || 'new'}</span>
             </button>
           )}
 
