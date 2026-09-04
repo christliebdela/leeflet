@@ -145,7 +145,7 @@ export const DocsPage: React.FC = () => {
                   type="button"
                   onClick={() => scrollToSection('getting-started')}
                   className="p-1.5 rounded-md hover:bg-white/[0.06] text-[#71717a] hover:text-[#ededef] transition-colors cursor-pointer"
-                  title="Search documentation"
+                  aria-label="Search documentation"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="11" cy="11" r="8"></circle>
@@ -683,10 +683,10 @@ export const DocsPage: React.FC = () => {
                     <div className="p-3 rounded-lg border border-zinc-800 bg-zinc-900 text-zinc-200">Charcoal</div>
                     <div className="p-3 rounded-lg border-[#45372b] bg-[#24201c] text-[#d4bca0]">Claude Warm</div>
                     <div className="p-3 rounded-lg border-[#292e42] bg-[#1a1b26] text-[#7aa2f7]">Tokyo Night</div>
-                    <div className="p-3 rounded-lg border-[#363a4f] bg-[#1e2030] text-[#8aadf4]">Catppuccin</div>
+                    <div className="p-3 rounded-lg border-[#23232f] bg-[#141419] text-[#5e6ad2]">Midnight Dark</div>
+                    <div className="p-3 rounded-lg border-[#323244] bg-[#252531] text-[#818cf8]">Abyss</div>
                     <div className="p-3 rounded-lg border-[#504945] bg-[#282828] text-[#ebdbb2]">Gruvbox</div>
-                    <div className="p-3 rounded-lg border-[#44475a] bg-[#282a36] text-[#bd93f9]">Dracula</div>
-                    <div className="p-3 rounded-lg border-[#24283b] bg-[#1f2335] text-[#bb9af7]">Storm</div>
+                    <div className="p-3 rounded-lg border border-zinc-200 bg-white text-zinc-800">Daylight</div>
                   </div>
                 </section>
 

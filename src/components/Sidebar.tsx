@@ -21,12 +21,12 @@ import {
   SquarePen,
   X,
   Sun,
+  Moon,
   Minimize2,
   Coffee,
   Check,
   Link2,
   Building2,
-  ArrowUpCircle,
   GripVertical,
   Ban,
 } from 'lucide-react';
@@ -37,7 +37,6 @@ import { Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
 import { toast } from '../store/useToastStore';
 import { resolveAvatarUrl } from '../utils/avatars';
 import { getUserPermissions } from '../utils/permissions';
-import { useUpdaterStore } from '../store/useUpdaterStore';
 
 export const Sidebar: React.FC = () => {
   const {
@@ -65,8 +64,6 @@ export const Sidebar: React.FC = () => {
 
   const currentPreset = THEME_PRESETS.find((p) => p.id === colorTheme) || THEME_PRESETS[0];
   const currentPresetName = currentPreset.name.replace(' (Default)', '');
-
-  const { status: updateStatus, availableVersion, setModalOpen: setUpdateModalOpen } = useUpdaterStore();
 
   // User profile & mascot avatar state with real-time instant sync
   const [profileState, setProfileState] = useState(() => {
@@ -467,22 +464,6 @@ export const Sidebar: React.FC = () => {
 
         {/* Bottom Tools in Rail */}
         <div className="flex flex-col items-center gap-1 w-full px-2 pt-2 border-t border-[#e5e7eb] dark:border-[#27272a]">
-          {updateStatus === 'available' && !isDemoMode && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  onClick={() => setUpdateModalOpen(true)}
-                  className="w-9 h-9 flex items-center justify-center rounded-[6px] bg-[#111827] dark:bg-white text-white dark:text-[#18181b] hover:opacity-90 transition-all shadow-xs cursor-pointer relative active:scale-[0.96]"
-                >
-                  <ArrowUpCircle className="w-4 h-4" />
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-400 dark:bg-emerald-500 animate-pulse" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="right">Update to v{availableVersion || 'new'}</TooltipContent>
-            </Tooltip>
-          )}
-
           <Tooltip>
             <TooltipTrigger asChild>
               <button
@@ -490,7 +471,11 @@ export const Sidebar: React.FC = () => {
                 onClick={cycleColorTheme}
                 className="w-9 h-9 flex items-center justify-center rounded-[6px] text-[#6b7280] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white transition-colors cursor-pointer"
               >
-                <Sun className="w-3.5 h-3.5" />
+                {colorTheme === 'daylight' ? (
+                  <Sun className="w-3.5 h-3.5 text-amber-500" />
+                ) : (
+                  <Moon className="w-3.5 h-3.5" />
+                )}
               </button>
             </TooltipTrigger>
             <TooltipContent side="right">Theme: {currentPresetName}</TooltipContent>
@@ -734,28 +719,36 @@ export const Sidebar: React.FC = () => {
                         {isActive && <Check className="w-3.5 h-3.5 text-[#111827] dark:text-[#f4f4f5] shrink-0" />}
                         {isWsAdmin && (
                           <>
-                            <button
-                              type="button"
-                              title="Rename workspace"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleStartRename(ws);
-                              }}
-                              className="opacity-0 group-hover/ws:opacity-100 p-1 hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] rounded text-[#6b7280] dark:text-[#a1a1aa] transition-opacity"
-                            >
-                              <SquarePen className="w-3 h-3" />
-                            </button>
-                            <button
-                              type="button"
-                              title="Delete workspace"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleStartDelete(ws);
-                              }}
-                              className="opacity-0 group-hover/ws:opacity-100 p-1 hover:bg-rose-100 dark:hover:bg-rose-950/50 rounded text-rose-600 dark:text-rose-400 transition-opacity"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleStartRename(ws);
+                                  }}
+                                  className="opacity-0 group-hover/ws:opacity-100 p-1 hover:bg-[#e5e7eb] dark:hover:bg-[#3f3f46] rounded text-[#6b7280] dark:text-[#a1a1aa] transition-opacity cursor-pointer"
+                                >
+                                  <SquarePen className="w-3 h-3" />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top">Rename workspace</TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleStartDelete(ws);
+                                  }}
+                                  className="opacity-0 group-hover/ws:opacity-100 p-1 hover:bg-rose-100 dark:hover:bg-rose-950/50 rounded text-rose-600 dark:text-rose-400 transition-opacity cursor-pointer"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top">Delete workspace</TooltipContent>
+                            </Tooltip>
                           </>
                         )}
                       </div>
@@ -1171,17 +1164,6 @@ export const Sidebar: React.FC = () => {
 
         {/* Bottom Footer Controls */}
         <div className="p-3 border-t border-[#e5e7eb] dark:border-[#27272a] space-y-1">
-          {updateStatus === 'available' && !isDemoMode && (
-            <button
-              type="button"
-              onClick={() => setUpdateModalOpen(true)}
-              className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-[6px] bg-[#111827] dark:bg-white text-white dark:text-[#111827] hover:opacity-90 transition-all text-xs font-semibold shadow-subtle cursor-pointer select-none active:scale-[0.98] mb-1.5"
-            >
-              <ArrowUpCircle className="w-3.5 h-3.5 shrink-0" />
-              <span className="font-semibold text-xs whitespace-nowrap">Update to v{availableVersion || 'new'}</span>
-            </button>
-          )}
-
           {/* Theme Toggle */}
           <button
             type="button"
@@ -1189,7 +1171,11 @@ export const Sidebar: React.FC = () => {
             className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white transition-colors text-xs font-medium cursor-pointer"
           >
             <div className="flex items-center gap-2">
-              <Sun className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
+              {colorTheme === 'daylight' ? (
+                <Sun className="w-3.5 h-3.5 text-amber-500" />
+              ) : (
+                <Moon className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
+              )}
               <span>Theme</span>
             </div>
             <div className="flex items-center gap-1.5">

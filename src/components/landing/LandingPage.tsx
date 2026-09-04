@@ -993,7 +993,7 @@ export const LandingPage: React.FC = () => {
             <button
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
               className="flex items-center gap-2.5 group cursor-pointer text-left focus:outline-hidden transition-transform active:scale-[0.98]"
-              title="Scroll to top"
+              aria-label="Scroll to top"
             >
               <img src="/logo_alpha.png" alt="Leeflet" className="w-7 h-7 rounded object-contain opacity-90 group-hover:opacity-100 transition-opacity" />
               <span className="font-brand text-2xl text-[#ededef] group-hover:text-white transition-colors">leeflet</span>

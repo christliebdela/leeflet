@@ -482,7 +482,6 @@ export const ProfileView: React.FC = () => {
                       key={m.id}
                       type="button"
                       onClick={() => handleSelectAvatar(m.id, url, m.name)}
-                      title={m.name}
                       className={`group relative flex flex-col items-center p-1.5 rounded-[8px] border transition-all cursor-pointer ${
                         isSelected
                           ? 'border-[#9ca3af] dark:border-[#52525b] bg-[#f4f5f6] dark:bg-[#27272a] shadow-2xs'

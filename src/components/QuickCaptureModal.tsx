@@ -25,6 +25,7 @@ import { getActiveTeamMembers, matchesAssignee, normalizeAssigneeId } from '../u
 import { resolveAvatarUrl } from '../utils/avatars';
 import { Calendar } from './ui/calendar';
 import { getUserPermissions } from '../utils/permissions';
+import { Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
 
 const TYPE_ICONS: Record<ItemType, React.FC<{ className?: string }>> = {
   task: CheckSquare,
@@ -582,15 +583,17 @@ export const QuickCaptureModal: React.FC = () => {
           <div id="capture-pills-row" className="grid grid-cols-3 gap-2 w-full">
             {/* Row 1, Col 1: Project Pill */}
             {isInProjectView && activeProject ? (
-              <div
-                title="Capturing inside current project"
-                className="w-full flex items-center justify-between gap-1.5 px-2.5 py-1.5 bg-[#f3f4f6] dark:bg-[#202024] rounded-[6px] text-xs font-medium text-[#374151] dark:text-[#d4d4d8] border border-[#e5e7eb] dark:border-[#27272a] min-w-0 select-none"
-              >
-                <div className="flex items-center gap-1.5 truncate min-w-0">
-                  <Folder className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa] shrink-0" />
-                  <span className="truncate">{activeProject.name}</span>
-                </div>
-              </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="w-full flex items-center justify-between gap-1.5 px-2.5 py-1.5 bg-[#f3f4f6] dark:bg-[#202024] rounded-[6px] text-xs font-medium text-[#374151] dark:text-[#d4d4d8] border border-[#e5e7eb] dark:border-[#27272a] min-w-0 select-none cursor-default">
+                    <div className="flex items-center gap-1.5 truncate min-w-0">
+                      <Folder className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa] shrink-0" />
+                      <span className="truncate">{activeProject.name}</span>
+                    </div>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Capturing inside current project</TooltipContent>
+              </Tooltip>
             ) : (
               <div className="relative w-full min-w-0" ref={projectRef}>
                 <button

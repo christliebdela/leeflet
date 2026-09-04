@@ -149,11 +149,15 @@ export type ColorThemeId =
   | 'charcoal'
   | 'claude'
   | 'tokyo-night'
+  | 'midnight'
+  | 'abyss'
+  | 'daylight'
+  | 'nord'
+  | 'deep-black'
+  // Legacy backward compatibility:
   | 'catppuccin'
   | 'dracula'
-  | 'deep-black'
   // Coming soon:
-  // | 'nord'
   // | 'gruvbox'
   // | 'rose-pine'
   // | 'kanagawa'
@@ -236,33 +240,58 @@ export const THEME_PRESETS: ThemePreset[] = [
     previewPills: ['#7aa2f7', '#bb9af7', '#7dcfff'],
   },
   {
-    id: 'catppuccin',
-    name: 'Catppuccin Mocha',
-    dotColor: '#cba6f7',
-    accentColor: '#cba6f7',
-    description: 'Official Catppuccin Mocha palette with soothing mauve.',
-    bgHex: '#1e1e2e',
-    sidebarHex: '#181825',
-    cardHex: '#313244',
-    cardElevatedHex: '#45475a',
-    borderHex: '#585b70',
-    previewPills: ['#cba6f7', '#89b4fa', '#f5c2e7'],
+    id: 'midnight',
+    name: 'Midnight Dark',
+    dotColor: '#5e6ad2',
+    accentColor: '#5e6ad2',
+    description: 'Linear-inspired midnight obsidian with subtle top ambient glow.',
+    bgHex: '#0e0e11',
+    sidebarHex: '#09090c',
+    cardHex: '#141419',
+    cardElevatedHex: '#1a1a22',
+    borderHex: '#23232f',
+    previewPills: ['#5e6ad2', '#818cf8', '#23232f'],
   },
   {
-    id: 'dracula',
-    name: 'Dracula',
-    dotColor: '#bd93f9',
-    accentColor: '#bd93f9',
-    description: 'Official Dracula theme with iconic gothic purple & pink.',
-    bgHex: '#282a36',
-    sidebarHex: '#21222c',
-    cardHex: '#343746',
-    cardElevatedHex: '#44475a',
-    borderHex: '#6272a4',
-    previewPills: ['#bd93f9', '#ff79c6', '#50fa7b'],
+    id: 'abyss',
+    name: 'Abyss',
+    dotColor: '#818cf8',
+    accentColor: '#818cf8',
+    description: 'Deep indigo navy (#1a1a24) with sculpted card surfaces (#252531).',
+    bgHex: '#1a1a24',
+    sidebarHex: '#12121b',
+    cardHex: '#252531',
+    cardElevatedHex: '#2b2b3a',
+    borderHex: '#323244',
+    previewPills: ['#818cf8', '#a5b4fc', '#323244'],
+  },
+  {
+    id: 'daylight',
+    name: 'Daylight',
+    dotColor: '#eab308',
+    accentColor: '#111827',
+    description: 'Crisp, high-contrast light mode with clean surfaces.',
+    bgHex: '#f8f9fa',
+    sidebarHex: '#e8e9eb',
+    cardHex: '#ffffff',
+    cardElevatedHex: '#f4f5f6',
+    borderHex: '#e5e7eb',
+    previewPills: ['#111827', '#6b7280', '#e5e7eb'],
+  },
+  {
+    id: 'nord',
+    name: 'Nord',
+    dotColor: '#88c0d0',
+    accentColor: '#88c0d0',
+    description: 'Arctic frost palette with soothing icy cyan & slate.',
+    bgHex: '#2e3440',
+    sidebarHex: '#242933',
+    cardHex: '#3b4252',
+    cardElevatedHex: '#434c5e',
+    borderHex: '#4c566a',
+    previewPills: ['#88c0d0', '#81a1c1', '#4c566a'],
   },
   // Coming soon — themes below are commented out:
-  // { id: 'nord', name: 'Nord', ... },
   // { id: 'gruvbox', name: 'Gruvbox Dark', ... },
   // { id: 'rose-pine', name: 'Rosé Pine', ... },
   // { id: 'kanagawa', name: 'Kanagawa Wave', ... },

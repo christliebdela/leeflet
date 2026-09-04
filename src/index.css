@@ -229,10 +229,20 @@ html.dark[data-color-theme="charcoal"],
 .dark[data-color-theme="charcoal"],
 .dark:not([data-color-theme]) {
   --theme-bg-shell: #121214;
+  --theme-bg-shell-top: #18181c;
+  --theme-bg-shell-gradient: linear-gradient(180deg, #18181c 0%, #121214 100%);
   --theme-bg-app: #0f0f11;
+  --theme-bg-app-top: #17171a;
+  --theme-bg-app-gradient: linear-gradient(180deg, #17171a 0%, #0f0f11 100%);
   --theme-bg-sidebar: #121214;
+  --theme-bg-sidebar-top: #18181c;
+  --theme-bg-sidebar-gradient: linear-gradient(180deg, #18181c 0%, #121214 100%);
   --theme-bg-card: #18181b;
+  --theme-bg-card-top: #212126;
+  --theme-bg-card-gradient: linear-gradient(180deg, #212126 0%, #18181b 100%);
   --theme-bg-card-elevated: #202024;
+  --theme-bg-card-elevated-top: #2a2a30;
+  --theme-bg-card-elevated-gradient: linear-gradient(180deg, #2a2a30 0%, #202024 100%);
   --theme-border: #27272a;
   --theme-accent: #10b981;
 }
@@ -245,10 +255,20 @@ html.dark[data-color-theme="deep-black"],
 .dark[data-color-theme="noir"],
 .dark[data-color-theme="deep-black"] {
   --theme-bg-shell: #000000;
+  --theme-bg-shell-top: #08080a;
+  --theme-bg-shell-gradient: linear-gradient(180deg, #08080a 0%, #000000 100%);
   --theme-bg-app: #000000;
+  --theme-bg-app-top: #0b0b0e;
+  --theme-bg-app-gradient: linear-gradient(180deg, #0b0b0e 0%, #000000 100%);
   --theme-bg-sidebar: #000000;
+  --theme-bg-sidebar-top: #08080a;
+  --theme-bg-sidebar-gradient: linear-gradient(180deg, #08080a 0%, #000000 100%);
   --theme-bg-card: #09090b;
+  --theme-bg-card-top: #121216;
+  --theme-bg-card-gradient: linear-gradient(180deg, #121216 0%, #09090b 100%);
   --theme-bg-card-elevated: #121215;
+  --theme-bg-card-elevated-top: #1a1a20;
+  --theme-bg-card-elevated-gradient: linear-gradient(180deg, #1a1a20 0%, #121215 100%);
   --theme-border: #18181b;
   --theme-accent: #ffffff;
 }
@@ -257,10 +277,20 @@ html.dark[data-color-theme="deep-black"],
 html.dark[data-color-theme="claude"],
 .dark[data-color-theme="claude"] {
   --theme-bg-shell: #141210;
+  --theme-bg-shell-top: #1a1815;
+  --theme-bg-shell-gradient: linear-gradient(180deg, #1a1815 0%, #141210 100%);
   --theme-bg-app: #1b1917;
+  --theme-bg-app-top: #24201c;
+  --theme-bg-app-gradient: linear-gradient(180deg, #24201c 0%, #1b1917 100%);
   --theme-bg-sidebar: #141210;
+  --theme-bg-sidebar-top: #1a1815;
+  --theme-bg-sidebar-gradient: linear-gradient(180deg, #1a1815 0%, #141210 100%);
   --theme-bg-card: #24201c;
+  --theme-bg-card-top: #2e2924;
+  --theme-bg-card-gradient: linear-gradient(180deg, #2e2924 0%, #24201c 100%);
   --theme-bg-card-elevated: #2c2824;
+  --theme-bg-card-elevated-top: #38322c;
+  --theme-bg-card-elevated-gradient: linear-gradient(180deg, #38322c 0%, #2c2824 100%);
   --theme-border: #3a3530;
   --theme-accent: #da7756;
 }
@@ -269,39 +299,117 @@ html.dark[data-color-theme="claude"],
 html.dark[data-color-theme="tokyo-night"],
 .dark[data-color-theme="tokyo-night"] {
   --theme-bg-shell: #16161e;
+  --theme-bg-shell-top: #1d1e29;
+  --theme-bg-shell-gradient: linear-gradient(180deg, #1d1e29 0%, #16161e 100%);
   --theme-bg-app: #1a1b26;
+  --theme-bg-app-top: #212334;
+  --theme-bg-app-gradient: linear-gradient(180deg, #212334 0%, #1a1b26 100%);
   --theme-bg-sidebar: #16161e;
+  --theme-bg-sidebar-top: #1d1e29;
+  --theme-bg-sidebar-gradient: linear-gradient(180deg, #1d1e29 0%, #16161e 100%);
   --theme-bg-card: #1f2335;
+  --theme-bg-card-top: #272d44;
+  --theme-bg-card-gradient: linear-gradient(180deg, #272d44 0%, #1f2335 100%);
   --theme-bg-card-elevated: #24283b;
+  --theme-bg-card-elevated-top: #2e344e;
+  --theme-bg-card-elevated-gradient: linear-gradient(180deg, #2e344e 0%, #24283b 100%);
   --theme-border: #292e42;
   --theme-accent: #7aa2f7;
 }
 
-/* 5. Catppuccin Mocha */
+/* 5. Midnight Dark (Linear-inspired Midnight with Electric Indigo) */
+html.dark[data-color-theme="midnight"],
+.dark[data-color-theme="midnight"],
 html.dark[data-color-theme="catppuccin"],
 .dark[data-color-theme="catppuccin"] {
-  --theme-bg-shell: #181825;
-  --theme-bg-app: #1e1e2e;
-  --theme-bg-sidebar: #181825;
-  --theme-bg-card: #313244;
-  --theme-bg-card-elevated: #45475a;
-  --theme-border: #585b70;
-  --theme-accent: #cba6f7;
+  --theme-bg-shell: #09090c;
+  --theme-bg-shell-top: #101016;
+  --theme-bg-shell-gradient: linear-gradient(180deg, #101016 0%, #09090c 100%);
+  --theme-bg-app: #0e0e11;
+  --theme-bg-app-top: #17171e;
+  --theme-bg-app-gradient: linear-gradient(180deg, #17171e 0%, #0e0e11 100%);
+  --theme-bg-sidebar: #09090c;
+  --theme-bg-sidebar-top: #101016;
+  --theme-bg-sidebar-gradient: linear-gradient(180deg, #101016 0%, #09090c 100%);
+  --theme-bg-card: #141419;
+  --theme-bg-card-top: #1d1d25;
+  --theme-bg-card-gradient: linear-gradient(180deg, #1d1d25 0%, #141419 100%);
+  --theme-bg-card-elevated: #1a1a22;
+  --theme-bg-card-elevated-top: #242430;
+  --theme-bg-card-elevated-gradient: linear-gradient(180deg, #242430 0%, #1a1a22 100%);
+  --theme-border: #23232f;
+  --theme-accent: #5e6ad2;
 }
 
-/* 6. Dracula */
+/* 6. Abyss (#1a1a24 canvas & #252531 elevated surfaces) */
+html.dark[data-color-theme="abyss"],
+.dark[data-color-theme="abyss"],
 html.dark[data-color-theme="dracula"],
 .dark[data-color-theme="dracula"] {
-  --theme-bg-shell: #21222c;
-  --theme-bg-app: #282a36;
-  --theme-bg-sidebar: #21222c;
-  --theme-bg-card: #343746;
-  --theme-bg-card-elevated: #44475a;
-  --theme-border: #6272a4;
-  --theme-accent: #bd93f9;
+  --theme-bg-shell: #12121b;
+  --theme-bg-shell-top: #181824;
+  --theme-bg-shell-gradient: linear-gradient(180deg, #181824 0%, #12121b 100%);
+  --theme-bg-app: #1a1a24;
+  --theme-bg-app-top: #232332;
+  --theme-bg-app-gradient: linear-gradient(180deg, #232332 0%, #1a1a24 100%);
+  --theme-bg-sidebar: #12121b;
+  --theme-bg-sidebar-top: #181824;
+  --theme-bg-sidebar-gradient: linear-gradient(180deg, #181824 0%, #12121b 100%);
+  --theme-bg-card: #252531;
+  --theme-bg-card-top: #2e2e3e;
+  --theme-bg-card-gradient: linear-gradient(180deg, #2e2e3e 0%, #252531 100%);
+  --theme-bg-card-elevated: #2c2c3b;
+  --theme-bg-card-elevated-top: #36364a;
+  --theme-bg-card-elevated-gradient: linear-gradient(180deg, #36364a 0%, #2c2c3b 100%);
+  --theme-border: #323244;
+  --theme-accent: #818cf8;
 }
 
-/* ---- THEMES 7–16 (commented out for now) ----
+/* 7. Daylight (Crisp High-Contrast Light Mode) */
+html:not(.dark)[data-color-theme="daylight"],
+:not(.dark)[data-color-theme="daylight"] {
+  --theme-bg-shell: #e8e9eb;
+  --theme-bg-shell-top: #edeeee;
+  --theme-bg-shell-gradient: linear-gradient(180deg, #edeeee 0%, #e8e9eb 100%);
+  --theme-bg-app: #f8f9fa;
+  --theme-bg-app-top: #ffffff;
+  --theme-bg-app-gradient: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
+  --theme-bg-sidebar: #e8e9eb;
+  --theme-bg-sidebar-top: #edeeee;
+  --theme-bg-sidebar-gradient: linear-gradient(180deg, #edeeee 0%, #e8e9eb 100%);
+  --theme-bg-card: #ffffff;
+  --theme-bg-card-top: #ffffff;
+  --theme-bg-card-gradient: linear-gradient(180deg, #ffffff 0%, #fbfbfc 100%);
+  --theme-bg-card-elevated: #f4f5f6;
+  --theme-bg-card-elevated-top: #f8f9fa;
+  --theme-bg-card-elevated-gradient: linear-gradient(180deg, #f8f9fa 0%, #f4f5f6 100%);
+  --theme-border: #e5e7eb;
+  --theme-accent: #111827;
+}
+
+/* 8. Nord (Arctic Frost Palette) */
+html.dark[data-color-theme="nord"],
+.dark[data-color-theme="nord"] {
+  --theme-bg-shell: #242933;
+  --theme-bg-shell-top: #2c323e;
+  --theme-bg-shell-gradient: linear-gradient(180deg, #2c323e 0%, #242933 100%);
+  --theme-bg-app: #2e3440;
+  --theme-bg-app-top: #373e4d;
+  --theme-bg-app-gradient: linear-gradient(180deg, #373e4d 0%, #2e3440 100%);
+  --theme-bg-sidebar: #242933;
+  --theme-bg-sidebar-top: #2c323e;
+  --theme-bg-sidebar-gradient: linear-gradient(180deg, #2c323e 0%, #242933 100%);
+  --theme-bg-card: #3b4252;
+  --theme-bg-card-top: #444c5e;
+  --theme-bg-card-gradient: linear-gradient(180deg, #444c5e 0%, #3b4252 100%);
+  --theme-bg-card-elevated: #434c5e;
+  --theme-bg-card-elevated-top: #4c566a;
+  --theme-bg-card-elevated-gradient: linear-gradient(180deg, #4c566a 0%, #434c5e 100%);
+  --theme-border: #4c566a;
+  --theme-accent: #88c0d0;
+}
+
+/* ---- THEMES 9–17 (commented out for now) ----
 
 7. Nord
 html.dark[data-color-theme="nord"] {
@@ -419,21 +527,34 @@ html.dark[data-color-theme="github-dark"] {
 html.dark .dark\:bg-\[\#0f0f11\],
 .dark .dark\:bg-\[\#0f0f11\],
 html.dark .dark\:bg-\[\#0c0c0e\],
-.dark .dark\:bg-\[\#0c0c0e\] {
+.dark .dark\:bg-\[\#0c0c0e\],
+html.dark .dark\:bg-\[var\(--theme-bg-app\,\#0f0f11\)\],
+.dark .dark\:bg-\[var\(--theme-bg-app\,\#0f0f11\)\],
+html.dark [data-color-theme] .dark\:bg-\[var\(--theme-bg-app\,\#0f0f11\)\],
+.dark [data-color-theme] .dark\:bg-\[var\(--theme-bg-app\,\#0f0f11\)\] {
   background-color: var(--theme-bg-app) !important;
+  background-image: var(--theme-bg-app-gradient) !important;
+  background-attachment: local;
 }
 
 html.dark aside,
 .dark aside,
 html.dark .dark\:bg-\[\#121214\],
-.dark .dark\:bg-\[\#121214\] {
+.dark .dark\:bg-\[\#121214\],
+html.dark .dark\:bg-\[var\(--theme-bg-sidebar\,\#121214\)\],
+.dark .dark\:bg-\[var\(--theme-bg-sidebar\,\#121214\)\],
+html.dark [data-color-theme] .dark\:bg-\[var\(--theme-bg-sidebar\,\#121214\)\],
+.dark [data-color-theme] .dark\:bg-\[var\(--theme-bg-sidebar\,\#121214\)\] {
   background-color: var(--theme-bg-sidebar) !important;
+  background-image: var(--theme-bg-sidebar-gradient) !important;
   border-color: var(--theme-border) !important;
 }
 
 html.dark .dark\:bg-\[\#18181b\],
 .dark .dark\:bg-\[\#18181b\] {
   background-color: var(--theme-bg-card) !important;
+  background-image: var(--theme-bg-card-gradient) !important;
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.035);
 }
 
 html.dark .dark\:bg-\[\#202024\],
@@ -443,6 +564,22 @@ html.dark .dark\:bg-\[\#1c1c1f\],
 html.dark .dark\:bg-\[\#27272a\],
 .dark .dark\:bg-\[\#27272a\] {
   background-color: var(--theme-bg-card-elevated) !important;
+  background-image: var(--theme-bg-card-elevated-gradient) !important;
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.04);
+}
+
+/* Linear-style selected / active card surface */
+html.dark .dark\:bg-\[\#1f1f23\],
+.dark .dark\:bg-\[\#1f1f23\] {
+  background-color: var(--theme-bg-card-elevated) !important;
+  background-image: var(--theme-bg-card-elevated-gradient) !important;
+}
+
+/* Interactive hover enhancement on theme cards */
+html.dark .dark\:hover\:bg-\[\#1f1f23\]:hover,
+.dark .dark\:hover\:bg-\[\#1f1f23\]:hover {
+  background-color: var(--theme-bg-card-elevated) !important;
+  background-image: var(--theme-bg-card-elevated-gradient) !important;
 }
 
 html.dark .dark\:border-\[\#27272a\],
@@ -460,8 +597,12 @@ html.dark .dark\:divide-\[\#27272a\] > :not([hidden]) ~ :not([hidden]),
 }
 
 /* Sidebar shell — outer wrapper behind sidebar matches sidebar color seamlessly */
-html.dark div.h-screen.w-screen {
+html.dark div.h-screen.w-screen,
+.dark div.h-screen.w-screen,
+html.dark .dark\:bg-\[var\(--theme-bg-shell\,\#121214\)\],
+.dark .dark\:bg-\[var\(--theme-bg-shell\,\#121214\)\] {
   background-color: var(--theme-bg-sidebar) !important;
+  background-image: var(--theme-bg-sidebar-gradient) !important;
 }
 
 /* Light mode shell */

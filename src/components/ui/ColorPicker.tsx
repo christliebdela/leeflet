@@ -263,14 +263,18 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
                     />
                   </div>
                   {hasEyeDropper && (
-                    <button
-                      type="button"
-                      onClick={handleEyeDropper}
-                      title="Sample color from screen"
-                      className="p-1.5 rounded-[6px] bg-[#f4f5f6] dark:bg-[#27272a] hover:bg-[#ebecee] dark:hover:bg-[#3f3f46] text-[#374151] dark:text-[#d4d4d8] border border-[#e5e7eb] dark:border-[#27272a] transition-colors cursor-pointer"
-                    >
-                      <Pipette className="w-3.5 h-3.5" />
-                    </button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          onClick={handleEyeDropper}
+                          className="p-1.5 rounded-[6px] bg-[#f4f5f6] dark:bg-[#27272a] hover:bg-[#ebecee] dark:hover:bg-[#3f3f46] text-[#374151] dark:text-[#d4d4d8] border border-[#e5e7eb] dark:border-[#27272a] transition-colors cursor-pointer"
+                        >
+                          <Pipette className="w-3.5 h-3.5" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">Sample color from screen</TooltipContent>
+                    </Tooltip>
                   )}
                 </div>
               </div>

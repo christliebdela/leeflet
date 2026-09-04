@@ -1,6 +1,6 @@
 [package]
 name = "leeflet"
-version = "0.5.0"
+version = "0.6.0"
 description = "A local-first workspace for capturing, organizing, prioritizing, and acting on everything you discover while working."
 authors = ["Christlieb Dela"]
 edition = "2021"

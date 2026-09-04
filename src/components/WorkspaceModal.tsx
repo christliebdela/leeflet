@@ -423,9 +423,16 @@ export const WorkspaceModal: React.FC = () => {
                   <div className="flex items-center justify-between py-1.5 border-b border-[#f3f4f6] dark:border-[#27272a]">
                     <div className="min-w-0 pr-2">
                       <div className="text-[#111827] dark:text-[#f4f4f5] font-medium">Storage Path</div>
-                      <div className="text-[10.5px] font-mono text-[#6b7280] dark:text-[#71717a] truncate max-w-[210px]" title={workspace.path}>
-                        {workspace.path}
-                      </div>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="text-[10.5px] font-mono text-[#6b7280] dark:text-[#71717a] truncate max-w-[210px] cursor-help">
+                            {workspace.path}
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="font-mono text-[10px] max-w-[320px]">
+                          {workspace.path}
+                        </TooltipContent>
+                      </Tooltip>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       <Tooltip>

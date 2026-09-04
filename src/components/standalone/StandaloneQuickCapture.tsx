@@ -3,6 +3,7 @@ import { dbService } from '../../services/db';
 import { ChecklistItem } from '../../types';
 import { CheckSquare, X, Plus } from 'lucide-react';
 import { broadcastSync } from '../../utils/sync';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '../ui/tooltip';
 
 export const deriveTitleFromContent = (content: string, maxWords: number = 7): string => {
   if (!content.trim()) return 'Untitled';
@@ -337,13 +338,19 @@ export const StandaloneQuickCapture: React.FC = () => {
             <span>Checklist{checklist.length > 0 ? ` (${checklist.length})` : ''}</span>
           </button>
 
-          <button
-            onClick={closeWindow}
-            title="Close (Esc)"
-            className="text-[10px] font-semibold bg-[#f3f4f6] dark:bg-[var(--theme-bg-card-elevated,#27272a)] text-[#6b7280] dark:text-[#a1a1aa] px-1.5 py-0.5 rounded-[5px] border border-[#e5e7eb] dark:border-[var(--theme-border,#3f3f46)] hover:bg-[#e5e7eb] dark:hover:bg-[var(--theme-bg-card,#3f3f46)] transition-colors cursor-pointer"
-          >
-            Esc
-          </button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={closeWindow}
+                  className="text-[10px] font-semibold bg-[#f3f4f6] dark:bg-[var(--theme-bg-card-elevated,#27272a)] text-[#6b7280] dark:text-[#a1a1aa] px-1.5 py-0.5 rounded-[5px] border border-[#e5e7eb] dark:border-[var(--theme-border,#3f3f46)] hover:bg-[#e5e7eb] dark:hover:bg-[var(--theme-bg-card,#3f3f46)] transition-colors cursor-pointer"
+                >
+                  Esc
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Close (Esc)</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </div>
 

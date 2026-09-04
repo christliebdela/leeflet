@@ -323,7 +323,6 @@ export const OnboardingModal: React.FC = () => {
                           setSelectedMascotId(m.id);
                           setCustomAvatarUrl('');
                         }}
-                        title={m.name}
                         className={`flex flex-col items-center p-1 rounded-[6px] border transition-all cursor-pointer ${
                           isSelected
                             ? 'border-[#9ca3af] dark:border-[#52525b] bg-[#f4f5f6] dark:bg-[#27272a]'

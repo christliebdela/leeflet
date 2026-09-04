@@ -25,6 +25,7 @@ import {
   RefreshCw,
   CircleDot,
   Ban,
+  ArrowUpCircle,
 } from 'lucide-react';
 import { ItemType, Priority, Project, Item } from '../types';
 import { ITEM_TYPE_CONFIG, PRIORITY_CONFIG } from '../utils/format';
@@ -35,6 +36,8 @@ import { toast } from '../store/useToastStore';
 import { isWorkspaceCloudSync } from '../services/cloudSync';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { parseGitHubRepo, syncGitHubIssuesForProject } from '../services/github';
+import { Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
+import { useUpdaterStore } from '../store/useUpdaterStore';
 
 const TYPE_ICONS: Record<ItemType, React.FC<{ className?: string }>> = {
   task: CheckSquare,
@@ -71,6 +74,8 @@ export const HeaderBar: React.FC = () => {
     updateItem,
     updateProject,
   } = useLeafStore();
+
+  const { status: updateStatus, availableVersion, setModalOpen: setUpdateModalOpen } = useUpdaterStore();
 
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
@@ -315,32 +320,54 @@ export const HeaderBar: React.FC = () => {
       {/* Title & Count */}
       <div className="flex items-center gap-1.5 min-w-0 mr-1.5 overflow-hidden" data-tauri-drag-region>
         {/* Sidebar Toggle Button — shown inline with page heading */}
-        <button
-          type="button"
-          onClick={toggleSidebar}
-          className="p-1 rounded-[5px] hover:bg-[#e5e7eb] dark:hover:bg-[#27272a] text-[#9ca3af] hover:text-[#111827] dark:hover:text-white transition-colors shrink-0 cursor-pointer"
-        >
-          {isSidebarCollapsed ? <PanelLeftOpen className="w-3.5 h-3.5" /> : <PanelLeftClose className="w-3.5 h-3.5" />}
-        </button>
-        <div className="flex items-center gap-1 min-w-0 shrink-0">
-          <h1
-            className="text-sm sm:text-base font-bold text-[#111827] dark:text-[#f4f4f5] tracking-tight truncate max-w-[120px] sm:max-w-[200px] md:max-w-[320px]"
-            data-tauri-drag-region
-          >
-            {headerInfo.title}
-          </h1>
-          {viewMode.type === 'project' && activeProj && isCurrentUserAdmin && !isDemoMode && (
+        <Tooltip>
+          <TooltipTrigger asChild>
             <button
-              onClick={() => setProjectModalOpen(true, activeProj)}
-              className="p-1 rounded-[4px] hover:bg-[#ebecee] dark:hover:bg-[#27272a] text-[#9ca3af] hover:text-[#111827] dark:hover:text-white transition-colors shrink-0"
+              type="button"
+              onClick={toggleSidebar}
+              aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              className="p-1 rounded-[5px] hover:bg-[#e5e7eb] dark:hover:bg-[#27272a] text-[#9ca3af] hover:text-[#111827] dark:hover:text-white transition-colors shrink-0 cursor-pointer"
             >
-              <SquarePen className="w-3.5 h-3.5" />
+              {isSidebarCollapsed ? <PanelLeftOpen className="w-3.5 h-3.5" /> : <PanelLeftClose className="w-3.5 h-3.5" />}
             </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            {isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          </TooltipContent>
+        </Tooltip>
+
+        <div className="flex items-center gap-1 min-w-0">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <h1
+                className="text-sm sm:text-base font-bold text-[#111827] dark:text-[#f4f4f5] tracking-tight truncate max-w-[120px] sm:max-w-[180px] lg:max-w-[220px] xl:max-w-[280px] cursor-default"
+                data-tauri-drag-region
+              >
+                {headerInfo.title}
+              </h1>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">{headerInfo.title}</TooltipContent>
+          </Tooltip>
+          {viewMode.type === 'project' && activeProj && isCurrentUserAdmin && !isDemoMode && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setProjectModalOpen(true, activeProj)}
+                  aria-label="Edit project"
+                  className="p-1 rounded-[4px] hover:bg-[#ebecee] dark:hover:bg-[#27272a] text-[#9ca3af] hover:text-[#111827] dark:hover:text-white transition-colors shrink-0"
+                >
+                  <SquarePen className="w-3.5 h-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Edit project</TooltipContent>
+            </Tooltip>
           )}
         </div>
         {viewMode.type === 'project' && activeProj && totalCount > 0 ? (() => {
           const completedCount = totalCount - openCount;
           const pct = Math.round((completedCount / totalCount) * 100);
+          const isLongTitle = headerInfo.title.length > 12;
+          const showProgressSubtext = !isDemoMode && !isLongTitle && !isSearchExpanded;
 
           // Color-code ring stroke only based on completion rate
           let strokeColor = activeProj.color || '#71717a';
@@ -353,51 +380,54 @@ export const HeaderBar: React.FC = () => {
           }
 
           return (
-            <div
-              className="hidden md:inline-flex items-center gap-1.5 px-2 py-1 rounded-[6px] bg-[#f4f5f6] dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] text-xs font-medium text-[#4b5563] dark:text-[#a1a1aa] shrink-0 shadow-2xs select-none"
-              data-tauri-drag-region
-            >
-              {/* Mini circular progress ring */}
-              <div className="relative w-3.5 h-3.5 shrink-0 flex items-center justify-center">
-                <svg className="w-3.5 h-3.5 -rotate-90 transform" viewBox="0 0 36 36">
-                  <circle
-                    cx="18"
-                    cy="18"
-                    r="14"
-                    className="text-[#e5e7eb] dark:text-[#3f3f46]"
-                    strokeWidth="4"
-                    stroke="currentColor"
-                    fill="transparent"
-                  />
-                  <circle
-                    cx="18"
-                    cy="18"
-                    r="14"
-                    style={{ stroke: strokeColor }}
-                    strokeWidth="4"
-                    strokeDasharray={88}
-                    strokeDashoffset={88 - Math.round((completedCount / totalCount) * 88)}
-                    strokeLinecap="round"
-                    fill="transparent"
-                    className="transition-all duration-500 ease-out"
-                  />
-                </svg>
-              </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div
+                  className="hidden sm:inline-flex items-center gap-1.5 px-2 py-1 rounded-[6px] bg-gradient-to-b from-white to-[#f4f5f7] dark:from-[#232328] dark:to-[#17171a] border border-[#d5d8de] dark:border-[#2c2c33] text-xs font-medium text-[#4b5563] dark:text-[#a1a1aa] shrink-0 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.9),0_1px_2px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08),0_1px_2px_rgba(0,0,0,0.25)] select-none cursor-default"
+                  data-tauri-drag-region
+                >
+                  {/* Mini circular progress ring */}
+                  <div className="relative w-3.5 h-3.5 shrink-0 flex items-center justify-center">
+                    <svg className="w-3.5 h-3.5 -rotate-90 transform" viewBox="0 0 36 36">
+                      <circle
+                        cx="18"
+                        cy="18"
+                        r="14"
+                        className="text-[#e5e7eb] dark:text-[#3f3f46]"
+                        strokeWidth="4"
+                        stroke="currentColor"
+                        fill="transparent"
+                      />
+                      <circle
+                        cx="18"
+                        cy="18"
+                        r="14"
+                        style={{ stroke: strokeColor }}
+                        strokeWidth="4"
+                        strokeDasharray={88}
+                        strokeDashoffset={88 - Math.round((completedCount / totalCount) * 88)}
+                        strokeLinecap="round"
+                        fill="transparent"
+                        className="transition-all duration-500 ease-out"
+                      />
+                    </svg>
+                  </div>
 
-              <span className="font-bold text-[#111827] dark:text-white text-[11px] shrink-0">
-                {pct}%
-              </span>
+                  <span className="font-bold text-[#111827] dark:text-white text-[11px] shrink-0">
+                    {pct}%
+                  </span>
 
-              <span
-                className={`text-[11px] text-[#6b7280] dark:text-[#a1a1aa] whitespace-nowrap overflow-hidden transition-all duration-200 ease-out inline-flex items-center ${
-                  isSearchExpanded
-                    ? 'max-w-0 opacity-0 xl:max-w-[200px] xl:opacity-100'
-                    : 'max-w-0 opacity-0 md:max-w-[200px] md:opacity-100'
-                }`}
-              >
-                {openCount} active · {completedCount} done
-              </span>
-            </div>
+                  {showProgressSubtext && (
+                    <span className="text-[11px] text-[#6b7280] dark:text-[#a1a1aa] whitespace-nowrap overflow-hidden transition-all duration-200 ease-out hidden 2xl:inline-flex items-center">
+                      {openCount} active · {completedCount} done
+                    </span>
+                  )}
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                {pct}% completed · {openCount} active, {completedCount} done
+              </TooltipContent>
+            </Tooltip>
           );
         })() : (
           viewMode.type !== 'my_queue' && viewMode.type !== 'team' && viewMode.type !== 'profile' && viewMode.type !== 'settings' && totalCount > 0 && (
@@ -423,58 +453,78 @@ export const HeaderBar: React.FC = () => {
 
           return (
             <div className="hidden sm:flex items-center gap-1 shrink-0 ml-1">
-              <button
-                type="button"
-                onClick={async (e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  try {
-                    if (typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window) {
-                      await openUrl(repoUrl);
-                    } else {
-                      window.open(repoUrl, '_blank', 'noopener,noreferrer');
-                    }
-                  } catch {
-                    window.open(repoUrl, '_blank', 'noopener,noreferrer');
-                  }
-                }}
-                className="h-6 w-6 flex items-center justify-center rounded-[5px] bg-[#f4f5f6] dark:bg-[#1c1c1f] hover:bg-[#ebecee] dark:hover:bg-[#27272a] text-[#4b5563] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white border border-[#e5e7eb] dark:border-[#27272a] transition-colors cursor-pointer shrink-0"
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="opacity-80 shrink-0">
-                  <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
-                </svg>
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label={`Open ${repoLabel} on GitHub`}
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      try {
+                        if (typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window) {
+                          await openUrl(repoUrl);
+                        } else {
+                          window.open(repoUrl, '_blank', 'noopener,noreferrer');
+                        }
+                      } catch {
+                        window.open(repoUrl, '_blank', 'noopener,noreferrer');
+                      }
+                    }}
+                    className="h-6 w-6 flex items-center justify-center rounded-[5px] bg-[#f4f5f6] dark:bg-[#1c1c1f] hover:bg-[#ebecee] dark:hover:bg-[#27272a] text-[#4b5563] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white border border-[#e5e7eb] dark:border-[#27272a] transition-colors cursor-pointer shrink-0"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="opacity-80 shrink-0">
+                      <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+                    </svg>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Open {repoLabel} on GitHub</TooltipContent>
+              </Tooltip>
 
               {/* Sync Issues Button */}
-              <button
-                type="button"
-                disabled={isSyncingGitHub || isDemoMode}
-                onClick={() => {
-                  if (!isDemoMode) handleSyncGitHubIssues();
-                }}
-                className={`h-6 ${
-                  syncCooldownSec > 0 ? 'px-1.5' : 'w-6'
-                } flex items-center justify-center gap-1 rounded-[5px] border border-[#e5e7eb] dark:border-[#27272a] bg-[#f4f5f6] dark:bg-[#1c1c1f] text-[11px] font-medium shrink-0 transition-colors group ${
-                  isDemoMode
-                    ? 'cursor-not-allowed opacity-60 text-[#9ca3af] dark:text-[#71717a]'
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    disabled={isSyncingGitHub || isDemoMode}
+                    aria-label="Sync GitHub issues"
+                    onClick={() => {
+                      if (!isDemoMode) handleSyncGitHubIssues();
+                    }}
+                    className={`h-6 ${
+                      syncCooldownSec > 0 ? 'px-1.5' : 'w-6'
+                    } flex items-center justify-center gap-1 rounded-[5px] border border-[#d5d8de] dark:border-[#2c2c33] bg-gradient-to-b from-white to-[#f4f5f7] dark:from-[#232328] dark:to-[#17171a] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.9),0_1px_2px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08),0_1px_2px_rgba(0,0,0,0.25)] text-[11px] font-medium shrink-0 transition-all group ${
+                      isDemoMode
+                        ? 'cursor-not-allowed opacity-60 text-[#9ca3af] dark:text-[#71717a]'
+                        : syncCooldownSec > 0
+                        ? 'text-[#6b7280] dark:text-[#a1a1aa] hover:from-white hover:to-[#ebedf1] dark:hover:from-[#2a2a30] dark:hover:to-[#1c1c20] cursor-pointer'
+                        : 'text-[#4b5563] dark:text-[#a1a1aa] hover:from-white hover:to-[#ebedf1] dark:hover:from-[#2a2a30] dark:hover:to-[#1c1c20] hover:text-[#111827] dark:hover:text-white cursor-pointer disabled:opacity-60'
+                    }`}
+                  >
+                    {isDemoMode ? (
+                      <>
+                        <CircleDot className="w-3.5 h-3.5 group-hover:hidden shrink-0" />
+                        <Ban className="w-3.5 h-3.5 text-zinc-400 hidden group-hover:block shrink-0" />
+                      </>
+                    ) : isSyncingGitHub ? (
+                      <RefreshCw className="w-3 h-3 animate-spin text-blue-500 shrink-0" />
+                    ) : syncCooldownSec > 0 ? (
+                      <span className="text-[10px] font-mono leading-none text-[#6b7280] dark:text-[#a1a1aa] font-medium">{syncCooldownSec}s</span>
+                    ) : (
+                      <CircleDot className="w-3.5 h-3.5 shrink-0" />
+                    )}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  {isDemoMode
+                    ? 'Sync disabled in demo'
+                    : isSyncingGitHub
+                    ? 'Syncing issues...'
                     : syncCooldownSec > 0
-                    ? 'text-[#6b7280] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#27272a] cursor-pointer'
-                    : 'text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#27272a] hover:text-[#111827] dark:hover:text-white cursor-pointer disabled:opacity-60'
-                }`}
-              >
-                {isDemoMode ? (
-                  <>
-                    <CircleDot className="w-3.5 h-3.5 group-hover:hidden shrink-0" />
-                    <Ban className="w-3.5 h-3.5 text-zinc-400 hidden group-hover:block shrink-0" />
-                  </>
-                ) : isSyncingGitHub ? (
-                  <RefreshCw className="w-3 h-3 animate-spin text-blue-500 shrink-0" />
-                ) : syncCooldownSec > 0 ? (
-                  <span className="text-[10px] font-mono leading-none text-[#6b7280] dark:text-[#a1a1aa] font-medium">{syncCooldownSec}s</span>
-                ) : (
-                  <CircleDot className="w-3.5 h-3.5 shrink-0" />
-                )}
-              </button>
+                    ? `Sync cooldown (${syncCooldownSec}s)`
+                    : 'Sync GitHub issues'}
+                </TooltipContent>
+              </Tooltip>
             </div>
           );
         })()}
@@ -498,28 +548,36 @@ export const HeaderBar: React.FC = () => {
 
         {/* Filter Toggle */}
         <div className="relative shrink-0" ref={filterDropdownRef}>
-          <button
-            onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
-            className={`w-7 h-7 xl:w-auto xl:px-2.5 xl:gap-1.5 flex items-center justify-center rounded-[6px] border text-xs font-medium shrink-0 transition-colors relative cursor-pointer ${
-              isFilterDropdownOpen || activeFilterCount > 0
-                ? 'bg-[#111827] text-white border-[#111827] dark:bg-white dark:text-[#111827] dark:border-white shadow-sm'
-                : 'bg-[#f4f5f6] dark:bg-[#1c1c1f] border-[#e5e7eb] dark:border-[#27272a] text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#27272a]'
-            }`}
-          >
-            <Filter className="w-3.5 h-3.5" />
-            <span className="hidden xl:inline">Filter</span>
-            {activeFilterCount > 0 && (
-              <span
-                className={`min-w-3.5 h-3.5 px-0.5 xl:px-1.5 flex items-center justify-center text-[9px] xl:text-[9.5px] rounded-full font-bold shadow-xs leading-none absolute -top-1 -right-1 xl:static xl:top-auto xl:right-auto xl:ml-0.5 ${
+          <Tooltip open={isFilterDropdownOpen ? false : undefined}>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
+                aria-label="Filter"
+                className={`w-7 h-7 xl:w-auto xl:px-2.5 xl:gap-1.5 flex items-center justify-center rounded-[6px] border text-xs font-medium shrink-0 transition-all relative cursor-pointer ${
                   isFilterDropdownOpen || activeFilterCount > 0
-                    ? 'bg-rose-500 text-white'
-                    : 'bg-[#111827] text-white dark:bg-white dark:text-[#111827]'
+                    ? 'bg-[#111827] text-white border-[#111827] dark:bg-white dark:text-[#111827] dark:border-white shadow-sm'
+                    : 'bg-gradient-to-b from-white to-[#f4f5f7] dark:from-[#232328] dark:to-[#17171a] border-[#d5d8de] dark:border-[#2c2c33] text-[#4b5563] dark:text-[#a1a1aa] hover:from-white hover:to-[#ebedf1] dark:hover:from-[#2a2a30] dark:hover:to-[#1c1c20] hover:text-[#111827] dark:hover:text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.9),0_1px_2px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08),0_1px_2px_rgba(0,0,0,0.25)]'
                 }`}
               >
-                {activeFilterCount}
-              </span>
-            )}
-          </button>
+                <Filter className="w-3.5 h-3.5" />
+                <span className="hidden xl:inline">Filter</span>
+                {activeFilterCount > 0 && (
+                  <span
+                    className={`min-w-3.5 h-3.5 px-0.5 xl:px-1.5 flex items-center justify-center text-[9px] xl:text-[9.5px] rounded-full font-bold shadow-xs leading-none absolute -top-1 -right-1 xl:static xl:top-auto xl:right-auto xl:ml-0.5 ${
+                      isFilterDropdownOpen || activeFilterCount > 0
+                        ? 'bg-rose-500 text-white'
+                        : 'bg-[#111827] text-white dark:bg-white dark:text-[#111827]'
+                    }`}
+                  >
+                    {activeFilterCount}
+                  </span>
+                )}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="xl:hidden">
+              Filter{activeFilterCount > 0 ? ` (${activeFilterCount} active)` : ''}
+            </TooltipContent>
+          </Tooltip>
           {isFilterDropdownOpen && (
             <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-modal z-50 overflow-hidden text-xs animate-in fade-in zoom-in-95 duration-100">
               {/* Header */}
@@ -700,13 +758,21 @@ export const HeaderBar: React.FC = () => {
 
         {/* Sort Toggle */}
         <div className="relative shrink-0" ref={sortDropdownRef}>
-          <button
-            onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
-            className="w-7 h-7 xl:w-auto xl:px-2.5 xl:gap-1.5 flex items-center justify-center rounded-[6px] border border-[#e5e7eb] dark:border-[#27272a] bg-[#f4f5f6] dark:bg-[#1c1c1f] text-xs font-medium text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#27272a] shrink-0 transition-colors cursor-pointer"
-          >
-            <ArrowUpDown className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
-            <span className="hidden xl:inline">Sort</span>
-          </button>
+          <Tooltip open={isSortDropdownOpen ? false : undefined}>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
+                aria-label="Sort"
+                className="w-7 h-7 xl:w-auto xl:px-2.5 xl:gap-1.5 flex items-center justify-center rounded-[6px] border border-[#d5d8de] dark:border-[#2c2c33] bg-gradient-to-b from-white to-[#f4f5f7] dark:from-[#232328] dark:to-[#17171a] text-xs font-medium text-[#4b5563] dark:text-[#a1a1aa] hover:from-white hover:to-[#ebedf1] dark:hover:from-[#2a2a30] dark:hover:to-[#1c1c20] hover:text-[#111827] dark:hover:text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.9),0_1px_2px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08),0_1px_2px_rgba(0,0,0,0.25)] shrink-0 transition-all cursor-pointer"
+              >
+                <ArrowUpDown className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
+                <span className="hidden xl:inline">Sort</span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="xl:hidden">
+              Sort
+            </TooltipContent>
+          </Tooltip>
 
           {isSortDropdownOpen && (
             <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-modal py-1.5 z-50 text-xs animate-in fade-in zoom-in-95 duration-100">
@@ -772,21 +838,29 @@ export const HeaderBar: React.FC = () => {
         {/* View Layout Switcher Dropdown — hidden on Queue page */}
         {viewMode.type !== 'my_queue' && (
           <div className="relative shrink-0" ref={layoutDropdownRef}>
-            <button
-              onClick={() => setIsLayoutDropdownOpen(!isLayoutDropdownOpen)}
-              className="w-7 h-7 xl:w-auto xl:px-2.5 xl:gap-1.5 flex items-center justify-center rounded-[6px] border border-[#e5e7eb] dark:border-[#27272a] bg-[#f4f5f6] dark:bg-[#1c1c1f] text-xs font-medium text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#27272a] shrink-0 transition-colors cursor-pointer"
-            >
-              {itemViewLayout === 'board' ? (
-                <Kanban className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
-              ) : itemViewLayout === 'cards' ? (
-                <LayoutGrid className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
-              ) : (
-                <List className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
-              )}
-              <span className="hidden xl:inline capitalize">
-                {itemViewLayout === 'board' ? 'Board' : itemViewLayout === 'cards' ? 'Cards' : 'List'}
-              </span>
-            </button>
+            <Tooltip open={isLayoutDropdownOpen ? false : undefined}>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setIsLayoutDropdownOpen(!isLayoutDropdownOpen)}
+                  aria-label={`Layout: ${itemViewLayout === 'board' ? 'Board' : itemViewLayout === 'cards' ? 'Cards' : 'List'}`}
+                  className="w-7 h-7 xl:w-auto xl:px-2.5 xl:gap-1.5 flex items-center justify-center rounded-[6px] border border-[#d5d8de] dark:border-[#2c2c33] bg-gradient-to-b from-white to-[#f4f5f7] dark:from-[#232328] dark:to-[#17171a] text-xs font-medium text-[#4b5563] dark:text-[#a1a1aa] hover:from-white hover:to-[#ebedf1] dark:hover:from-[#2a2a30] dark:hover:to-[#1c1c20] hover:text-[#111827] dark:hover:text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.9),0_1px_2px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08),0_1px_2px_rgba(0,0,0,0.25)] shrink-0 transition-all cursor-pointer"
+                >
+                  {itemViewLayout === 'board' ? (
+                    <Kanban className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
+                  ) : itemViewLayout === 'cards' ? (
+                    <LayoutGrid className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
+                  ) : (
+                    <List className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
+                  )}
+                  <span className="hidden xl:inline capitalize">
+                    {itemViewLayout === 'board' ? 'Board' : itemViewLayout === 'cards' ? 'Cards' : 'List'}
+                  </span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="xl:hidden">
+                Layout: {itemViewLayout === 'board' ? 'Board' : itemViewLayout === 'cards' ? 'Cards' : 'List'}
+              </TooltipContent>
+            </Tooltip>
 
             {isLayoutDropdownOpen && (
               <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-[#1c1c1f] border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] shadow-modal py-1.5 z-50 text-xs animate-in fade-in zoom-in-95 duration-100">
@@ -856,39 +930,77 @@ export const HeaderBar: React.FC = () => {
       </>
     )}
 
+        {/* Software Update Available Button */}
+        {updateStatus === 'available' && !isDemoMode && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={() => setUpdateModalOpen(true)}
+                aria-label={`Update available: v${availableVersion || 'new'}`}
+                className="h-7 w-7 md:w-auto md:px-2.5 md:gap-1.5 flex items-center justify-center rounded-[6px] border border-[#d5d8de] dark:border-[#2c2c33] bg-gradient-to-b from-white to-[#f4f5f7] dark:from-[#232328] dark:to-[#17171a] text-xs font-medium text-[#111827] dark:text-[#f4f4f5] hover:from-white hover:to-[#ebedf1] dark:hover:from-[#2a2a30] dark:hover:to-[#1c1c20] hover:text-[#111827] dark:hover:text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.9),0_1px_2px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08),0_1px_2px_rgba(0,0,0,0.25)] shrink-0 transition-all cursor-pointer select-none active:scale-[0.97]"
+              >
+                <ArrowUpCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span className="font-semibold text-xs whitespace-nowrap hidden md:inline">
+                  Update to v{availableVersion || 'new'}
+                </span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              Update available: v{availableVersion || 'new'} — click to view & install
+            </TooltipContent>
+          </Tooltip>
+        )}
+
         {/* Cloud Sync / Offline button */}
         {isCloudSync && !isDemoMode && (
-          <button
-            type="button"
-            onClick={() => handleRefresh(false)}
-            className={`w-7 h-7 xl:w-auto xl:px-2.5 xl:gap-1.5 flex items-center justify-center rounded-[6px] border text-xs font-medium shrink-0 transition-colors cursor-pointer select-none ${
-              !isOnline
-                ? 'bg-[#f4f5f6] dark:bg-[#1c1c1f] border-[#e5e7eb] dark:border-[#27272a] text-[#9ca3af] dark:text-[#52525b]'
-                : 'bg-[#f4f5f6] dark:bg-[#1c1c1f] border-[#e5e7eb] dark:border-[#27272a] text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#27272a]'
-            }`}
-          >
-            {!isOnline ? (
-              <CloudOff className="w-3.5 h-3.5" />
-            ) : syncState === 'syncing' ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Cloud className="w-3.5 h-3.5" />
-            )}
-            <span className="hidden xl:inline">
-              {!isOnline ? 'Offline' : syncState === 'syncing' ? 'Syncing...' : 'Synced'}
-            </span>
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={() => handleRefresh(false)}
+                aria-label={!isOnline ? 'Offline' : syncState === 'syncing' ? 'Syncing...' : 'Synced'}
+                className={`w-7 h-7 xl:w-auto xl:px-2.5 xl:gap-1.5 flex items-center justify-center rounded-[6px] border text-xs font-medium shrink-0 transition-all cursor-pointer select-none ${
+                  !isOnline
+                    ? 'bg-gradient-to-b from-white to-[#f4f5f7] dark:from-[#232328] dark:to-[#17171a] border-[#d5d8de] dark:border-[#2c2c33] text-[#9ca3af] dark:text-[#52525b] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.9),0_1px_2px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08),0_1px_2px_rgba(0,0,0,0.25)]'
+                    : 'bg-gradient-to-b from-white to-[#f4f5f7] dark:from-[#232328] dark:to-[#17171a] border-[#d5d8de] dark:border-[#2c2c33] text-[#4b5563] dark:text-[#a1a1aa] hover:from-white hover:to-[#ebedf1] dark:hover:from-[#2a2a30] dark:hover:to-[#1c1c20] hover:text-[#111827] dark:hover:text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.9),0_1px_2px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08),0_1px_2px_rgba(0,0,0,0.25)]'
+                }`}
+              >
+                {!isOnline ? (
+                  <CloudOff className="w-3.5 h-3.5" />
+                ) : syncState === 'syncing' ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Cloud className="w-3.5 h-3.5" />
+                )}
+                <span className="hidden xl:inline">
+                  {!isOnline ? 'Offline' : syncState === 'syncing' ? 'Syncing...' : 'Synced'}
+                </span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="xl:hidden">
+              {!isOnline ? 'Offline' : syncState === 'syncing' ? 'Syncing...' : 'Cloud Synced'}
+            </TooltipContent>
+          </Tooltip>
         )}
 
         {/* + New Button or View Only Badge */}
         {permissions.canCreateItems ? (
-          <button
-            onClick={() => setQuickCaptureOpen(true)}
-            className="w-7 h-7 xl:w-auto xl:px-3 xl:gap-1 flex items-center justify-center bg-[#111827] dark:bg-[#f4f4f5] hover:bg-[#1f2937] dark:hover:bg-white text-white dark:text-[#18181b] rounded-[6px] text-xs font-semibold shadow-subtle shrink-0 transition-all active:scale-[0.96] cursor-pointer"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span className="hidden xl:inline">New</span>
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => setQuickCaptureOpen(true)}
+                aria-label="New task"
+                className="w-7 h-7 xl:w-auto xl:px-3 xl:gap-1 flex items-center justify-center bg-gradient-to-b from-[#1f2937] to-[#111827] dark:from-white dark:to-[#f4f4f5] hover:from-[#111827] hover:to-[#090d16] dark:hover:from-[#ffffff] dark:hover:to-[#e4e4e7] text-white dark:text-[#18181b] border border-[#111827] dark:border-white/80 rounded-[6px] text-xs font-semibold shadow-[inset_0_1px_0_0_rgba(255,255,255,0.2),0_1px_2px_rgba(0,0,0,0.15)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,1),0_1px_2px_rgba(0,0,0,0.2)] shrink-0 transition-all active:scale-[0.96] cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span className="hidden xl:inline">New</span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="xl:hidden">
+              New task (C)
+            </TooltipContent>
+          </Tooltip>
         ) : (
           <span className="flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 border border-amber-500/25 text-amber-600 dark:text-amber-400 rounded-[6px] text-[11px] font-semibold shrink-0 select-none">
             <span>View Only</span>

@@ -122,6 +122,8 @@ interface LeafState {
 }
 
 const getInitialTheme = (): 'light' | 'dark' => {
+  const colorTheme = localStorage.getItem('leaf_color_theme');
+  if (colorTheme === 'daylight') return 'light';
   const saved = localStorage.getItem('leaf_theme');
   if (saved === 'dark' || saved === 'light') return saved;
   return 'dark';
@@ -129,12 +131,16 @@ const getInitialTheme = (): 'light' | 'dark' => {
 
 const getInitialColorTheme = (): ColorThemeId => {
   try {
+    const rawSavedTheme = localStorage.getItem('leaf_theme');
     const rawSaved = localStorage.getItem('leaf_color_theme');
+    if (rawSaved === 'daylight' || (rawSavedTheme === 'light' && !rawSaved)) return 'daylight';
     if (rawSaved === 'deep-black' || rawSaved === 'noir') return 'default';
+    if (rawSaved === 'catppuccin') return 'midnight';
+    if (rawSaved === 'dracula') return 'abyss';
     if (!rawSaved || rawSaved === 'default') return 'charcoal';
     const saved = rawSaved as ColorThemeId | null;
     const validIds: ColorThemeId[] = [
-      'default', 'charcoal', 'claude', 'tokyo-night', 'catppuccin', 'dracula',
+      'default', 'charcoal', 'claude', 'tokyo-night', 'midnight', 'abyss', 'daylight', 'nord',
     ];
     if (saved && validIds.includes(saved)) {
       return saved;
@@ -270,6 +276,15 @@ export const useLeafStore = create<LeafState>((set, get) => ({
     if (typeof document !== 'undefined') {
       document.documentElement.setAttribute('data-color-theme', colorTheme);
     }
+    if (colorTheme === 'daylight') {
+      if (get().theme !== 'light') {
+        get().setTheme('light');
+      }
+    } else {
+      if (get().theme !== 'dark') {
+        get().setTheme('dark');
+      }
+    }
     set({ colorTheme });
   },
 
@@ -334,9 +349,6 @@ export const useLeafStore = create<LeafState>((set, get) => ({
     const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % presets.length;
     const nextPreset = presets[nextIndex];
     get().setColorTheme(nextPreset.id);
-    if (get().theme !== 'dark') {
-      get().setTheme('dark');
-    }
   },
 
   toggleTheme: () => {

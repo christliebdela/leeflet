@@ -636,28 +636,34 @@ export const ItemListView: React.FC = () => {
 
           {/* GitHub Issue Link Badge */}
           {item.githubIssueNumber && (
-            <a
-              href={item.githubIssueUrl || '#'}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (item.githubIssueUrl) {
-                  try {
-                    openUrl(item.githubIssueUrl);
-                  } catch {
-                    window.open(item.githubIssueUrl, '_blank');
-                  }
-                }
-              }}
-              className="inline-flex items-center gap-1 text-[10px] font-mono text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white bg-[#f4f5f6] dark:bg-[#202024] hover:bg-[#e5e7eb] dark:hover:bg-[#27272a] px-1.5 py-0.5 rounded border border-[#e5e7eb] dark:border-[#27272a] shrink-0 transition-colors cursor-pointer"
-              title={`GitHub Issue #${item.githubIssueNumber}${item.githubIssueState ? ` (${item.githubIssueState})` : ''}`}
-            >
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="opacity-75 shrink-0">
-                <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
-              </svg>
-              <span>#{item.githubIssueNumber}</span>
-            </a>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <a
+                  href={item.githubIssueUrl || '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (item.githubIssueUrl) {
+                      try {
+                        openUrl(item.githubIssueUrl);
+                      } catch {
+                        window.open(item.githubIssueUrl, '_blank');
+                      }
+                    }
+                  }}
+                  className="inline-flex items-center gap-1 text-[10px] font-mono text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white bg-[#f4f5f6] dark:bg-[#202024] hover:bg-[#e5e7eb] dark:hover:bg-[#27272a] px-1.5 py-0.5 rounded border border-[#e5e7eb] dark:border-[#27272a] shrink-0 transition-colors cursor-pointer"
+                >
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="opacity-75 shrink-0">
+                    <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+                  </svg>
+                  <span>#{item.githubIssueNumber}</span>
+                </a>
+              </TooltipTrigger>
+              <TooltipContent side="top">
+                GitHub Issue #{item.githubIssueNumber}{item.githubIssueState ? ` (${item.githubIssueState})` : ''}
+              </TooltipContent>
+            </Tooltip>
           )}
         </div>
 
@@ -937,7 +943,6 @@ export const ItemListView: React.FC = () => {
                                 }
                             : undefined
                         }
-                        title={hasDismissedComponentHint ? 'Click to filter · Right-click to edit or delete' : undefined}
                       >
                         <span className="truncate max-w-[120px]">{comp.name}</span>
                         <span className={`text-[11px] font-normal ${isActive ? (compColor ? 'text-white/85' : 'text-white/80 dark:text-[#a1a1aa]') : 'opacity-75'}`}>
@@ -1002,14 +1007,20 @@ export const ItemListView: React.FC = () => {
 
                 {/* + Module button */}
                 {permissions.canCreateItems && (
-                  <button
-                    onClick={() => openComponentModal()}
-                    className="flex items-center gap-1 px-2 py-1 rounded-[6px] text-xs font-medium text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] border border-dashed border-[#d1d5db] dark:border-[#3f3f46] transition-all whitespace-nowrap cursor-pointer"
-                    title="Create new module (Shortcut: M)"
-                  >
-                    <Plus className="w-3 h-3" />
-                    <span className="text-[11px]">Module</span>
-                  </button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => openComponentModal()}
+                        className="flex items-center gap-1 px-2 py-1 rounded-[6px] text-xs font-medium text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white hover:bg-[#f3f4f6] dark:hover:bg-[#27272a] border border-dashed border-[#d1d5db] dark:border-[#3f3f46] transition-all whitespace-nowrap cursor-pointer"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span className="text-[11px]">Module</span>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      Create new module (Shortcut: M)
+                    </TooltipContent>
+                  </Tooltip>
                 )}
               </>
             ) : (

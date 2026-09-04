@@ -44,7 +44,7 @@ const getStoredLastChecked = (): string | null => {
 
 export const useUpdaterStore = create<UpdaterState>((set, get) => ({
   status: 'idle',
-  currentVersion: '0.5.0',
+  currentVersion: '0.6.0',
   availableVersion: null,
   releaseDate: null,
   releaseNotes: null,
@@ -129,10 +129,10 @@ export const useUpdaterStore = create<UpdaterState>((set, get) => ({
   simulateUpdateForTesting: () => {
     set({
       status: 'available',
-      currentVersion: '0.2.0',
-      availableVersion: '0.3.0',
+      currentVersion: '0.6.0',
+      availableVersion: '0.7.0',
       releaseDate: new Date().toLocaleDateString(),
-      releaseNotes: `### What's New in v0.3.0
+      releaseNotes: `### What's New in v0.7.0
 - **Cross-Workspace Database Inheritance**: Seamless global database credentials across all workspaces.
 - **Team Collaboration Guards**: Clear prerequisites preventing broken invites without cloud connectivity.
 - **Auto-Updater Stability**: Complete bundle updater artifacts with zero-friction updates.`,

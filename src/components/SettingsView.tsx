@@ -137,7 +137,6 @@ export const SettingsView: React.FC = () => {
     projects,
     items,
     theme,
-    setTheme,
     colorTheme,
     setColorTheme,
     standbyJokesEnabled,
@@ -159,6 +158,7 @@ export const SettingsView: React.FC = () => {
     setAutoCheckEnabled,
     checkForUpdates,
     setModalOpen: setUpdateModalOpen,
+    simulateUpdateForTesting,
   } = useUpdaterStore();
 
   const [activeTab, setActiveTab] = useState<SettingsTab>(() => {
@@ -923,7 +923,7 @@ export const SettingsView: React.FC = () => {
         {activeTab === 'preferences' && (
           <div className="space-y-6">
 
-            {/* 2. Color Themes Gallery (Terax/Linear style 2-col visual cards) */}
+            {/* Color Themes Gallery (8 curated presets including Daylight & Nord) */}
             <div className="space-y-2">
               <div className="flex items-center justify-between px-1">
                 <div className="text-[11px] font-semibold uppercase tracking-wider text-[#9ca3af] dark:text-[#71717a]">
@@ -943,7 +943,6 @@ export const SettingsView: React.FC = () => {
                       type="button"
                       onClick={() => {
                         setColorTheme(preset.id);
-                        if (theme !== 'dark') setTheme('dark');
                         toast.success(`Applied ${preset.name} theme`);
                       }}
                       className={`flex items-center gap-3 p-3 rounded-[8px] border transition-all text-left cursor-pointer group relative ${
@@ -2304,14 +2303,20 @@ export const SettingsView: React.FC = () => {
                         onChange={(e) => setGithubToken(e.target.value)}
                         className="w-full pr-10 px-3 py-2 text-xs bg-[#f9fafb] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] text-[#111827] dark:text-white placeholder-[#9ca3af] focus:outline-none focus:border-[#9ca3af] dark:focus:border-[#52525b] font-mono"
                       />
-                      <button
-                        type="button"
-                        onClick={() => setShowGithubToken(!showGithubToken)}
-                        className="absolute right-2.5 text-[#9ca3af] hover:text-[#374151] dark:hover:text-white transition-colors cursor-pointer"
-                        title={showGithubToken ? 'Hide token' : 'Show token'}
-                      >
-                        {showGithubToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={() => setShowGithubToken(!showGithubToken)}
+                            className="absolute right-2.5 text-[#9ca3af] hover:text-[#374151] dark:hover:text-white transition-colors cursor-pointer"
+                          >
+                            {showGithubToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="left">
+                          {showGithubToken ? 'Hide token' : 'Show token'}
+                        </TooltipContent>
+                      </Tooltip>
                     </div>
                   </div>
 
@@ -2810,6 +2815,17 @@ export const SettingsView: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    simulateUpdateForTesting();
+                    toast.info('Simulating update availability for testing');
+                  }}
+                  className="text-xs text-[#6b7280] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white hover:underline transition-colors px-1.5 py-1 cursor-pointer"
+                >
+                  Preview Dialog
+                </button>
+
                 <button
                   type="button"
                   disabled={updateStatus === 'checking'}
