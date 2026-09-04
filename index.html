@@ -58,12 +58,16 @@
           }
 
           var saved = localStorage.getItem('leaf_theme');
-          var isDark = saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          var isDark = saved ? saved === 'dark' : true;
           if (isDark) {
             document.documentElement.classList.add('dark');
           } else {
             document.documentElement.classList.remove('dark');
           }
+
+          var savedColor = localStorage.getItem('leaf_color_theme');
+          if (!savedColor || savedColor === 'default') savedColor = 'charcoal';
+          document.documentElement.setAttribute('data-color-theme', savedColor);
         } catch (e) {}
       })();
     </script>

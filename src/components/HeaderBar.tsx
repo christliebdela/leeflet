@@ -23,12 +23,13 @@ import {
   Kanban,
   LayoutGrid,
   RefreshCw,
+  CircleDot,
+  Ban,
 } from 'lucide-react';
 import { ItemType, Priority, Project, Item } from '../types';
 import { ITEM_TYPE_CONFIG, PRIORITY_CONFIG } from '../utils/format';
 import { WindowControls } from './WindowControls';
 import { SearchInput } from './ui/SearchInput';
-import { Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
 import { getUserPermissions } from '../utils/permissions';
 import { toast } from '../store/useToastStore';
 import { isWorkspaceCloudSync } from '../services/cloudSync';
@@ -58,6 +59,7 @@ export const HeaderBar: React.FC = () => {
     startRealtime,
     stopRealtime,
     isSidebarCollapsed,
+    isDemoMode,
     toggleSidebar,
     setSearchQuery,
     setFilterOptions,
@@ -78,6 +80,27 @@ export const HeaderBar: React.FC = () => {
   const [syncState, setSyncState] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isSyncingGitHub, setIsSyncingGitHub] = useState(false);
+  const [syncCooldownSec, setSyncCooldownSec] = useState(0);
+
+  const activeProj = viewMode.type === 'project' ? projects.find((p: Project) => p.id === viewMode.projectId) : null;
+
+  useEffect(() => {
+    const calculateRemaining = () => {
+      if (!activeProj?.githubLastSyncedAt) return 0;
+      const lastTime = new Date(activeProj.githubLastSyncedAt).getTime();
+      if (isNaN(lastTime)) return 0;
+      const elapsed = Date.now() - lastTime;
+      return Math.max(0, Math.ceil((60000 - elapsed) / 1000));
+    };
+
+    setSyncCooldownSec(calculateRemaining());
+
+    const interval = setInterval(() => {
+      setSyncCooldownSec(calculateRemaining());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [activeProj?.githubLastSyncedAt, activeProj?.id]);
 
   const filterDropdownRef = useRef<HTMLDivElement>(null);
   const sortDropdownRef = useRef<HTMLDivElement>(null);
@@ -91,6 +114,10 @@ export const HeaderBar: React.FC = () => {
 
   const handleSyncGitHubIssues = async () => {
     if (!activeProj || !activeProj.githubRepo || isSyncingGitHub) return;
+    if (syncCooldownSec > 0) {
+      toast.info(`Sync is on cooldown. Please wait ${syncCooldownSec}s before syncing again.`);
+      return;
+    }
     setIsSyncingGitHub(true);
     try {
       const result = await syncGitHubIssuesForProject({
@@ -106,6 +133,7 @@ export const HeaderBar: React.FC = () => {
           ...activeProj,
           githubLastSyncedAt: now,
         });
+        setSyncCooldownSec(60);
         if (result.createdCount > 0 || result.updatedCount > 0) {
           toast.success(`GitHub Sync: ${result.createdCount} new, ${result.updatedCount} updated`);
         } else {
@@ -267,7 +295,6 @@ export const HeaderBar: React.FC = () => {
 
   const totalCount = displayItems.length;
   const openCount = displayItems.filter((i: Item) => i.status !== 'done').length;
-  const activeProj = viewMode.type === 'project' ? projects.find((p: Project) => p.id === viewMode.projectId) : null;
 
   const activeProjectsCount = filterOptions.projectIds?.length || 0;
   const activeTypesCount = filterOptions.types?.length || 0;
@@ -302,7 +329,7 @@ export const HeaderBar: React.FC = () => {
           >
             {headerInfo.title}
           </h1>
-          {viewMode.type === 'project' && activeProj && isCurrentUserAdmin && (
+          {viewMode.type === 'project' && activeProj && isCurrentUserAdmin && !isDemoMode && (
             <button
               onClick={() => setProjectModalOpen(true, activeProj)}
               className="p-1 rounded-[4px] hover:bg-[#ebecee] dark:hover:bg-[#27272a] text-[#9ca3af] hover:text-[#111827] dark:hover:text-white transition-colors shrink-0"
@@ -395,47 +422,59 @@ export const HeaderBar: React.FC = () => {
           const repoUrl = `https://github.com/${repoLabel}`;
 
           return (
-            <div className="hidden sm:flex items-center gap-1.5 shrink-0 ml-1">
-              <a
-                href={repoUrl}
-                target="_blank"
-                rel="noreferrer"
-                onClick={(e) => {
+            <div className="hidden sm:flex items-center gap-1 shrink-0 ml-1">
+              <button
+                type="button"
+                onClick={async (e) => {
                   e.preventDefault();
+                  e.stopPropagation();
                   try {
-                    openUrl(repoUrl);
+                    if (typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window) {
+                      await openUrl(repoUrl);
+                    } else {
+                      window.open(repoUrl, '_blank', 'noopener,noreferrer');
+                    }
                   } catch {
-                    window.open(repoUrl, '_blank');
+                    window.open(repoUrl, '_blank', 'noopener,noreferrer');
                   }
                 }}
-                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[5px] bg-[#f4f5f6] dark:bg-[#1c1c1f] hover:bg-[#ebecee] dark:hover:bg-[#27272a] text-[#4b5563] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white border border-[#e5e7eb] dark:border-[#27272a] text-[11px] font-mono transition-colors cursor-pointer"
-                title={`Linked GitHub Repository: ${repoLabel}`}
+                className="h-6 w-6 flex items-center justify-center rounded-[5px] bg-[#f4f5f6] dark:bg-[#1c1c1f] hover:bg-[#ebecee] dark:hover:bg-[#27272a] text-[#4b5563] dark:text-[#a1a1aa] hover:text-[#111827] dark:hover:text-white border border-[#e5e7eb] dark:border-[#27272a] transition-colors cursor-pointer shrink-0"
               >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="opacity-80">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="opacity-80 shrink-0">
                   <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
                 </svg>
-                <span className="truncate max-w-[130px]">{repoLabel}</span>
-              </a>
+              </button>
 
               {/* Sync Issues Button */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    disabled={isSyncingGitHub}
-                    onClick={handleSyncGitHubIssues}
-                    className="h-6 px-2 flex items-center gap-1 rounded-[5px] border border-[#e5e7eb] dark:border-[#27272a] bg-[#f4f5f6] dark:bg-[#1c1c1f] text-[11px] font-medium text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#27272a] hover:text-[#111827] dark:hover:text-white shrink-0 transition-colors cursor-pointer disabled:opacity-60"
-                  >
-                    <RefreshCw className={`w-3 h-3 ${isSyncingGitHub ? 'animate-spin text-blue-500' : ''}`} />
-                    <span>{isSyncingGitHub ? 'Syncing...' : 'Sync Issues'}</span>
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" sideOffset={6}>
-                  {activeProj.githubLastSyncedAt
-                    ? `Sync GitHub issues (Last: ${new Date(activeProj.githubLastSyncedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`
-                    : 'Sync issues from linked GitHub repository'}
-                </TooltipContent>
-              </Tooltip>
+              <button
+                type="button"
+                disabled={isSyncingGitHub || isDemoMode}
+                onClick={() => {
+                  if (!isDemoMode) handleSyncGitHubIssues();
+                }}
+                className={`h-6 ${
+                  syncCooldownSec > 0 ? 'px-1.5' : 'w-6'
+                } flex items-center justify-center gap-1 rounded-[5px] border border-[#e5e7eb] dark:border-[#27272a] bg-[#f4f5f6] dark:bg-[#1c1c1f] text-[11px] font-medium shrink-0 transition-colors group ${
+                  isDemoMode
+                    ? 'cursor-not-allowed opacity-60 text-[#9ca3af] dark:text-[#71717a]'
+                    : syncCooldownSec > 0
+                    ? 'text-[#6b7280] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#27272a] cursor-pointer'
+                    : 'text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#27272a] hover:text-[#111827] dark:hover:text-white cursor-pointer disabled:opacity-60'
+                }`}
+              >
+                {isDemoMode ? (
+                  <>
+                    <CircleDot className="w-3.5 h-3.5 group-hover:hidden shrink-0" />
+                    <Ban className="w-3.5 h-3.5 text-zinc-400 hidden group-hover:block shrink-0" />
+                  </>
+                ) : isSyncingGitHub ? (
+                  <RefreshCw className="w-3 h-3 animate-spin text-blue-500 shrink-0" />
+                ) : syncCooldownSec > 0 ? (
+                  <span className="text-[10px] font-mono leading-none text-[#6b7280] dark:text-[#a1a1aa] font-medium">{syncCooldownSec}s</span>
+                ) : (
+                  <CircleDot className="w-3.5 h-3.5 shrink-0" />
+                )}
+              </button>
             </div>
           );
         })()}
@@ -818,7 +857,7 @@ export const HeaderBar: React.FC = () => {
     )}
 
         {/* Cloud Sync / Offline button */}
-        {isCloudSync && (
+        {isCloudSync && !isDemoMode && (
           <button
             type="button"
             onClick={() => handleRefresh(false)}

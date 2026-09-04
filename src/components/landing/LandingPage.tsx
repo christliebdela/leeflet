@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { WobbleCard } from '../ui/wobble-card';
 import { LandingBackground, BackgroundToggle } from './LandingBackground';
+import { InteractiveAppDemo } from './InteractiveAppDemo';
 import {
   useReleaseDownload,
   OSIcon,
@@ -300,18 +301,10 @@ export const LandingPage: React.FC = () => {
                 loading="eager"
               />
 
-              {/* Desktop Hero Screenshot (Landscape widescreen) */}
-              <img
-                src="/leaf.png"
-                alt="Leeflet Workspace Interface"
-                className="w-full h-auto hidden sm:block select-none"
-                style={{
-                  width: 'calc(100% + 4px)',
-                  maxWidth: 'none',
-                  margin: '-2px',
-                }}
-                loading="eager"
-              />
+              {/* Desktop Interactive Live Demo */}
+              <div className="hidden sm:block w-full">
+                <InteractiveAppDemo />
+              </div>
             </div>
           </div>
         </section>

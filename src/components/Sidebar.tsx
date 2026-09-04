@@ -21,7 +21,6 @@ import {
   SquarePen,
   X,
   Sun,
-  Moon,
   Minimize2,
   Coffee,
   Check,
@@ -29,9 +28,10 @@ import {
   Building2,
   ArrowUpCircle,
   GripVertical,
+  Ban,
 } from 'lucide-react';
 import { dbService } from '../services/db';
-import { ViewMode, ItemType, Priority, Project, Item, Workspace } from '../types';
+import { ViewMode, ItemType, Priority, Project, Item, Workspace, THEME_PRESETS } from '../types';
 import { enterMiniMode } from '../utils/window';
 import { Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
 import { toast } from '../store/useToastStore';
@@ -54,13 +54,17 @@ export const Sidebar: React.FC = () => {
     setProjectModalOpen,
     deleteProject,
     reorderProjects,
-    theme,
-    toggleTheme,
+    colorTheme,
+    cycleColorTheme,
     isSidebarCollapsed,
     sidebarCollapseMode,
     sidebarHoverExpand,
     initialize,
+    isDemoMode,
   } = useLeafStore();
+
+  const currentPreset = THEME_PRESETS.find((p) => p.id === colorTheme) || THEME_PRESETS[0];
+  const currentPresetName = currentPreset.name.replace(' (Default)', '');
 
   const { status: updateStatus, availableVersion, setModalOpen: setUpdateModalOpen } = useUpdaterStore();
 
@@ -463,7 +467,7 @@ export const Sidebar: React.FC = () => {
 
         {/* Bottom Tools in Rail */}
         <div className="flex flex-col items-center gap-1 w-full px-2 pt-2 border-t border-[#e5e7eb] dark:border-[#27272a]">
-          {updateStatus === 'available' && (
+          {updateStatus === 'available' && !isDemoMode && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
@@ -483,26 +487,42 @@ export const Sidebar: React.FC = () => {
             <TooltipTrigger asChild>
               <button
                 type="button"
-                onClick={toggleTheme}
+                onClick={cycleColorTheme}
                 className="w-9 h-9 flex items-center justify-center rounded-[6px] text-[#6b7280] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white transition-colors cursor-pointer"
               >
-                {theme === 'dark' ? <Moon className="w-3.5 h-3.5" /> : <Sun className="w-3.5 h-3.5" />}
+                <Sun className="w-3.5 h-3.5" />
               </button>
             </TooltipTrigger>
-            <TooltipContent side="right">Toggle Theme</TooltipContent>
+            <TooltipContent side="right">Theme: {currentPresetName}</TooltipContent>
           </Tooltip>
 
           <Tooltip>
             <TooltipTrigger asChild>
               <button
                 type="button"
-                onClick={() => enterMiniMode()}
-                className="w-9 h-9 flex items-center justify-center rounded-[6px] text-[#6b7280] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white transition-colors cursor-pointer"
+                disabled={isDemoMode}
+                onClick={() => {
+                  if (!isDemoMode) enterMiniMode();
+                }}
+                className={`w-9 h-9 flex items-center justify-center rounded-[6px] transition-colors group ${
+                  isDemoMode
+                    ? 'cursor-not-allowed opacity-50 text-[#9ca3af] dark:text-[#71717a]'
+                    : 'text-[#6b7280] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white cursor-pointer'
+                }`}
               >
-                <Minimize2 className="w-3.5 h-3.5" />
+                {isDemoMode ? (
+                  <>
+                    <Minimize2 className="w-3.5 h-3.5 group-hover:hidden" />
+                    <Ban className="w-3.5 h-3.5 text-zinc-400 hidden group-hover:block" />
+                  </>
+                ) : (
+                  <Minimize2 className="w-3.5 h-3.5" />
+                )}
               </button>
             </TooltipTrigger>
-            <TooltipContent side="right">Mini Mode (M)</TooltipContent>
+            <TooltipContent side="right">
+              {isDemoMode ? 'Desktop app only' : 'Mini Mode (M)'}
+            </TooltipContent>
           </Tooltip>
 
           <Tooltip>
@@ -522,40 +542,74 @@ export const Sidebar: React.FC = () => {
             <TooltipTrigger asChild>
               <button
                 type="button"
-                onClick={() => setViewMode({ type: 'settings' })}
-                className={`w-9 h-9 flex items-center justify-center rounded-[6px] transition-colors cursor-pointer ${
-                  isViewActive({ type: 'settings' })
-                    ? 'bg-[#e5e7eb] dark:bg-[#27272a] text-[#111827] dark:text-white'
-                    : 'text-[#6b7280] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white'
+                disabled={isDemoMode}
+                onClick={() => {
+                  if (!isDemoMode) setViewMode({ type: 'settings' });
+                }}
+                className={`w-9 h-9 flex items-center justify-center rounded-[6px] transition-colors group ${
+                  isDemoMode
+                    ? 'cursor-not-allowed opacity-50 text-[#9ca3af] dark:text-[#71717a]'
+                    : isViewActive({ type: 'settings' })
+                      ? 'bg-[#e5e7eb] dark:bg-[#27272a] text-[#111827] dark:text-white'
+                      : 'text-[#6b7280] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white cursor-pointer'
                 }`}
               >
-                <Settings className="w-3.5 h-3.5" />
+                {isDemoMode ? (
+                  <>
+                    <Settings className="w-3.5 h-3.5 group-hover:hidden" />
+                    <Ban className="w-3.5 h-3.5 text-zinc-400 hidden group-hover:block" />
+                  </>
+                ) : (
+                  <Settings className="w-3.5 h-3.5" />
+                )}
               </button>
             </TooltipTrigger>
-            <TooltipContent side="right">Settings (Ctrl+,)</TooltipContent>
+            <TooltipContent side="right">
+              {isDemoMode ? 'Disabled in preview' : 'Settings (Ctrl+,)'}
+            </TooltipContent>
           </Tooltip>
 
           <Tooltip>
             <TooltipTrigger asChild>
               <button
                 type="button"
-                onClick={() => setViewMode({ type: 'profile' })}
-                className={`w-9 h-9 flex items-center justify-center rounded-[6px] transition-colors cursor-pointer ${
-                  isViewActive({ type: 'profile' })
-                    ? 'bg-[#e5e7eb] dark:bg-[#27272a]'
-                    : 'hover:bg-[#ebecee] dark:hover:bg-[#1f1f23]'
+                disabled={isDemoMode}
+                onClick={() => {
+                  if (!isDemoMode) setViewMode({ type: 'profile' });
+                }}
+                className={`w-9 h-9 flex items-center justify-center rounded-[6px] transition-colors group ${
+                  isDemoMode
+                    ? 'cursor-not-allowed opacity-50'
+                    : isViewActive({ type: 'profile' })
+                      ? 'bg-[#e5e7eb] dark:bg-[#27272a]'
+                      : 'hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] cursor-pointer'
                 }`}
               >
-                <div className="w-6 h-6 rounded-full border border-[#e5e7eb] dark:border-[#323238] overflow-hidden shrink-0">
-                  <img
-                    src={userAvatarUrl}
-                    alt="Profile"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
+                {isDemoMode ? (
+                  <div className="w-6 h-6 flex items-center justify-center">
+                    <div className="w-6 h-6 rounded-full border border-[#e5e7eb] dark:border-[#323238] overflow-hidden shrink-0 group-hover:hidden">
+                      <img
+                        src={userAvatarUrl}
+                        alt="Profile"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <Ban className="w-3.5 h-3.5 text-zinc-400 hidden group-hover:block" />
+                  </div>
+                ) : (
+                  <div className="w-6 h-6 rounded-full border border-[#e5e7eb] dark:border-[#323238] overflow-hidden shrink-0">
+                    <img
+                      src={userAvatarUrl}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
               </button>
             </TooltipTrigger>
-            <TooltipContent side="right">Profile ({userProfileName})</TooltipContent>
+            <TooltipContent side="right">
+              {isDemoMode ? 'Disabled in preview' : `Profile (${userProfileName})`}
+            </TooltipContent>
           </Tooltip>
         </div>
     </div>
@@ -582,7 +636,7 @@ export const Sidebar: React.FC = () => {
             setIsHovered(false);
           }
         }}
-        className="h-full bg-[#e8e9eb] dark:bg-[#0a0a0c] flex flex-col justify-between shrink-0 select-none z-0 overflow-hidden relative transition-colors"
+        className="h-full bg-[#e8e9eb] dark:bg-[var(--theme-bg-sidebar,#121214)] flex flex-col justify-between shrink-0 select-none z-0 overflow-hidden relative transition-colors"
       >
         <AnimatePresence mode="wait" initial={false}>
           {isExpanded ? (
@@ -602,8 +656,15 @@ export const Sidebar: React.FC = () => {
         >
           <button
             type="button"
-            onClick={() => setIsWorkspaceMenuOpen(!isWorkspaceMenuOpen)}
-            className="flex-1 flex items-center justify-between p-1.5 rounded-[6px] hover:bg-[#e5e7eb]/70 dark:hover:bg-[#1f1f23] transition-colors group text-left select-none min-w-0"
+            disabled={isDemoMode}
+            onClick={() => {
+              if (!isDemoMode) setIsWorkspaceMenuOpen(!isWorkspaceMenuOpen);
+            }}
+            className={`flex-1 flex items-center justify-between p-1.5 rounded-[6px] transition-colors group text-left select-none min-w-0 ${
+              isDemoMode
+                ? 'cursor-not-allowed opacity-75'
+                : 'hover:bg-[#e5e7eb]/70 dark:hover:bg-[#1f1f23] cursor-pointer'
+            }`}
           >
             <div className="flex items-center gap-2 min-w-0">
               <div className="w-5 h-5 flex items-center justify-center shrink-0">
@@ -617,11 +678,18 @@ export const Sidebar: React.FC = () => {
                 {workspace?.name || 'Personal Workspace'}
               </span>
             </div>
-            <ChevronDown
-              className={`w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa] group-hover:text-[#111827] dark:group-hover:text-white transition-transform shrink-0 ml-1 ${
-                isWorkspaceMenuOpen ? 'rotate-180' : ''
-              }`}
-            />
+            {isDemoMode ? (
+              <div className="flex items-center shrink-0 ml-1">
+                <ChevronDown className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa] group-hover:hidden" />
+                <Ban className="w-3.5 h-3.5 text-zinc-400 hidden group-hover:block" />
+              </div>
+            ) : (
+              <ChevronDown
+                className={`w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa] group-hover:text-[#111827] dark:group-hover:text-white transition-transform shrink-0 ml-1 ${
+                  isWorkspaceMenuOpen ? 'rotate-180' : ''
+                }`}
+              />
+            )}
           </button>
 
           {/* Workspace Dropdown Menu */}
@@ -1103,7 +1171,7 @@ export const Sidebar: React.FC = () => {
 
         {/* Bottom Footer Controls */}
         <div className="p-3 border-t border-[#e5e7eb] dark:border-[#27272a] space-y-1">
-          {updateStatus === 'available' && (
+          {updateStatus === 'available' && !isDemoMode && (
             <button
               type="button"
               onClick={() => setUpdateModalOpen(true)}
@@ -1116,40 +1184,61 @@ export const Sidebar: React.FC = () => {
 
           {/* Theme Toggle */}
           <button
-            onClick={toggleTheme}
-            className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white transition-colors text-xs font-medium"
+            type="button"
+            onClick={cycleColorTheme}
+            className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white transition-colors text-xs font-medium cursor-pointer"
           >
             <div className="flex items-center gap-2">
-              {theme === 'dark' ? (
-                <Sun className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
-              ) : (
-                <Moon className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
-              )}
-              <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+              <Sun className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
+              <span>Theme</span>
             </div>
-            <span className="text-[10.5px] text-[#9ca3af] dark:text-[#71717a] font-normal capitalize">
-              {theme}
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span
+                className="w-1.5 h-1.5 rounded-full shrink-0"
+                style={{ backgroundColor: currentPreset?.dotColor || '#a1a1aa' }}
+              />
+              <span className="text-[10.5px] text-[#9ca3af] dark:text-[#71717a] font-normal capitalize">
+                {currentPresetName}
+              </span>
+            </div>
           </button>
 
           {/* Mini Mode */}
           <button
-            onClick={enterMiniMode}
-            className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white transition-colors text-xs font-medium"
+            type="button"
+            disabled={isDemoMode}
+            onClick={() => {
+              if (!isDemoMode) enterMiniMode();
+            }}
+            className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] transition-colors text-xs font-medium group ${
+              isDemoMode
+                ? 'cursor-not-allowed opacity-60 text-[#9ca3af] dark:text-[#71717a]'
+                : 'text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white'
+            }`}
           >
             <div className="flex items-center gap-2">
               <Minimize2 className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
               <span>Mini Mode</span>
             </div>
-            <kbd className="w-4 h-4 flex items-center justify-center rounded-[3px] bg-[#ebecee] dark:bg-[#27272a] border border-[#e5e7eb] dark:border-[#3f3f46] font-mono text-[9px] font-semibold text-[#6b7280] dark:text-[#a1a1aa] shrink-0 leading-none">
-              M
-            </kbd>
+            {isDemoMode ? (
+              <div className="flex items-center justify-center w-5 h-5">
+                <kbd className="w-4 h-4 flex items-center justify-center rounded-[3px] bg-[#ebecee] dark:bg-[#27272a] border border-[#e5e7eb] dark:border-[#3f3f46] font-mono text-[9px] font-semibold text-[#6b7280] dark:text-[#a1a1aa] shrink-0 leading-none group-hover:hidden">
+                  M
+                </kbd>
+                <Ban className="w-3.5 h-3.5 text-zinc-400 hidden group-hover:block" />
+              </div>
+            ) : (
+              <kbd className="w-4 h-4 flex items-center justify-center rounded-[3px] bg-[#ebecee] dark:bg-[#27272a] border border-[#e5e7eb] dark:border-[#3f3f46] font-mono text-[9px] font-semibold text-[#6b7280] dark:text-[#a1a1aa] shrink-0 leading-none">
+                M
+              </kbd>
+            )}
           </button>
 
           {/* Coffee Break / Mask */}
           <button
+            type="button"
             onClick={() => useLeafStore.getState().setStandby(true)}
-            className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] transition-colors text-xs font-medium text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white"
+            className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] transition-colors text-xs font-medium text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white cursor-pointer"
           >
             <div className="flex items-center gap-2">
               <Coffee className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
@@ -1162,31 +1251,50 @@ export const Sidebar: React.FC = () => {
 
           {/* Settings & Preferences */}
           <button
-            onClick={() => setViewMode({ type: 'settings' })}
-            className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] transition-colors text-xs font-medium ${
-              isViewActive({ type: 'settings' })
-                ? 'bg-[#ebecee] dark:bg-[#27272a] text-[#111827] dark:text-white font-semibold'
-                : 'text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white'
+            type="button"
+            disabled={isDemoMode}
+            onClick={() => {
+              if (!isDemoMode) setViewMode({ type: 'settings' });
+            }}
+            className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] transition-colors text-xs font-medium group ${
+              isDemoMode
+                ? 'cursor-not-allowed opacity-60 text-[#9ca3af] dark:text-[#71717a]'
+                : isViewActive({ type: 'settings' })
+                ? 'bg-[#ebecee] dark:bg-[#27272a] text-[#111827] dark:text-white font-semibold cursor-pointer'
+                : 'text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white cursor-pointer'
             }`}
           >
             <div className="flex items-center gap-2">
               <Settings className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
               <span>Settings</span>
             </div>
-            <kbd className="px-1.5 py-0.5 rounded-[3px] bg-[#ebecee] dark:bg-[#27272a] border border-[#e5e7eb] dark:border-[#3f3f46] font-mono text-[9px] font-semibold text-[#6b7280] dark:text-[#a1a1aa] shrink-0 leading-none">
-              Ctrl+,
-            </kbd>
+            {isDemoMode ? (
+              <div className="flex items-center justify-center">
+                <kbd className="px-1.5 py-0.5 rounded-[3px] bg-[#ebecee] dark:bg-[#27272a] border border-[#e5e7eb] dark:border-[#3f3f46] font-mono text-[9px] font-semibold text-[#6b7280] dark:text-[#a1a1aa] shrink-0 leading-none group-hover:hidden">
+                  Ctrl+,
+                </kbd>
+                <Ban className="w-3.5 h-3.5 text-zinc-400 hidden group-hover:block" />
+              </div>
+            ) : (
+              <kbd className="px-1.5 py-0.5 rounded-[3px] bg-[#ebecee] dark:bg-[#27272a] border border-[#e5e7eb] dark:border-[#3f3f46] font-mono text-[9px] font-semibold text-[#6b7280] dark:text-[#a1a1aa] shrink-0 leading-none">
+                Ctrl+,
+              </kbd>
+            )}
           </button>
-
-
 
           {/* User Profile */}
           <button
-            onClick={() => setViewMode({ type: 'profile' })}
-            className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] transition-colors text-xs font-medium ${
-              isViewActive({ type: 'profile' })
-                ? 'bg-[#ebecee] dark:bg-[#27272a] text-[#111827] dark:text-white font-semibold'
-                : 'text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white'
+            type="button"
+            disabled={isDemoMode}
+            onClick={() => {
+              if (!isDemoMode) setViewMode({ type: 'profile' });
+            }}
+            className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-[6px] transition-colors text-xs font-medium group ${
+              isDemoMode
+                ? 'cursor-not-allowed opacity-60 text-[#9ca3af] dark:text-[#71717a]'
+                : isViewActive({ type: 'profile' })
+                ? 'bg-[#ebecee] dark:bg-[#27272a] text-[#111827] dark:text-white font-semibold cursor-pointer'
+                : 'text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#1f1f23] hover:text-[#111827] dark:hover:text-white cursor-pointer'
             }`}
           >
             <div className="flex items-center gap-2 min-w-0">
@@ -1199,9 +1307,18 @@ export const Sidebar: React.FC = () => {
               </div>
               <span className="truncate">{userProfileName}</span>
             </div>
-            <span className="text-[10.5px] text-[#9ca3af] dark:text-[#71717a] font-normal shrink-0">
-              {workspace ? localStorage.getItem(`leeflet_workspace_role_${workspace.id}`) || (localStorage.getItem(`leeflet_is_joined_workspace_${workspace.id}`) === 'true' ? 'Member' : 'Admin') : 'Admin'}
-            </span>
+            {isDemoMode ? (
+              <div className="flex items-center justify-end">
+                <span className="text-[10.5px] text-[#9ca3af] dark:text-[#71717a] font-normal shrink-0 group-hover:hidden">
+                  Admin
+                </span>
+                <Ban className="w-3.5 h-3.5 text-zinc-400 hidden group-hover:block" />
+              </div>
+            ) : (
+              <span className="text-[10.5px] text-[#9ca3af] dark:text-[#71717a] font-normal shrink-0">
+                {workspace ? localStorage.getItem(`leeflet_workspace_role_${workspace.id}`) || (localStorage.getItem(`leeflet_is_joined_workspace_${workspace.id}`) === 'true' ? 'Member' : 'Admin') : 'Admin'}
+              </span>
+            )}
           </button>
         </div>
             </motion.div>

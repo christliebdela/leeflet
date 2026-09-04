@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Workspace, Project, Item, ViewMode, FilterOptions, ChecklistItem, Attachment, ItemType, Priority, Status, ColorThemeId, SidebarCollapseMode, ItemViewLayout } from '../types';
+import { Workspace, Project, Item, ViewMode, FilterOptions, ChecklistItem, Attachment, ItemType, Priority, Status, ColorThemeId, SidebarCollapseMode, ItemViewLayout, THEME_PRESETS } from '../types';
 import { dbService } from '../services/db';
 import { broadcastSync, subscribeToSync } from '../utils/sync';
 import { toast } from './useToastStore';
@@ -7,6 +7,14 @@ import { soundService } from '../utils/audio';
 import { subscribeToWorkspace, unsubscribe as realtimeUnsubscribe } from '../services/realtimeSync';
 import { getDefaultCloudCredentials } from '../services/cloudSync';
 import { useComponentStore } from './useComponentStore';
+import {
+  DEMO_WORKSPACE,
+  DEMO_PROJECTS,
+  DEMO_ITEMS,
+  DEMO_COMPONENTS,
+  DEMO_MEMBERS,
+} from '../utils/demoData';
+import { saveStoredTeamMembers } from '../utils/team';
 
 interface LeafState {
   workspace: Workspace | null;
@@ -49,6 +57,7 @@ interface LeafState {
   setStandbyJokesEnabled: (enabled: boolean) => void;
   setTheme: (theme: 'light' | 'dark') => void;
   toggleTheme: () => void;
+  cycleColorTheme: () => void;
   loadWorkspaces: () => Promise<void>;
   switchWorkspace: (workspaceId: string) => Promise<void>;
   createWorkspace: (name: string, locationPath: string, explicitId?: string) => Promise<Workspace>;
@@ -103,6 +112,10 @@ interface LeafState {
   setProjectModalOpen: (open: boolean, project?: Project | null) => void;
   setStickyNoteItemId: (id: string | null) => void;
   setItemToDelete: (item: Item | null) => void;
+  isDemoMode: boolean;
+  enterDemoMode: () => void;
+  exitDemoMode: () => void;
+  resetDemoData: () => void;
   syncCloudData: (silent?: boolean) => Promise<void>;
   startRealtime: () => void;
   stopRealtime: () => void;
@@ -111,13 +124,14 @@ interface LeafState {
 const getInitialTheme = (): 'light' | 'dark' => {
   const saved = localStorage.getItem('leaf_theme');
   if (saved === 'dark' || saved === 'light') return saved;
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  return 'dark';
 };
 
 const getInitialColorTheme = (): ColorThemeId => {
   try {
     const rawSaved = localStorage.getItem('leaf_color_theme');
-    if (rawSaved === 'deep-black') return 'default';
+    if (rawSaved === 'deep-black' || rawSaved === 'noir') return 'default';
+    if (!rawSaved || rawSaved === 'default') return 'charcoal';
     const saved = rawSaved as ColorThemeId | null;
     const validIds: ColorThemeId[] = [
       'default', 'charcoal', 'claude', 'tokyo-night', 'catppuccin', 'dracula',
@@ -126,7 +140,7 @@ const getInitialColorTheme = (): ColorThemeId => {
       return saved;
     }
   } catch {}
-  return 'default';
+  return 'charcoal';
 };
 
 const getInitialSidebarCollapseMode = (): SidebarCollapseMode => {
@@ -177,6 +191,7 @@ export const useLeafStore = create<LeafState>((set, get) => ({
   editingProject: null,
   stickyNoteItemId: null,
   itemToDelete: null,
+  isDemoMode: false,
   isLoading: true,
   loadingMessage: 'loading workspace...',
   isStandby: false,
@@ -187,6 +202,51 @@ export const useLeafStore = create<LeafState>((set, get) => ({
   theme: getInitialTheme(),
   colorTheme: getInitialColorTheme(),
   itemViewLayout: getInitialItemViewLayout(),
+
+  enterDemoMode: () => {
+    set({
+      isDemoMode: true,
+      theme: 'dark',
+      colorTheme: 'charcoal',
+      workspace: DEMO_WORKSPACE,
+      workspaces: [DEMO_WORKSPACE],
+      projects: DEMO_PROJECTS,
+      items: DEMO_ITEMS,
+      selectedProjectId: DEMO_PROJECTS[0].id,
+      viewMode: { type: 'project', projectId: DEMO_PROJECTS[0].id },
+      itemViewLayout: 'list',
+      selectedItemId: null,
+      isLoading: false,
+      isSidebarCollapsed: false,
+    });
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.add('dark');
+      document.documentElement.setAttribute('data-color-theme', 'charcoal');
+    }
+    try {
+      saveStoredTeamMembers(DEMO_MEMBERS, DEMO_WORKSPACE.id);
+      useComponentStore.setState({ components: DEMO_COMPONENTS });
+    } catch {}
+  },
+
+  resetDemoData: () => {
+    set({
+      items: DEMO_ITEMS,
+      projects: DEMO_PROJECTS,
+      selectedProjectId: DEMO_PROJECTS[0].id,
+      viewMode: { type: 'project', projectId: DEMO_PROJECTS[0].id },
+      selectedItemId: null,
+    });
+    try {
+      useComponentStore.setState({ components: DEMO_COMPONENTS });
+    } catch {}
+    toast.success('Demo data reset to initial state');
+  },
+
+  exitDemoMode: () => {
+    set({ isDemoMode: false });
+    get().initialize();
+  },
 
   setItemViewLayout: (itemViewLayout: ItemViewLayout) => {
     try {
@@ -267,12 +327,24 @@ export const useLeafStore = create<LeafState>((set, get) => ({
     set({ theme });
   },
 
+  cycleColorTheme: () => {
+    const current = get().colorTheme;
+    const presets = THEME_PRESETS;
+    const currentIndex = presets.findIndex((p) => p.id === current);
+    const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % presets.length;
+    const nextPreset = presets[nextIndex];
+    get().setColorTheme(nextPreset.id);
+    if (get().theme !== 'dark') {
+      get().setTheme('dark');
+    }
+  },
+
   toggleTheme: () => {
-    const next = get().theme === 'dark' ? 'light' : 'dark';
-    get().setTheme(next);
+    get().cycleColorTheme();
   },
 
   initialize: async (customLoadingMessage?: string) => {
+    if (get().isDemoMode) return;
     set({
       isLoading: true,
       loadingMessage: customLoadingMessage || 'loading workspace...',
@@ -341,6 +413,7 @@ export const useLeafStore = create<LeafState>((set, get) => ({
   },
 
   loadWorkspaces: async () => {
+    if (get().isDemoMode) return;
     const workspaces = await dbService.getAllWorkspaces();
     set({ workspaces });
   },
@@ -412,11 +485,27 @@ export const useLeafStore = create<LeafState>((set, get) => ({
   },
 
   loadProjects: async () => {
+    if (get().isDemoMode) return;
     const projects = await dbService.getProjects();
     set({ projects });
   },
 
   createProject: async (data) => {
+    if (get().isDemoMode) {
+      const newProj: Project = {
+        id: crypto.randomUUID(),
+        name: data.name,
+        color: data.color || '#3b82f6',
+        description: data.description || '',
+        githubRepo: data.githubRepo,
+        githubToken: data.githubToken,
+        githubSyncState: data.githubSyncState,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      set({ projects: [...get().projects, newProj] });
+      return newProj;
+    }
     const project = await dbService.createProject(data);
     await get().loadProjects();
     broadcastSync({ type: 'projects_reload' });
@@ -424,12 +513,24 @@ export const useLeafStore = create<LeafState>((set, get) => ({
   },
 
   updateProject: async (project) => {
+    if (get().isDemoMode) {
+      set({ projects: get().projects.map((p) => (p.id === project.id ? project : p)) });
+      return;
+    }
     await dbService.updateProject(project);
     await get().loadProjects();
     broadcastSync({ type: 'projects_reload' });
   },
 
   deleteProject: async (id) => {
+    if (get().isDemoMode) {
+      set({
+        projects: get().projects.filter((p) => p.id !== id),
+        items: get().items.filter((i) => i.projectId !== id),
+        selectedProjectId: get().selectedProjectId === id ? null : get().selectedProjectId,
+      });
+      return;
+    }
     await dbService.deleteProject(id);
     if (get().selectedProjectId === id) {
       set({ selectedProjectId: null, viewMode: { type: 'inbox' } });
@@ -442,6 +543,19 @@ export const useLeafStore = create<LeafState>((set, get) => ({
 
   reorderProjects: async (sourceId: string, targetId: string, position: 'before' | 'after' = 'before') => {
     if (sourceId === targetId) return;
+
+    if (get().isDemoMode) {
+      const projects = [...get().projects];
+      const sourceIndex = projects.findIndex((p) => p.id === sourceId);
+      if (sourceIndex === -1) return;
+      const [movedProject] = projects.splice(sourceIndex, 1);
+      const newTargetIndex = projects.findIndex((p) => p.id === targetId);
+      if (newTargetIndex === -1) return;
+      const insertIndex = position === 'after' ? newTargetIndex + 1 : newTargetIndex;
+      projects.splice(insertIndex, 0, movedProject);
+      set({ projects });
+      return;
+    }
 
     const projects = [...get().projects];
     const sourceIndex = projects.findIndex((p) => p.id === sourceId);
@@ -461,11 +575,38 @@ export const useLeafStore = create<LeafState>((set, get) => ({
   },
 
   loadItems: async () => {
+    if (get().isDemoMode) return;
     const items = await dbService.getItems(get().filterOptions);
     set({ items });
   },
 
   createItem: async (data) => {
+    if (get().isDemoMode) {
+      const newItem: Item = {
+        id: crypto.randomUUID(),
+        projectId: data.projectId || get().selectedProjectId || DEMO_PROJECTS[0].id,
+        componentId: data.componentId || null,
+        title: data.title,
+        content: data.content || '',
+        type: data.type || 'task',
+        priority: data.priority || 'none',
+        status: data.status || 'planned',
+        tags: data.tags || [],
+        checklist: data.checklist || [],
+        attachments: data.attachments || [],
+        dueAt: data.dueAt || null,
+        assigneeId: data.assigneeId || null,
+        completedAt: data.completedAt || null,
+        githubIssueNumber: data.githubIssueNumber,
+        githubIssueUrl: data.githubIssueUrl,
+        githubIssueState: data.githubIssueState,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      set({ items: [newItem, ...get().items] });
+      toast.success('Item added');
+      return newItem;
+    }
     const newItem = await dbService.createItem(data);
     await get().loadItems();
     broadcastSync({ type: 'item_created', item: newItem });
@@ -491,6 +632,11 @@ export const useLeafStore = create<LeafState>((set, get) => ({
     set((state) => ({
       items: state.items.map((i) => (i.id === item.id ? item : i)),
     }));
+
+    if (get().isDemoMode) {
+      return;
+    }
+
     broadcastSync({ type: 'item_updated', item });
     await dbService.updateItem(item);
   },
@@ -500,6 +646,12 @@ export const useLeafStore = create<LeafState>((set, get) => ({
       items: state.items.filter((i) => i.id !== id),
       selectedItemId: state.selectedItemId === id ? null : state.selectedItemId,
     }));
+
+    if (get().isDemoMode) {
+      toast.success('Item deleted');
+      return;
+    }
+
     broadcastSync({ type: 'item_deleted', itemId: id });
     await dbService.deleteItem(id);
     await get().loadItems();
@@ -525,6 +677,11 @@ export const useLeafStore = create<LeafState>((set, get) => ({
       items,
       filterOptions: { ...get().filterOptions, sortBy: 'manual' },
     });
+
+    if (get().isDemoMode) {
+      return;
+    }
+
     await dbService.saveItemsOrder(items);
     broadcastSync({ type: 'items_reload' });
   },
@@ -547,6 +704,11 @@ export const useLeafStore = create<LeafState>((set, get) => ({
     });
   },
   setViewMode: (viewMode) => {
+    if (get().isDemoMode) {
+      if (viewMode.type === 'settings' || viewMode.type === 'profile') {
+        return;
+      }
+    }
     try {
       localStorage.setItem('leaf_current_view_mode', JSON.stringify(viewMode));
     } catch {}
@@ -572,16 +734,25 @@ export const useLeafStore = create<LeafState>((set, get) => ({
 
   setQuickCaptureOpen: (open) => set({ isQuickCaptureOpen: open }),
   setOnboardingOpen: (open) => set({ isOnboardingOpen: open }),
-  setWorkspaceModalOpen: (open) =>
+  setWorkspaceModalOpen: (open) => {
+    if (get().isDemoMode && open) return;
     set({
       isWorkspaceModalOpen: open,
       selectedItemId: open ? null : get().selectedItemId,
-    }),
-  setProjectModalOpen: (open, project = null) => set({ isProjectModalOpen: open, editingProject: project }),
-  setStickyNoteItemId: (id) => set({ stickyNoteItemId: id }),
+    });
+  },
+  setProjectModalOpen: (open, project = null) => {
+    if (get().isDemoMode && open) return;
+    set({ isProjectModalOpen: open, editingProject: project });
+  },
+  setStickyNoteItemId: (id) => {
+    if (get().isDemoMode && id) return;
+    set({ stickyNoteItemId: id });
+  },
   setItemToDelete: (item) => set({ itemToDelete: item }),
 
   syncCloudData: async (silent = true) => {
+    if (get().isDemoMode) return;
     const ws = get().workspace;
     if (!ws) return;
     try {

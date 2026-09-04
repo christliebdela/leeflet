@@ -207,21 +207,11 @@
    INTERFACE COLOR THEMES
    ======================================================== */
 
-/* 1. Noir (Default Flagship - OLED Pitch Black) */
+/* 1. Charcoal (Default Flagship - Zinc & Charcoal) */
 html.dark,
-html.dark[data-color-theme="default"],
-html.dark[data-color-theme="deep-black"] {
-  --theme-bg-shell: #000000;
-  --theme-bg-app: #000000;
-  --theme-bg-sidebar: #000000;
-  --theme-bg-card: #09090b;
-  --theme-bg-card-elevated: #121215;
-  --theme-border: #18181b;
-  --theme-accent: #ffffff;
-}
-
-/* 2. Charcoal (Zinc & Charcoal) */
-html.dark[data-color-theme="charcoal"] {
+html.dark[data-color-theme="charcoal"],
+.dark[data-color-theme="charcoal"],
+.dark:not([data-color-theme]) {
   --theme-bg-shell: #121214;
   --theme-bg-app: #0f0f11;
   --theme-bg-sidebar: #121214;
@@ -231,8 +221,25 @@ html.dark[data-color-theme="charcoal"] {
   --theme-accent: #10b981;
 }
 
+/* 2. Noir (OLED Pitch Black) */
+html.dark[data-color-theme="default"],
+html.dark[data-color-theme="noir"],
+html.dark[data-color-theme="deep-black"],
+.dark[data-color-theme="default"],
+.dark[data-color-theme="noir"],
+.dark[data-color-theme="deep-black"] {
+  --theme-bg-shell: #000000;
+  --theme-bg-app: #000000;
+  --theme-bg-sidebar: #000000;
+  --theme-bg-card: #09090b;
+  --theme-bg-card-elevated: #121215;
+  --theme-border: #18181b;
+  --theme-accent: #ffffff;
+}
+
 /* 3. Claude (Anthropic Warm Stone & Terracotta) */
-html.dark[data-color-theme="claude"] {
+html.dark[data-color-theme="claude"],
+.dark[data-color-theme="claude"] {
   --theme-bg-shell: #141210;
   --theme-bg-app: #1b1917;
   --theme-bg-sidebar: #141210;
@@ -243,7 +250,8 @@ html.dark[data-color-theme="claude"] {
 }
 
 /* 4. Tokyo Night (folke/tokyo-night.nvim) */
-html.dark[data-color-theme="tokyo-night"] {
+html.dark[data-color-theme="tokyo-night"],
+.dark[data-color-theme="tokyo-night"] {
   --theme-bg-shell: #16161e;
   --theme-bg-app: #1a1b26;
   --theme-bg-sidebar: #16161e;
@@ -254,7 +262,8 @@ html.dark[data-color-theme="tokyo-night"] {
 }
 
 /* 5. Catppuccin Mocha */
-html.dark[data-color-theme="catppuccin"] {
+html.dark[data-color-theme="catppuccin"],
+.dark[data-color-theme="catppuccin"] {
   --theme-bg-shell: #181825;
   --theme-bg-app: #1e1e2e;
   --theme-bg-sidebar: #181825;
@@ -265,7 +274,8 @@ html.dark[data-color-theme="catppuccin"] {
 }
 
 /* 6. Dracula */
-html.dark[data-color-theme="dracula"] {
+html.dark[data-color-theme="dracula"],
+.dark[data-color-theme="dracula"] {
   --theme-bg-shell: #21222c;
   --theme-bg-app: #282a36;
   --theme-bg-sidebar: #21222c;
@@ -391,33 +401,45 @@ html.dark[data-color-theme="github-dark"] {
 
 /* Universal Theme Overrides across entire application */
 html.dark .dark\:bg-\[\#0f0f11\],
-html.dark .dark\:bg-\[\#0c0c0e\] {
+.dark .dark\:bg-\[\#0f0f11\],
+html.dark .dark\:bg-\[\#0c0c0e\],
+.dark .dark\:bg-\[\#0c0c0e\] {
   background-color: var(--theme-bg-app) !important;
 }
 
 html.dark aside,
-html.dark .dark\:bg-\[\#121214\] {
+.dark aside,
+html.dark .dark\:bg-\[\#121214\],
+.dark .dark\:bg-\[\#121214\] {
   background-color: var(--theme-bg-sidebar) !important;
   border-color: var(--theme-border) !important;
 }
 
-html.dark .dark\:bg-\[\#18181b\] {
+html.dark .dark\:bg-\[\#18181b\],
+.dark .dark\:bg-\[\#18181b\] {
   background-color: var(--theme-bg-card) !important;
 }
 
 html.dark .dark\:bg-\[\#202024\],
+.dark .dark\:bg-\[\#202024\],
 html.dark .dark\:bg-\[\#1c1c1f\],
-html.dark .dark\:bg-\[\#27272a\] {
+.dark .dark\:bg-\[\#1c1c1f\],
+html.dark .dark\:bg-\[\#27272a\],
+.dark .dark\:bg-\[\#27272a\] {
   background-color: var(--theme-bg-card-elevated) !important;
 }
 
 html.dark .dark\:border-\[\#27272a\],
+.dark .dark\:border-\[\#27272a\],
 html.dark .dark\:border-\[\#323238\],
-html.dark .dark\:border-\[\#3f3f46\] {
+.dark .dark\:border-\[\#323238\],
+html.dark .dark\:border-\[\#3f3f46\],
+.dark .dark\:border-\[\#3f3f46\] {
   border-color: var(--theme-border) !important;
 }
 
-html.dark .dark\:divide-\[\#27272a\] > :not([hidden]) ~ :not([hidden]) {
+html.dark .dark\:divide-\[\#27272a\] > :not([hidden]) ~ :not([hidden]),
+.dark .dark\:divide-\[\#27272a\] > :not([hidden]) ~ :not([hidden]) {
   border-color: var(--theme-border) !important;
 }
 

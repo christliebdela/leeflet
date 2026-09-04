@@ -20,6 +20,7 @@ import {
   Send,
   Loader2,
   LogOut,
+  Ban,
 } from 'lucide-react';
 import { useLeafStore } from '../store/useLeafStore';
 import { toast } from '../store/useToastStore';
@@ -64,7 +65,7 @@ const ROLES: RoleConfig[] = [
 ];
 
 export const TeamView: React.FC = () => {
-  const { workspace, setViewMode } = useLeafStore();
+  const { workspace, setViewMode, isDemoMode } = useLeafStore();
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [showSmtpRequiredModal, setShowSmtpRequiredModal] = useState(false);
   const [showDbRequiredModal, setShowDbRequiredModal] = useState(false);
@@ -480,7 +481,18 @@ export const TeamView: React.FC = () => {
           </div>
         </div>
 
-        {isCurrentUserAdmin ? (
+        {isDemoMode ? (
+          <button
+            type="button"
+            disabled
+            className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[#f4f5f6] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#323238] text-[#9ca3af] dark:text-[#71717a] rounded-[6px] text-xs font-medium cursor-not-allowed group opacity-75 select-none"
+            title="Invites disabled in interactive preview"
+          >
+            <UserPlus className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa] group-hover:hidden" />
+            <Ban className="w-3.5 h-3.5 text-zinc-400 hidden group-hover:block" />
+            <span>Invite Member</span>
+          </button>
+        ) : isCurrentUserAdmin ? (
           <button
             onClick={handleOpenInviteModal}
             className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[#f4f5f6] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#323238] text-[#374151] dark:text-[#f4f4f5] hover:bg-[#ebecee] dark:hover:bg-[#27272a] hover:border-[#d1d5db] dark:hover:border-[#3f3f46] rounded-[6px] text-xs font-medium transition-colors shrink-0 shadow-2xs active:scale-95 cursor-pointer"
@@ -501,7 +513,7 @@ export const TeamView: React.FC = () => {
       </div>
 
       {/* Prerequisite: Cloud Database Required Banner */}
-      {!hasCloudDb && (
+      {!hasCloudDb && !isDemoMode && (
         <div className="p-3.5 rounded-[8px] border border-amber-500/20 bg-amber-500/5 dark:bg-amber-500/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
           <div className="flex items-start sm:items-center gap-2.5">
             <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5 sm:mt-0" />
@@ -600,11 +612,11 @@ export const TeamView: React.FC = () => {
                         <ShieldCheck className="w-3 h-3 text-violet-600 dark:text-violet-400" />
                         <span>Admin</span>
                       </span>
-                    ) : !isCurrentUserAdmin || isPending ? (
+                    ) : !isCurrentUserAdmin || isPending || isDemoMode ? (
                       <span
                         className="flex items-center gap-1.5 px-2.5 py-1 text-[11.5px] font-medium text-[#6b7280] dark:text-[#a1a1aa] bg-[#f4f5f6] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#323238] rounded-[5px] opacity-75 select-none"
                       >
-                        <Shield className="w-3 h-3 text-[#9ca3af]" />
+                        <Shield className="w-3.5 h-3.5 text-[#9ca3af]" />
                         <span>{member.role}</span>
                       </span>
                     ) : (
@@ -617,14 +629,14 @@ export const TeamView: React.FC = () => {
                         className="flex items-center gap-1.5 px-2.5 py-1 text-[11.5px] font-medium text-[#374151] dark:text-[#d4d4d8] bg-[#f4f5f6] dark:bg-[#202024] hover:bg-[#ebecee] dark:hover:bg-[#27272a] border border-[#e5e7eb] dark:border-[#323238] rounded-[5px] transition-colors cursor-pointer"
                         title="Click to change role"
                       >
-                        <Shield className="w-3 h-3 text-[#6b7280] dark:text-[#a1a1aa]" />
+                        <Shield className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
                         <span>{member.role}</span>
-                        <ChevronDown className="w-3 h-3 text-[#9ca3af]" />
+                        <ChevronDown className="w-3.5 h-3.5 text-[#9ca3af]" />
                       </button>
                     )}
 
                     {/* Role Popover (Only for Admins managing non-admin joined members) */}
-                    {isRoleOpen && isCurrentUserAdmin && !isPending && !isMemberAdmin && (
+                    {isRoleOpen && isCurrentUserAdmin && !isPending && !isMemberAdmin && !isDemoMode && (
                       <div className="absolute right-0 top-full mt-1 w-56 bg-white dark:bg-[#18181b] border border-[#e5e7eb] dark:border-[#323238] rounded-[8px] shadow-dropdown z-40 py-1 divide-y divide-[#f3f4f6] dark:divide-[#27272a] animate-in fade-in duration-100">
                         {ROLES.map((role) => (
                           <button
@@ -651,7 +663,7 @@ export const TeamView: React.FC = () => {
                   </div>
 
                   {/* Actions Menu Trigger (Only for Admins managing non-admin members) */}
-                  {isCurrentUserAdmin && !isMemberAdmin && (
+                  {isCurrentUserAdmin && !isMemberAdmin && !isDemoMode && (
                     <div className="relative">
                       <button
                         type="button"

@@ -269,11 +269,30 @@ export async function syncGitHubIssuesForProject(params: {
   createItem: (data: any) => Promise<Item>;
   updateItem: (item: Item) => Promise<void>;
   state?: 'open' | 'closed' | 'all';
+  force?: boolean;
 }): Promise<SyncGitHubResult> {
-  const { project, existingItems, createItem, updateItem, state = project.githubSyncState || 'open' } = params;
+  const { project, existingItems, createItem, updateItem, state = project.githubSyncState || 'open', force = false } = params;
 
   if (!project.githubRepo) {
     return { success: false, createdCount: 0, updatedCount: 0, totalFetched: 0, error: 'No GitHub repository configured for this project.' };
+  }
+
+  // 1-minute rate limit cooldown per project
+  if (!force && project.githubLastSyncedAt) {
+    const lastSync = new Date(project.githubLastSyncedAt).getTime();
+    if (!isNaN(lastSync)) {
+      const elapsed = Date.now() - lastSync;
+      if (elapsed < 60000) {
+        const remainingSec = Math.ceil((60000 - elapsed) / 1000);
+        return {
+          success: false,
+          createdCount: 0,
+          updatedCount: 0,
+          totalFetched: 0,
+          error: `Sync is on cooldown. Please wait ${remainingSec}s before syncing again.`,
+        };
+      }
+    }
   }
 
   const parsed = parseGitHubRepo(project.githubRepo);

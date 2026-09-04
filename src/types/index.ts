@@ -184,21 +184,8 @@ export interface ThemePreset {
 
 export const THEME_PRESETS: ThemePreset[] = [
   {
-    id: 'default',
-    name: 'Noir (Default)',
-    dotColor: '#ffffff',
-    accentColor: '#ffffff',
-    description: 'Pure void. Flagship OLED pitch-black with sharp contrast.',
-    bgHex: '#000000',
-    sidebarHex: '#000000',
-    cardHex: '#09090b',
-    cardElevatedHex: '#121215',
-    borderHex: '#18181b',
-    previewPills: ['#ffffff', '#a1a1aa', '#18181b'],
-  },
-  {
     id: 'charcoal',
-    name: 'Charcoal',
+    name: 'Charcoal (Default)',
     dotColor: '#a1a1aa',
     accentColor: '#10b981',
     description: 'Balanced dark charcoal and zinc with soft contrast.',
@@ -208,6 +195,19 @@ export const THEME_PRESETS: ThemePreset[] = [
     cardElevatedHex: '#202024',
     borderHex: '#27272a',
     previewPills: ['#10b981', '#a1a1aa', '#27272a'],
+  },
+  {
+    id: 'default',
+    name: 'Noir',
+    dotColor: '#ffffff',
+    accentColor: '#ffffff',
+    description: 'Pure void. Flagship OLED pitch-black with sharp contrast.',
+    bgHex: '#000000',
+    sidebarHex: '#000000',
+    cardHex: '#09090b',
+    cardElevatedHex: '#121215',
+    borderHex: '#18181b',
+    previewPills: ['#ffffff', '#a1a1aa', '#18181b'],
   },
   {
     id: 'claude',
