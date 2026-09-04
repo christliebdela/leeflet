@@ -30,7 +30,7 @@ export const PrivacyPage: React.FC = () => {
             : 'border-b border-transparent bg-transparent shadow-none'
         }`}
       >
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
           <a href="/" className="flex items-center gap-2.5 group no-underline text-inherit cursor-pointer">
             <img
               src="/logo_alpha.png"
@@ -157,7 +157,7 @@ export const PrivacyPage: React.FC = () => {
       </main>
 
       {/* ── Multi-Column Structured Footer ── */}
-      <footer className="border-t border-white/[0.06] pt-16 pb-12 px-6 max-w-6xl mx-auto text-xs">
+      <footer className="border-t border-white/[0.06] pt-16 pb-12 px-6 max-w-7xl mx-auto text-xs">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8 pb-12 border-b border-white/[0.06]">
           <div className="col-span-2 space-y-3">
             <button

@@ -48,6 +48,9 @@ export interface Item {
   assigneeId?: string | null;
   completedAt?: string | null;
   isPinned?: boolean;
+  githubIssueNumber?: number;
+  githubIssueUrl?: string;
+  githubIssueState?: 'open' | 'closed';
 }
 
 export interface ProjectModule {
@@ -88,6 +91,10 @@ export interface Project {
   color?: string; // hex or tailwind identifier
   icon?: string;
   localPath?: string;
+  githubRepo?: string; // e.g. "owner/repo"
+  githubToken?: string; // optional per-project token override
+  githubLastSyncedAt?: string;
+  githubSyncState?: 'open' | 'all';
   createdAt: string;
   updatedAt: string;
   isArchived?: boolean;

@@ -55,6 +55,13 @@ import {
   setDefaultCloudCredentials,
   isWorkspaceCloudSync,
 } from '../services/cloudSync';
+import { openUrl } from '@tauri-apps/plugin-opener';
+import {
+  getGlobalGitHubToken,
+  setGlobalGitHubToken,
+  testGitHubConnection,
+  GitHubTokenStatus,
+} from '../services/github';
 
 type SettingsTab = 'preferences' | 'shortcuts' | 'sync' | 'data' | 'about';
 
@@ -597,6 +604,52 @@ export const SettingsView: React.FC = () => {
     setSmtpTestStatus('idle');
     setSmtpTestMessage('');
     toast.info('SMTP configuration cleared');
+  };
+
+  // Global GitHub Token State
+  const [githubToken, setGithubToken] = useState(() => getGlobalGitHubToken() || '');
+  const [savedGithubToken, setSavedGithubToken] = useState(() => getGlobalGitHubToken() || '');
+  const [showGithubToken, setShowGithubToken] = useState(false);
+  const [githubTesting, setGithubTesting] = useState(false);
+  const [githubStatus, setGithubStatus] = useState<GitHubTokenStatus | null>(null);
+
+  const hasGithubChanges = githubToken.trim() !== savedGithubToken.trim();
+
+  const handleSaveGithubToken = () => {
+    const trimmed = githubToken.trim();
+    setGlobalGitHubToken(trimmed || null);
+    setSavedGithubToken(trimmed);
+    setGithubStatus(null);
+    toast.success(trimmed ? 'Global GitHub token saved' : 'Global GitHub token removed');
+  };
+
+  const handleClearGithubToken = () => {
+    setGithubToken('');
+    setSavedGithubToken('');
+    setGlobalGitHubToken(null);
+    setGithubStatus(null);
+    toast.success('GitHub token cleared');
+  };
+
+  const handleTestGithubToken = async () => {
+    setGithubTesting(true);
+    try {
+      const status = await testGitHubConnection(githubToken.trim() || null);
+      setGithubStatus(status);
+      if (status.ok) {
+        if (status.username) {
+          toast.success(`Connected as @${status.username}! (${status.rateLimitRemaining ?? 0}/${status.rateLimitLimit ?? 5000} req/hr)`);
+        } else {
+          toast.success(`Unauthenticated rate limit: ${status.rateLimitRemaining ?? 0}/${status.rateLimitLimit ?? 60} req/hr remaining`);
+        }
+      } else {
+        toast.error(status.error || 'Failed to authenticate token with GitHub');
+      }
+    } catch (err: any) {
+      toast.error(err?.message || 'Connection test failed');
+    } finally {
+      setGithubTesting(false);
+    }
   };
 
   const handleSendTestEmail = async () => {
@@ -2184,6 +2237,149 @@ export const SettingsView: React.FC = () => {
             </div>
             </>
           )}
+
+            {/* GitHub Integration */}
+            <div id="settings-section-github" className="space-y-1.5 pt-2">
+              <div className="flex items-center justify-between px-1">
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-[#9ca3af] dark:text-[#71717a]">
+                  GitHub Integration
+                </div>
+                {savedGithubToken ? (
+                  <span className="px-2 py-0.5 text-[10.5px] font-medium rounded-[5px] bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                    <Check className="w-3 h-3" />
+                    <span>Personal Token Configured</span>
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 text-[10.5px] font-mono rounded bg-[#f4f5f6] dark:bg-[#202024] text-[#6b7280] dark:text-[#a1a1aa] border border-[#e5e7eb] dark:border-[#323238]">
+                    Public Repos Only (Unauthenticated)
+                  </span>
+                )}
+              </div>
+
+              <div className="border border-[#e5e7eb] dark:border-[#27272a] rounded-[8px] bg-white dark:bg-[#18181b] divide-y divide-[#f3f4f6] dark:divide-[#27272a] overflow-hidden text-xs">
+                {/* Header info */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-3">
+                  <div className="space-y-1">
+                    <div className="font-semibold text-xs text-[#111827] dark:text-[#f4f4f5] flex items-center gap-2">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" className="opacity-90">
+                        <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+                      </svg>
+                      <span>Personal Access Token</span>
+                    </div>
+                    <p className="text-[11px] text-[#6b7280] dark:text-[#a1a1aa] leading-relaxed">
+                      Link GitHub repositories to Leeflet projects to automatically pull issues, labels, and tags into task cards. A Personal Access Token (classic or fine-grained with <code className="px-1 py-0.5 rounded bg-[#f3f4f6] dark:bg-[#27272a] font-mono text-[10px]">repo</code> scope) enables private repository synchronization and lifts the API rate limit to 5,000 req/hr.
+                    </p>
+                  </div>
+
+                  <a
+                    href="https://github.com/settings/tokens/new?scopes=repo&description=Leeflet%20Desktop%20Sync"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      try {
+                        openUrl('https://github.com/settings/tokens/new?scopes=repo&description=Leeflet%20Desktop%20Sync');
+                      } catch {
+                        window.open('https://github.com/settings/tokens/new?scopes=repo&description=Leeflet%20Desktop%20Sync', '_blank');
+                      }
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-[6px] border border-[#e5e7eb] dark:border-[#27272a] bg-white dark:bg-[#202024] text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f9fafb] dark:hover:bg-[#27272a] transition-all self-start sm:self-auto shrink-0 cursor-pointer"
+                  >
+                    <span>Generate Token</span>
+                    <ExternalLink className="w-3 h-3 text-[#9ca3af]" />
+                  </a>
+                </div>
+
+                {/* Token Input and Actions */}
+                <div className="p-4 space-y-3">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-medium text-[#374151] dark:text-[#d4d4d8]">
+                      Global Token (ghp_... or github_pat_...)
+                    </label>
+                    <div className="relative flex items-center">
+                      <input
+                        type={showGithubToken ? 'text' : 'password'}
+                        placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                        value={githubToken}
+                        onChange={(e) => setGithubToken(e.target.value)}
+                        className="w-full pr-10 px-3 py-2 text-xs bg-[#f9fafb] dark:bg-[#202024] border border-[#e5e7eb] dark:border-[#27272a] rounded-[6px] text-[#111827] dark:text-white placeholder-[#9ca3af] focus:outline-none focus:border-[#9ca3af] dark:focus:border-[#52525b] font-mono"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowGithubToken(!showGithubToken)}
+                        className="absolute right-2.5 text-[#9ca3af] hover:text-[#374151] dark:hover:text-white transition-colors cursor-pointer"
+                        title={showGithubToken ? 'Hide token' : 'Show token'}
+                      >
+                        {showGithubToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Token Status / Test Results */}
+                  {githubStatus && (
+                    <div
+                      className={`p-3 rounded-[6px] text-xs flex items-center justify-between gap-2 ${
+                        githubStatus.ok
+                          ? 'bg-emerald-500/8 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300'
+                          : 'bg-red-500/8 border border-red-500/20 text-red-700 dark:text-red-400'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        {githubStatus.ok ? (
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                        ) : (
+                          <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+                        )}
+                        <span>
+                          {githubStatus.ok
+                            ? githubStatus.username
+                              ? `Authenticated as @${githubStatus.username}`
+                              : 'Valid connection'
+                            : githubStatus.error || 'Authentication error'}
+                        </span>
+                      </div>
+                      <div className="font-mono text-[11px] opacity-80 shrink-0">
+                        {githubStatus.rateLimitRemaining ?? 0}/{githubStatus.rateLimitLimit ?? 0} req/hr
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Button bar */}
+                  <div className="flex items-center justify-between pt-1">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        disabled={githubTesting}
+                        onClick={handleTestGithubToken}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-[6px] border border-[#e5e7eb] dark:border-[#27272a] bg-white dark:bg-[#202024] text-[#374151] dark:text-[#d4d4d8] hover:bg-[#f9fafb] dark:hover:bg-[#27272a] transition-all cursor-pointer disabled:opacity-60"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${githubTesting ? 'animate-spin' : ''}`} />
+                        <span>{githubTesting ? 'Testing...' : 'Test Connection'}</span>
+                      </button>
+
+                      {savedGithubToken && (
+                        <button
+                          type="button"
+                          onClick={handleClearGithubToken}
+                          className="px-2.5 py-1.5 text-xs font-medium text-red-600 hover:text-red-700 dark:text-red-400 hover:underline cursor-pointer"
+                        >
+                          Remove Token
+                        </button>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      disabled={!hasGithubChanges}
+                      onClick={handleSaveGithubToken}
+                      className="px-3.5 py-1.5 text-xs font-medium rounded-[6px] bg-[#111827] dark:bg-white text-white dark:text-[#111827] hover:bg-black dark:hover:bg-[#f4f4f5] transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      Save Changes
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

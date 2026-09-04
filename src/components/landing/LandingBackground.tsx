@@ -2,12 +2,6 @@ import React, { ReactNode, useState, useEffect, useCallback } from "react";
 import { AuroraBackground } from "../ui/aurora-background";
 import { LineWavesBackground } from "../ui/line-waves-background";
 import { Waves, Rainbow } from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "../ui/tooltip";
 import { cn } from "@/lib/utils";
 
 export type BackgroundMode = "waves" | "aurora";
@@ -24,8 +18,8 @@ export function getStoredBackgroundMode(): BackgroundMode {
       // Ignore storage errors
     }
   }
-  // Default is waves
-  return "waves";
+  // Default is aurora
+  return "aurora";
 }
 
 export function useBackgroundMode() {
@@ -92,32 +86,21 @@ export function BackgroundToggle({ className }: BackgroundToggleProps) {
   const { bgMode, toggleBackground } = useBackgroundMode();
 
   return (
-    <TooltipProvider delayDuration={150}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            type="button"
-            onClick={toggleBackground}
-            className={cn(
-              "w-8 h-8 flex items-center justify-center rounded-lg text-[#8a8f98] hover:text-[#ededef] hover:bg-white/[0.06] transition-colors cursor-pointer",
-              className
-            )}
-            aria-label="Toggle background animation"
-          >
-            {bgMode === "waves" ? (
-              <Waves className="w-4 h-4" />
-            ) : (
-              <Rainbow className="w-4 h-4" />
-            )}
-          </button>
-        </TooltipTrigger>
-        <TooltipContent side="bottom" sideOffset={6}>
-          {bgMode === "waves"
-            ? "Background: Line Waves (Click for Aurora)"
-            : "Background: Aurora (Click for Line Waves)"}
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <button
+      type="button"
+      onClick={toggleBackground}
+      className={cn(
+        "w-8 h-8 flex items-center justify-center rounded-lg text-[#8a8f98] hover:text-[#ededef] hover:bg-white/[0.06] transition-colors cursor-pointer",
+        className
+      )}
+      aria-label="Toggle background animation"
+    >
+      {bgMode === "waves" ? (
+        <Waves className="w-4 h-4" />
+      ) : (
+        <Rainbow className="w-4 h-4" />
+      )}
+    </button>
   );
 }
 

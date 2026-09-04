@@ -114,7 +114,7 @@ export const LandingPage: React.FC = () => {
             : 'border-b border-transparent bg-transparent shadow-none'
         }`}
       >
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
           {/* Brand - Uses the app's signature font-brand font, scrolls to hero */}
           <a
             href="#hero"
@@ -212,7 +212,7 @@ export const LandingPage: React.FC = () => {
       {/* ── Main Content Container with top padding for fixed header ── */}
       <main className="relative z-10 pt-28 sm:pt-36">
         {/* ── Hero Section (Linear Left-Aligned, Punchy & Convincing) ── */}
-        <section id="hero" className="pb-16 px-6 max-w-6xl mx-auto scroll-mt-28">
+        <section id="hero" className="pb-16 px-6 max-w-7xl mx-auto scroll-mt-28">
           <div className="max-w-4xl">
             {/* GitHub Stars Text Link above Headline (No Pill) */}
             <a
@@ -317,7 +317,7 @@ export const LandingPage: React.FC = () => {
         </section>
 
         {/* ── Social Proof / Trusted By Teams Strip ── */}
-        <section className="py-14 px-6 max-w-6xl mx-auto border-t border-white/[0.04]">
+        <section className="py-14 px-6 max-w-7xl mx-auto border-t border-white/[0.04]">
           <p className="text-center text-[11px] sm:text-xs font-mono uppercase tracking-[0.25em] text-[#71717a] mb-8">
             Trusted by engineers & builders across
           </p>
@@ -432,7 +432,7 @@ export const LandingPage: React.FC = () => {
         </section>
 
         {/* ── Data Sovereignty & Workflow (Unified WobbleCard Bento Grid with Glass Effect) ── */}
-        <section id="byod" className="py-20 px-6 max-w-6xl mx-auto border-t border-white/[0.06] scroll-mt-16">
+        <section id="byod" className="py-20 px-6 max-w-7xl mx-auto border-t border-white/[0.06] scroll-mt-16">
           <div className="max-w-3xl mb-12">
             <div className="text-[11px] font-mono uppercase tracking-[0.2em] text-[#8a8f98]">
               Architecture & Workflow
@@ -558,7 +558,7 @@ export const LandingPage: React.FC = () => {
         </section>
 
         {/* ── Why I Built Leeflet (Manifesto / Founder Note) ── */}
-        <section id="manifesto" className="py-20 px-6 max-w-6xl mx-auto border-t border-white/[0.06] scroll-mt-16">
+        <section id="manifesto" className="py-20 px-6 max-w-7xl mx-auto border-t border-white/[0.06] scroll-mt-16">
           <div className="p-8 sm:p-12 rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl relative overflow-hidden">
             
             {/* Two-column layout: text left, screenshot right */}
@@ -630,7 +630,7 @@ export const LandingPage: React.FC = () => {
         </section>
 
         {/* ── Pricing Section (100% Free & Open Source Satirical / Clean Pricing) ── */}
-        <section id="pricing" className="py-20 px-6 max-w-6xl mx-auto border-t border-white/[0.06] scroll-mt-16">
+        <section id="pricing" className="py-20 px-6 max-w-7xl mx-auto border-t border-white/[0.06] scroll-mt-16">
           <div className="max-w-3xl mb-12">
             <div className="text-[11px] font-mono uppercase tracking-[0.2em] text-[#8a8f98]">
               Pricing
@@ -826,7 +826,7 @@ export const LandingPage: React.FC = () => {
         </section>
 
         {/* ── FAQ Section (2-Column Grid with Glassmorphic Accordion & Support Card) ── */}
-        <section id="faq" className="py-20 px-6 max-w-6xl mx-auto border-t border-white/[0.06] scroll-mt-16">
+        <section id="faq" className="py-20 px-6 max-w-7xl mx-auto border-t border-white/[0.06] scroll-mt-16">
           <div className="mb-10">
             <div className="text-[11px] font-mono uppercase tracking-[0.2em] text-[#8a8f98]">
               FAQ
@@ -946,7 +946,7 @@ export const LandingPage: React.FC = () => {
 
 
         {/* ── Download Strip (Glassmorphic CTA Card & Button) ── */}
-        <section id="download" className="py-20 px-6 max-w-6xl mx-auto border-t border-white/[0.06] scroll-mt-16">
+        <section id="download" className="py-20 px-6 max-w-7xl mx-auto border-t border-white/[0.06] scroll-mt-16">
           <div className="p-8 sm:p-12 rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
             <div>
               <div className="text-[11px] font-mono uppercase tracking-[0.2em] text-[#8a8f98]">
@@ -994,7 +994,7 @@ export const LandingPage: React.FC = () => {
       </main>
 
       {/* ── Multi-Column Structured Footer ── */}
-      <footer className="border-t border-white/[0.06] pt-16 pb-12 px-6 max-w-6xl mx-auto text-xs">
+      <footer className="border-t border-white/[0.06] pt-16 pb-12 px-6 max-w-7xl mx-auto text-xs">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8 pb-12 border-b border-white/[0.06]">
           <div className="col-span-2 space-y-3">
             <button

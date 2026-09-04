@@ -55,7 +55,15 @@ interface LeafState {
   renameWorkspace: (workspaceId: string, newName: string) => Promise<void>;
   deleteWorkspace: (workspaceId: string) => Promise<void>;
   loadProjects: () => Promise<void>;
-  createProject: (data: { name: string; description?: string; color?: string; localPath?: string }) => Promise<Project>;
+  createProject: (data: {
+    name: string;
+    description?: string;
+    color?: string;
+    localPath?: string;
+    githubRepo?: string;
+    githubToken?: string;
+    githubSyncState?: 'open' | 'all';
+  }) => Promise<Project>;
   updateProject: (project: Project) => Promise<void>;
   deleteProject: (id: string) => Promise<void>;
   reorderProjects: (sourceId: string, targetId: string, position?: 'before' | 'after') => void;
@@ -74,6 +82,10 @@ interface LeafState {
     attachments?: Attachment[];
     dueAt?: string | null;
     assigneeId?: string | null;
+    completedAt?: string | null;
+    githubIssueNumber?: number;
+    githubIssueUrl?: string;
+    githubIssueState?: 'open' | 'closed';
   }) => Promise<Item>;
   updateItem: (item: Item) => Promise<void>;
   deleteItem: (id: string) => Promise<void>;

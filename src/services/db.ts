@@ -387,6 +387,10 @@ export class DatabaseService {
     attachments?: Attachment[];
     dueAt?: string | null;
     assigneeId?: string | null;
+    completedAt?: string | null;
+    githubIssueNumber?: number;
+    githubIssueUrl?: string;
+    githubIssueState?: 'open' | 'closed';
   }): Promise<Item> {
     const wsId = this.getActiveWorkspaceId();
     if (!wsId) throw new Error('No active workspace');
@@ -410,7 +414,10 @@ export class DatabaseService {
       updatedAt: now,
       dueAt: data.dueAt || null,
       assigneeId: data.assigneeId || null,
-      completedAt: data.status === 'done' ? now : null,
+      completedAt: data.completedAt ?? (data.status === 'done' ? now : null),
+      githubIssueNumber: data.githubIssueNumber,
+      githubIssueUrl: data.githubIssueUrl,
+      githubIssueState: data.githubIssueState,
     };
 
     items.unshift(newItem);
