@@ -1,5 +1,5 @@
 import React, { ReactNode, useState, useEffect, useCallback } from "react";
-import { AuroraBackground } from "../ui/aurora-background";
+import { AuroraEffect } from "../ui/aurora-background";
 import { LineWavesBackground } from "../ui/line-waves-background";
 import { Waves, Rainbow } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -127,18 +127,6 @@ export const LandingBackground: React.FC<LandingBackgroundProps> = ({
     onFallback?.();
   }, [setBgMode, onFallback]);
 
-  if (currentMode === "aurora") {
-    return (
-      <AuroraBackground
-        showRadialGradient={showRadialGradient}
-        className={className}
-        {...props}
-      >
-        {children}
-      </AuroraBackground>
-    );
-  }
-
   return (
     <div
       className={cn(
@@ -147,7 +135,14 @@ export const LandingBackground: React.FC<LandingBackgroundProps> = ({
       )}
       {...props}
     >
-      <LineWavesBackground onError={handleFallback} />
+      {/* Background layer switches behind content without unmounting the page or resetting DOM height */}
+      {currentMode === "aurora" ? (
+        <AuroraEffect showRadialGradient={showRadialGradient} />
+      ) : (
+        <LineWavesBackground onError={handleFallback} />
+      )}
+
+      {/* Children tree stays permanently mounted with zero layout shifts or scrollbar flashes */}
       <div className="relative z-10 w-full">
         {children}
       </div>

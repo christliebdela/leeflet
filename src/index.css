@@ -83,6 +83,22 @@
     color: #f4f4f5;
   }
 
+  html.is-landing {
+    scroll-behavior: smooth;
+    scrollbar-gutter: stable;
+  }
+
+  html.is-landing,
+  html.is-landing body {
+    overflow-y: scroll !important;
+    scrollbar-gutter: stable;
+    overflow-x: hidden !important;
+    height: auto !important;
+    min-height: 100% !important;
+    user-select: text !important;
+    -webkit-user-select: text !important;
+  }
+
   input, textarea, select, [contenteditable] {
     user-select: text;
   }

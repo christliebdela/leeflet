@@ -13,12 +13,14 @@
         height: 100%;
         overflow: hidden;
       }
-      /* Landing page needs scrolling, natural height, and dark background matching the design */
+      /* Landing page needs scrolling, natural height, stable scrollbar gutter, and dark background matching the design */
       html.is-landing {
         scroll-behavior: smooth;
+        scrollbar-gutter: stable;
       }
       html.is-landing, html.is-landing body {
-        overflow-y: auto !important;
+        overflow-y: scroll !important;
+        scrollbar-gutter: stable;
         overflow-x: hidden !important;
         height: auto !important;
         min-height: 100% !important;
