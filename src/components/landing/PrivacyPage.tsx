@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AuroraBackground } from '../ui/aurora-background';
+import { LandingBackground, BackgroundToggle } from './LandingBackground';
 import {
   useReleaseDownload,
   OSIcon,
@@ -21,7 +21,7 @@ export const PrivacyPage: React.FC = () => {
   }, []);
 
   return (
-    <AuroraBackground>
+    <LandingBackground>
       {/* ── Top Navigation Bar ── */}
       <header
         className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${
@@ -74,6 +74,8 @@ export const PrivacyPage: React.FC = () => {
                 <span>GitHub</span>
               </a>
             </nav>
+
+            <BackgroundToggle />
 
             <a
               href={downloadUrl}
@@ -216,6 +218,6 @@ export const PrivacyPage: React.FC = () => {
           </div>
         </div>
       </footer>
-    </AuroraBackground>
+    </LandingBackground>
   );
 };

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AuroraBackground } from '../ui/aurora-background';
+import { LandingBackground, BackgroundToggle } from './LandingBackground';
 import { INITIAL_SCHEMA_SQL } from '../../utils/schemaSql';
 import { useReleaseDownload, OSIcon } from '../../utils/releaseDownload';
 
@@ -121,7 +121,7 @@ export const DocsPage: React.FC = () => {
   const categories = ['Getting started', 'Sync & Database', 'Workflow & UI', 'Data Sovereignty'];
 
   return (
-    <AuroraBackground showRadialGradient={false}>
+    <LandingBackground showRadialGradient={false}>
       {/* Linear-Style Fixed Layout with Aurora Flow */}
       <div className="relative z-10 flex h-screen w-full overflow-hidden text-[#ededef] font-sans antialiased selection:bg-white/20 selection:text-white">
         
@@ -139,17 +139,20 @@ export const DocsPage: React.FC = () => {
                 <span className="font-semibold text-sm tracking-tight text-[#ededef]">Docs</span>
               </a>
 
-              <button
-                type="button"
-                onClick={() => scrollToSection('getting-started')}
-                className="p-1.5 rounded-md hover:bg-white/[0.06] text-[#71717a] hover:text-[#ededef] transition-colors cursor-pointer"
-                title="Search documentation"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="11" cy="11" r="8"></circle>
-                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                </svg>
-              </button>
+              <div className="flex items-center gap-1">
+                <BackgroundToggle />
+                <button
+                  type="button"
+                  onClick={() => scrollToSection('getting-started')}
+                  className="p-1.5 rounded-md hover:bg-white/[0.06] text-[#71717a] hover:text-[#ededef] transition-colors cursor-pointer"
+                  title="Search documentation"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
+                </button>
+              </div>
             </div>
 
             {/* Navigation Groups List */}
@@ -707,6 +710,6 @@ sqlite3 ~/Documents/leeflet/leaf.db ".dump" > leeflet_backup.sql`}
           </main>
         </div>
       </div>
-    </AuroraBackground>
+    </LandingBackground>
   );
 };

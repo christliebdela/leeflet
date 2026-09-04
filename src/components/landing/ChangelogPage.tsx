@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AuroraBackground } from '../ui/aurora-background';
+import { LandingBackground, BackgroundToggle } from './LandingBackground';
 import {
   useReleaseDownload,
   OSIcon,
@@ -21,7 +21,7 @@ export const ChangelogPage: React.FC = () => {
   }, []);
 
   return (
-    <AuroraBackground>
+    <LandingBackground>
       {/* ── Fixed Top Navigation Bar (Seamless at top, frosted glass on scroll) ── */}
       <header
         className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${
@@ -88,6 +88,8 @@ export const ChangelogPage: React.FC = () => {
                 <span>GitHub</span>
               </a>
             </nav>
+
+            <BackgroundToggle />
 
             <a
               href={downloadUrl}
@@ -340,6 +342,6 @@ export const ChangelogPage: React.FC = () => {
           </div>
         </div>
       </footer>
-    </AuroraBackground>
+    </LandingBackground>
   );
 };

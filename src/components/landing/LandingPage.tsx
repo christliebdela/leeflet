@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { WobbleCard } from '../ui/wobble-card';
-import { AuroraBackground } from '../ui/aurora-background';
+import { LandingBackground, BackgroundToggle } from './LandingBackground';
 import {
   useReleaseDownload,
   OSIcon,
@@ -105,7 +105,7 @@ export const LandingPage: React.FC = () => {
   };
 
   return (
-    <AuroraBackground>
+    <LandingBackground>
       {/* ── Fixed Top Navigation Bar (Seamless at top, frosted glass on scroll) ── */}
       <header
         className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${
@@ -191,6 +191,9 @@ export const LandingPage: React.FC = () => {
                 <span>GitHub</span>
               </a>
             </nav>
+
+            {/* Background Style Toggle */}
+            <BackgroundToggle />
 
             {/* Glass Navigation Download Button */}
             <a
@@ -289,10 +292,19 @@ export const LandingPage: React.FC = () => {
             />
 
             <div className="relative rounded-xl border border-white/[0.08] bg-[#0e1013] overflow-hidden shadow-[0_24px_60px_-12px_rgba(0,0,0,0.7)]">
+              {/* Mobile Hero Screenshot (Square aspect for compact viewports) */}
+              <img
+                src="/leaf_mobile.png"
+                alt="Leeflet Workspace Interface"
+                className="w-full h-auto block sm:hidden select-none"
+                loading="eager"
+              />
+
+              {/* Desktop Hero Screenshot (Landscape widescreen) */}
               <img
                 src="/leaf.png"
                 alt="Leeflet Workspace Interface"
-                className="w-full h-auto block select-none"
+                className="w-full h-auto hidden sm:block select-none"
                 style={{
                   width: 'calc(100% + 4px)',
                   maxWidth: 'none',
@@ -1119,6 +1131,6 @@ export const LandingPage: React.FC = () => {
           </div>
         </div>
       </footer>
-    </AuroraBackground>
+    </LandingBackground>
   );
 };

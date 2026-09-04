@@ -24,6 +24,7 @@
     "date-fns": "^4.1.0",
     "framer-motion": "^13.1.1",
     "lucide-react": "^1.16.0",
+    "ogl": "^1.0.11",
     "react": "^18.3.1",
     "react-day-picker": "^10.0.1",
     "react-dom": "^18.3.1",

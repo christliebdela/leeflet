@@ -350,7 +350,7 @@ export const HeaderBar: React.FC = () => {
       </div>
 
       {/* Action Controls & Top Window Controls */}
-      <div className="flex items-center gap-1 shrink-0" data-tauri-drag-region="false">
+      <div className="flex items-center gap-1 xl:gap-1.5 shrink-0" data-tauri-drag-region="false">
         {/* Search, Filter, and Sort Controls (Only in list and item views) */}
         {viewMode.type !== 'team' && viewMode.type !== 'profile' && viewMode.type !== 'settings' && (
           <>
@@ -369,16 +369,17 @@ export const HeaderBar: React.FC = () => {
         <div className="relative shrink-0" ref={filterDropdownRef}>
           <button
             onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
-            className={`w-7 h-7 flex items-center justify-center p-1.5 rounded-[6px] border text-xs font-medium shrink-0 transition-colors relative cursor-pointer ${
+            className={`w-7 h-7 xl:w-auto xl:px-2.5 xl:gap-1.5 flex items-center justify-center rounded-[6px] border text-xs font-medium shrink-0 transition-colors relative cursor-pointer ${
               isFilterDropdownOpen || activeFilterCount > 0
                 ? 'bg-[#111827] text-white border-[#111827] dark:bg-white dark:text-[#111827] dark:border-white shadow-sm'
                 : 'bg-[#f4f5f6] dark:bg-[#1c1c1f] border-[#e5e7eb] dark:border-[#27272a] text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#27272a]'
             }`}
           >
             <Filter className="w-3.5 h-3.5" />
+            <span className="hidden xl:inline">Filter</span>
             {activeFilterCount > 0 && (
               <span
-                className={`absolute -top-1 -right-1 min-w-3.5 h-3.5 px-0.5 flex items-center justify-center text-[9px] rounded-full font-bold shadow-xs leading-none ${
+                className={`min-w-3.5 h-3.5 px-0.5 xl:px-1.5 flex items-center justify-center text-[9px] xl:text-[9.5px] rounded-full font-bold shadow-xs leading-none absolute -top-1 -right-1 xl:static xl:top-auto xl:right-auto xl:ml-0.5 ${
                   isFilterDropdownOpen || activeFilterCount > 0
                     ? 'bg-rose-500 text-white'
                     : 'bg-[#111827] text-white dark:bg-white dark:text-[#111827]'
@@ -570,9 +571,10 @@ export const HeaderBar: React.FC = () => {
         <div className="relative shrink-0" ref={sortDropdownRef}>
           <button
             onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
-            className="w-7 h-7 flex items-center justify-center p-1.5 rounded-[6px] border border-[#e5e7eb] dark:border-[#27272a] bg-[#f4f5f6] dark:bg-[#1c1c1f] text-xs font-medium text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#27272a] shrink-0 transition-colors cursor-pointer"
+            className="w-7 h-7 xl:w-auto xl:px-2.5 xl:gap-1.5 flex items-center justify-center rounded-[6px] border border-[#e5e7eb] dark:border-[#27272a] bg-[#f4f5f6] dark:bg-[#1c1c1f] text-xs font-medium text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#27272a] shrink-0 transition-colors cursor-pointer"
           >
             <ArrowUpDown className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
+            <span className="hidden xl:inline">Sort</span>
           </button>
 
           {isSortDropdownOpen && (
@@ -641,7 +643,7 @@ export const HeaderBar: React.FC = () => {
           <div className="relative shrink-0" ref={layoutDropdownRef}>
             <button
               onClick={() => setIsLayoutDropdownOpen(!isLayoutDropdownOpen)}
-              className="w-7 h-7 flex items-center justify-center p-1.5 rounded-[6px] border border-[#e5e7eb] dark:border-[#27272a] bg-[#f4f5f6] dark:bg-[#1c1c1f] text-xs font-medium text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#27272a] shrink-0 transition-colors cursor-pointer"
+              className="w-7 h-7 xl:w-auto xl:px-2.5 xl:gap-1.5 flex items-center justify-center rounded-[6px] border border-[#e5e7eb] dark:border-[#27272a] bg-[#f4f5f6] dark:bg-[#1c1c1f] text-xs font-medium text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#27272a] shrink-0 transition-colors cursor-pointer"
             >
               {itemViewLayout === 'board' ? (
                 <Kanban className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
@@ -650,6 +652,9 @@ export const HeaderBar: React.FC = () => {
               ) : (
                 <List className="w-3.5 h-3.5 text-[#6b7280] dark:text-[#a1a1aa]" />
               )}
+              <span className="hidden xl:inline capitalize">
+                {itemViewLayout === 'board' ? 'Board' : itemViewLayout === 'cards' ? 'Cards' : 'List'}
+              </span>
             </button>
 
             {isLayoutDropdownOpen && (
@@ -725,7 +730,7 @@ export const HeaderBar: React.FC = () => {
           <button
             type="button"
             onClick={() => handleRefresh(false)}
-            className={`w-7 h-7 flex items-center justify-center p-1.5 rounded-[6px] border text-xs font-medium shrink-0 transition-colors cursor-pointer select-none ${
+            className={`w-7 h-7 xl:w-auto xl:px-2.5 xl:gap-1.5 flex items-center justify-center rounded-[6px] border text-xs font-medium shrink-0 transition-colors cursor-pointer select-none ${
               !isOnline
                 ? 'bg-[#f4f5f6] dark:bg-[#1c1c1f] border-[#e5e7eb] dark:border-[#27272a] text-[#9ca3af] dark:text-[#52525b]'
                 : 'bg-[#f4f5f6] dark:bg-[#1c1c1f] border-[#e5e7eb] dark:border-[#27272a] text-[#4b5563] dark:text-[#a1a1aa] hover:bg-[#ebecee] dark:hover:bg-[#27272a]'
@@ -738,6 +743,9 @@ export const HeaderBar: React.FC = () => {
             ) : (
               <Cloud className="w-3.5 h-3.5" />
             )}
+            <span className="hidden xl:inline">
+              {!isOnline ? 'Offline' : syncState === 'syncing' ? 'Syncing...' : 'Synced'}
+            </span>
           </button>
         )}
 
@@ -745,9 +753,10 @@ export const HeaderBar: React.FC = () => {
         {permissions.canCreateItems ? (
           <button
             onClick={() => setQuickCaptureOpen(true)}
-            className="w-7 h-7 flex items-center justify-center p-1.5 bg-[#111827] dark:bg-[#f4f4f5] hover:bg-[#1f2937] dark:hover:bg-white text-white dark:text-[#18181b] rounded-[6px] text-xs font-semibold shadow-subtle shrink-0 transition-all active:scale-[0.96] cursor-pointer"
+            className="w-7 h-7 xl:w-auto xl:px-3 xl:gap-1 flex items-center justify-center bg-[#111827] dark:bg-[#f4f4f5] hover:bg-[#1f2937] dark:hover:bg-white text-white dark:text-[#18181b] rounded-[6px] text-xs font-semibold shadow-subtle shrink-0 transition-all active:scale-[0.96] cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
+            <span className="hidden xl:inline">New</span>
           </button>
         ) : (
           <span className="flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 border border-amber-500/25 text-amber-600 dark:text-amber-400 rounded-[6px] text-[11px] font-semibold shrink-0 select-none">

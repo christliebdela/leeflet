@@ -120,7 +120,7 @@ fn send_smtp_email(config: SmtpConfig, payload: EmailPayload) -> Result<(), Stri
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.show();
@@ -152,15 +152,16 @@ pub fn run() {
                 let _ = app.global_shortcut().register(shortcut);
             }
 
-            let open_item = MenuItem::with_id(app, "open", "Open leeflet", true, None::<String>)?;
+            let app_name = if cfg!(debug_assertions) { "leeflet (dev)" } else { "leeflet" };
+            let open_item = MenuItem::with_id(app, "open", format!("Open {}", app_name), true, None::<String>)?;
             let capture_item = MenuItem::with_id(app, "capture", "Quick Capture (Alt+L)", true, None::<String>)?;
-            let quit_item = MenuItem::with_id(app, "quit", "Quit leeflet", true, None::<String>)?;
+            let quit_item = MenuItem::with_id(app, "quit", format!("Quit {}", app_name), true, None::<String>)?;
             let menu = Menu::with_items(app, &[&open_item, &capture_item, &quit_item])?;
 
             if let Some(icon) = app.default_window_icon() {
                 let _tray = TrayIconBuilder::new()
                     .icon(icon.clone())
-                    .tooltip("leeflet")
+                    .tooltip(app_name)
                     .menu(&menu)
                     .show_menu_on_left_click(false)
                     .on_menu_event(|app, event| match event.id.as_ref() {
@@ -221,7 +222,20 @@ pub fn run() {
             write_file_to_path,
             read_file_from_path,
             send_smtp_email
-        ])
-        .run(tauri::generate_context!())
+        ]);
+
+    let mut context = tauri::generate_context!();
+    if cfg!(debug_assertions) {
+        context.config_mut().identifier = "com.leeflet.workspace.dev".to_string();
+        context.config_mut().product_name = Some("leeflet (dev)".to_string());
+        for win in &mut context.config_mut().app.windows {
+            if win.label == "main" {
+                win.title = "leeflet (dev)".to_string();
+            }
+        }
+    }
+
+    builder
+        .run(context)
         .expect("error while running leeflet application");
 }
