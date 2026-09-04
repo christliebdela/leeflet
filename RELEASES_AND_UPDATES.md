@@ -100,8 +100,8 @@ git commit -m "chore: release v0.2.0"
 git push origin main
 
 # Create and push the version tag
-git tag v0.2.0
-git push origin v0.2.0
+git tag v0.6.0
+git push origin v0.6.0
 ```
 
 ### 3. GitHub Actions Builds & Publishes

@@ -1,5 +1,6 @@
 import { Mesh, Program, Renderer, Triangle } from "ogl";
 import { useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
 
 export interface LineWavesProps {
   speed?: number;
@@ -15,6 +16,8 @@ export interface LineWavesProps {
   color3?: string;
   enableMouseInteraction?: boolean;
   mouseInfluence?: number;
+  flipHorizontal?: boolean;
+  flipVertical?: boolean;
   className?: string;
   onError?: () => void;
 }
@@ -160,6 +163,8 @@ export function LineWaves({
   color3 = "#ffffff",
   enableMouseInteraction = true,
   mouseInfluence = 1.6,
+  flipHorizontal = false,
+  flipVertical = false,
   className = "size-full",
   onError,
 }: LineWavesProps) {
@@ -201,10 +206,11 @@ export function LineWaves({
     function handleMouseMove(e: MouseEvent) {
       if (!gl.canvas) return;
       const rect = gl.canvas.getBoundingClientRect();
-      targetMouse = [
-        (e.clientX - rect.left) / (rect.width || 1),
-        1.0 - (e.clientY - rect.top) / (rect.height || 1),
-      ];
+      const rawX = (e.clientX - rect.left) / (rect.width || 1);
+      const normalizedX = flipHorizontal ? 1.0 - rawX : rawX;
+      const rawY = 1.0 - (e.clientY - rect.top) / (rect.height || 1);
+      const normalizedY = flipVertical ? 1.0 - rawY : rawY;
+      targetMouse = [normalizedX, normalizedY];
     }
 
     function handleMouseLeave() {
@@ -342,6 +348,8 @@ export function LineWaves({
     color3,
     enableMouseInteraction,
     mouseInfluence,
+    flipHorizontal,
+    flipVertical,
     reduceMotion,
     onError,
   ]);
@@ -356,7 +364,16 @@ export function LineWaves({
     );
   }
 
-  return <div ref={containerRef} className={className} />;
+  return (
+    <div
+      ref={containerRef}
+      className={cn(
+        flipHorizontal && "-scale-x-100",
+        flipVertical && "-scale-y-100",
+        className
+      )}
+    />
+  );
 }
 
 export default LineWaves;

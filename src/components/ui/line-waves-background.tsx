@@ -3,11 +3,15 @@ import { cn } from "@/lib/utils";
 
 interface LineWavesBackgroundProps {
   className?: string;
+  flipHorizontal?: boolean;
+  flipVertical?: boolean;
   onError?: () => void;
 }
 
 export function LineWavesBackground({
   className,
+  flipHorizontal = true,
+  flipVertical = false,
   onError,
 }: LineWavesBackgroundProps) {
   return (
@@ -32,6 +36,8 @@ export function LineWavesBackground({
         color2="#ffffff"
         color3="#ffffff"
         mouseInfluence={1.6}
+        flipHorizontal={flipHorizontal}
+        flipVertical={flipVertical}
         className="size-full opacity-65"
         onError={onError}
       />
